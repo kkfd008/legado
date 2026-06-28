@@ -217,10 +217,10 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
         }
 
     val showDiscovery: Boolean
-        get() = appCtx.getPrefBoolean(PreferKey.showDiscovery, true)
+        get() = appCtx.getPrefBoolean(PreferKey.showDiscovery, false)
 
     val showRSS: Boolean
-        get() = appCtx.getPrefBoolean(PreferKey.showRss, true)
+        get() = appCtx.getPrefBoolean(PreferKey.showRss, false)
 
     val autoRefreshBook: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.autoRefresh)
@@ -623,7 +623,7 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
 
     //跳转到漫画界面不使用富文本模式
     val showMangaUi: Boolean
-        get() = appCtx.getPrefBoolean(PreferKey.showMangaUi, true)
+        get() = appCtx.getPrefBoolean(PreferKey.showMangaUi, false)
 
     //禁用漫画缩放
     var disableMangaScale: Boolean
