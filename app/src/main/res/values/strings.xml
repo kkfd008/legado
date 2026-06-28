@@ -1145,8 +1145,9 @@
     <string name="result_analyzed">Analyzed</string>
     <string name="bookshelf_px_4">Comprehensive</string>
     <string name="bookshelf_px_5">Sort by author</string>
-    <string name="bookshelf_px_6">File size ascending</string>
-    <string name="bookshelf_px_7">File size descending</string>
+    <string name="bookshelf_px_6">By file size</string>
+    <string name="bookshelf_sort_ascending">Ascending</string>
+    <string name="bookshelf_sort_descending">Descending</string>
     <string name="effective_replaces">Effective replacement</string>
     <string name="export_book">Export Book</string>
     <string name="export_book_notification_content">Exporting (%1$s), with %2$d to be exported.</string>

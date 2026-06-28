@@ -65,8 +65,14 @@ object BookController {
                     5 -> books.sortedWith { o1, o2 ->
                         o1.author.cnCompare(o2.author)
                     }
-                    6 -> books.sortedBy { it.getFileSize() }
-                    7 -> books.sortedByDescending { it.getFileSize() }
+                    6 -> if (AppConfig.bookshelfSortAscending)
+                        books.sortedBy { it.getFileSize() }
+                    else
+                        books.sortedByDescending { it.getFileSize() }
+                    7 -> if (AppConfig.bookshelfSortAscending)
+                        books.sortedBy { it.getFileSize() }
+                    else
+                        books.sortedByDescending { it.getFileSize() }
                     else -> books.sortedByDescending { it.durChapterTime }
                 }
                 returnData.setData(data)

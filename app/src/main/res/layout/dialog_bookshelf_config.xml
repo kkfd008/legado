@@ -186,10 +186,28 @@
                 android:text="@string/bookshelf_px_6"
                 tools:ignore="TouchTargetSizeCheck" />
 
+        </RadioGroup>
+
+        <RadioGroup
+            android:id="@+id/rg_sort_order"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
             <RadioButton
-                android:layout_width="match_parent"
+                android:id="@+id/rb_sort_ascending"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="@string/bookshelf_px_7"
+                android:layout_weight="1"
+                android:text="@string/bookshelf_sort_ascending"
+                tools:ignore="TouchTargetSizeCheck" />
+
+            <RadioButton
+                android:id="@+id/rb_sort_descending"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/bookshelf_sort_descending"
                 tools:ignore="TouchTargetSizeCheck" />
 
         </RadioGroup>

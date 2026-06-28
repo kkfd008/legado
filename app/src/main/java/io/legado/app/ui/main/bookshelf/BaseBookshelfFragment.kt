@@ -181,11 +181,18 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
                             bookshelfSort = 0
                             AppConfig.bookshelfSort = 0
                         }
+                        // 兼容旧版：如果之前选了反序(7)，转为文件大小(6)+降序
+                        if (bookshelfSort == 7) {
+                            bookshelfSort = 6
+                            AppConfig.bookshelfSort = 6
+                            AppConfig.bookshelfSortAscending = false
+                        }
                         spGroupStyle.setSelection(AppConfig.bookGroupStyle)
                         swShowUnread.isChecked = AppConfig.showUnread
                         swShowLastUpdateTime.isChecked = AppConfig.showLastUpdateTime
                         swShowWaitUpBooks.isChecked = AppConfig.showWaitUpCount
                         swShowBookshelfFastScroller.isChecked = AppConfig.showBookshelfFastScroller
+                        rgSortOrder.checkByIndex(if (AppConfig.bookshelfSortAscending) 0 else 1)
                         rgLayout.checkByIndex(bookshelfLayout)
                         rgSort.checkByIndex(bookshelfSort)
                     }
@@ -216,6 +223,11 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
                     }
                     if (bookshelfSort != rgSort.getCheckedIndex()) {
                         AppConfig.bookshelfSort = rgSort.getCheckedIndex()
+                        upSort()
+                    }
+                    val newAscending = rgSortOrder.getCheckedIndex() == 0
+                    if (AppConfig.bookshelfSortAscending != newAscending) {
+                        AppConfig.bookshelfSortAscending = newAscending
                         upSort()
                     }
                     if (bookshelfLayout != rgLayout.getCheckedIndex()) {

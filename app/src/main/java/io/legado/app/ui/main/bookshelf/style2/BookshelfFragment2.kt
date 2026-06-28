@@ -165,10 +165,16 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                     5 -> list.sortedWith { o1, o2 ->
                         o1.author.cnCompare(o2.author)
                     }
-                    // 文件大小正序
-                    6 -> list.sortedBy { it.getFileSize() }
-                    // 文件大小反序
-                    7 -> list.sortedByDescending { it.getFileSize() }
+                    // 文件大小
+                    6 -> if (AppConfig.bookshelfSortAscending)
+                        list.sortedBy { it.getFileSize() }
+                    else
+                        list.sortedByDescending { it.getFileSize() }
+                    // 文件大小（兼容旧版反序）
+                    7 -> if (AppConfig.bookshelfSortAscending)
+                        list.sortedBy { it.getFileSize() }
+                    else
+                        list.sortedByDescending { it.getFileSize() }
 
                     else -> list.sortedByDescending {
                         it.durChapterTime
