@@ -49,6 +49,10 @@ object ReadAloud {
         pageIndex: Int = ReadBook.durPageIndex,
         startPos: Int = 0
     ) {
+        if (!AppConfig.readAloudEnabled) {
+            context.toastOnUi("请先在设置中开启语音朗读功能")
+            return
+        }
         val intent = Intent(context, aloudClass)
         intent.action = IntentAction.play
         intent.putExtra("play", play)

@@ -466,6 +466,9 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
 
     val mediaButtonOnExit get() = appCtx.getPrefBoolean("mediaButtonOnExit", true)
 
+    val readAloudEnabled
+        get() = appCtx.getPrefBoolean(PreferKey.readAloudEnabled, false)
+
     val readAloudByMediaButton
         get() = appCtx.getPrefBoolean(PreferKey.readAloudByMediaButton, false)
 
