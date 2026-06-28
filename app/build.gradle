@@ -2,13 +2,14 @@ plugins {
 //    id "com.android.application"
 //    id 'org.jetbrains.kotlin.android'
 //    id 'kotlin-parcelize'
-//    //id 'kotlin-kapt'
+//    id 'kotlin-kapt'
 //    id 'com.google.devtools.ksp'
 //    id "com.google.gms.google-services"
 
     alias libs.plugins.android.application
     alias libs.plugins.kotlin.android
     alias libs.plugins.kotlin.parcelize
+    id 'org.jetbrains.kotlin.kapt'
     alias libs.plugins.room
     alias libs.plugins.ksp
     alias libs.plugins.google.services
@@ -240,12 +241,10 @@ dependencies {
     //Glide
     implementation(libs.glide.glide)
     implementation(libs.glide.okhttp)
-    ksp(libs.glide.ksp)
+    kapt(libs.glide.compiler)
 
     //Svg
     implementation(libs.androidsvg)
-    //Glide svg plugin
-    implementation(libs.glide.svg)
 
     //webServer
     implementation(libs.nanohttpd.nanohttpd)

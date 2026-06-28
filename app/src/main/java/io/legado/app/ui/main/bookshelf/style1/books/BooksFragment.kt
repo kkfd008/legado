@@ -22,6 +22,7 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.databinding.FragmentBooksBinding
+import io.legado.app.help.book.getFileSize
 import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryColor
@@ -180,6 +181,10 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
                     5 -> list.sortedWith { o1, o2 ->
                         o1.author.cnCompare(o2.author)
                     }
+                    // 文件大小正序
+                    6 -> list.sortedBy { it.getFileSize() }
+                    // 文件大小反序
+                    7 -> list.sortedByDescending { it.getFileSize() }
 
                     else -> list.sortedByDescending { it.durChapterTime }
                 }

@@ -23,6 +23,7 @@ import io.legado.app.databinding.ActivityArrangeBookBinding
 import io.legado.app.databinding.DialogEditTextBinding
 import io.legado.app.help.DirectLinkUpload
 import io.legado.app.help.book.contains
+import io.legado.app.help.book.getFileSize
 import io.legado.app.help.book.isLocal
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.LocalConfig
@@ -235,6 +236,14 @@ class BookshelfManageActivity :
                     4 -> list.sortedByDescending {
                         max(it.latestChapterTime, it.durChapterTime)
                     }
+                    // 按作者排序
+                    5 -> list.sortedWith { o1, o2 ->
+                        o1.author.cnCompare(o2.author)
+                    }
+                    // 文件大小正序
+                    6 -> list.sortedBy { it.getFileSize() }
+                    // 文件大小反序
+                    7 -> list.sortedByDescending { it.getFileSize() }
 
                     else -> list.sortedByDescending {
                         it.durChapterTime

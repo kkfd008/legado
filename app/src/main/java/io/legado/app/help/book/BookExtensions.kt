@@ -4,6 +4,7 @@ package io.legado.app.help.book
 
 import android.net.Uri
 import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
 import com.script.buildScriptBindings
 import com.script.rhino.RhinoScriptEngine
 import io.legado.app.constant.AppLog
@@ -295,6 +296,21 @@ fun Book.getBookSource(): BookSource? {
 
 fun Book.isLocalModified(): Boolean {
     return isLocal && LocalBook.getLastModified(this).getOrDefault(0L) > latestChapterTime
+}
+
+/**
+ * 获取本地书籍文件大小，非本地书籍返回0
+ */
+fun Book.getFileSize(): Long {
+    return kotlin.runCatching {
+        val uri = Uri.parse(bookUrl)
+        if (uri.scheme == "content") {
+            DocumentFile.fromSingleUri(appCtx, uri)?.length() ?: 0L
+        } else {
+            val file = File(uri.path!!)
+            if (file.exists()) file.length() else 0L
+        }
+    }.getOrDefault(0L)
 }
 
 fun Book.releaseHtmlData() {

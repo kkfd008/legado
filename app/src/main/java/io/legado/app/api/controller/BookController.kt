@@ -13,6 +13,7 @@ import io.legado.app.help.AppWebDav
 import io.legado.app.help.CacheManager
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.ContentProcessor
+import io.legado.app.help.book.getFileSize
 import io.legado.app.help.book.isLocal
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.glide.ImageLoader
@@ -23,6 +24,7 @@ import io.legado.app.model.localBook.LocalBook
 import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.GSON
 import io.legado.app.utils.cnCompare
+import kotlin.math.max
 import io.legado.app.utils.fromJsonObject
 import io.legado.app.utils.printOnDebug
 import io.legado.app.utils.stackTraceStr
@@ -57,6 +59,14 @@ object BookController {
                     }
 
                     3 -> books.sortedBy { it.order }
+                    4 -> books.sortedByDescending {
+                        max(it.latestChapterTime, it.durChapterTime)
+                    }
+                    5 -> books.sortedWith { o1, o2 ->
+                        o1.author.cnCompare(o2.author)
+                    }
+                    6 -> books.sortedBy { it.getFileSize() }
+                    7 -> books.sortedByDescending { it.getFileSize() }
                     else -> books.sortedByDescending { it.durChapterTime }
                 }
                 returnData.setData(data)
