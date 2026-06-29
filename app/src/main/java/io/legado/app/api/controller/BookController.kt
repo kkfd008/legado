@@ -53,27 +53,46 @@ object BookController {
                 returnData.setErrorMsg("还没有添加小说")
             } else {
                 val data = when (AppConfig.bookshelfSort) {
-                    1 -> books.sortedByDescending { it.latestChapterTime }
-                    2 -> books.sortedWith { o1, o2 ->
-                        o1.name.cnCompare(o2.name)
-                    }
-
-                    3 -> books.sortedBy { it.order }
-                    4 -> books.sortedByDescending {
-                        max(it.latestChapterTime, it.durChapterTime)
-                    }
-                    5 -> books.sortedWith { o1, o2 ->
-                        o1.author.cnCompare(o2.author)
-                    }
+                    // 按更新时间
+                    1 -> if (AppConfig.bookshelfSortAscending)
+                        books.sortedBy { it.latestChapterTime }
+                    else
+                        books.sortedByDescending { it.latestChapterTime }
+                    // 按名字
+                    2 -> if (AppConfig.bookshelfSortAscending)
+                        books.sortedWith { o1, o2 -> o1.name.cnCompare(o2.name) }
+                    else
+                        books.sortedWith { o1, o2 -> o2.name.cnCompare(o1.name) }
+                    // 手动排序
+                    3 -> if (AppConfig.bookshelfSortAscending)
+                        books.sortedBy { it.order }
+                    else
+                        books.sortedByDescending { it.order }
+                    // 综合排序
+                    4 -> if (AppConfig.bookshelfSortAscending)
+                        books.sortedBy { max(it.latestChapterTime, it.durChapterTime) }
+                    else
+                        books.sortedByDescending { max(it.latestChapterTime, it.durChapterTime) }
+                    // 按作者
+                    5 -> if (AppConfig.bookshelfSortAscending)
+                        books.sortedWith { o1, o2 -> o1.author.cnCompare(o2.author) }
+                    else
+                        books.sortedWith { o1, o2 -> o2.author.cnCompare(o1.author) }
+                    // 按文件大小
                     6 -> if (AppConfig.bookshelfSortAscending)
                         books.sortedBy { it.getFileSize() }
                     else
                         books.sortedByDescending { it.getFileSize() }
+                    // 文件大小（兼容旧版反序）
                     7 -> if (AppConfig.bookshelfSortAscending)
                         books.sortedBy { it.getFileSize() }
                     else
                         books.sortedByDescending { it.getFileSize() }
-                    else -> books.sortedByDescending { it.durChapterTime }
+                    // 按最近阅读
+                    else -> if (AppConfig.bookshelfSortAscending)
+                        books.sortedBy { it.durChapterTime }
+                    else
+                        books.sortedByDescending { it.durChapterTime }
                 }
                 returnData.setData(data)
             }

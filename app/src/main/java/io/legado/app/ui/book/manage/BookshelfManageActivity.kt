@@ -221,26 +221,32 @@ class BookshelfManageActivity :
             val bookSort = AppConfig.getBookSortByGroupId(viewModel.groupId)
             appDb.bookDao.flowByGroup(viewModel.groupId).map { list ->
                 when (bookSort) {
-                    1 -> list.sortedByDescending {
-                        it.latestChapterTime
-                    }
-
-                    2 -> list.sortedWith { o1, o2 ->
-                        o1.name.cnCompare(o2.name)
-                    }
-
-                    3 -> list.sortedBy {
-                        it.order
-                    }
-
-                    4 -> list.sortedByDescending {
-                        max(it.latestChapterTime, it.durChapterTime)
-                    }
-                    // 按作者排序
-                    5 -> list.sortedWith { o1, o2 ->
-                        o1.author.cnCompare(o2.author)
-                    }
-                    // 文件大小
+                    // 按更新时间
+                    1 -> if (AppConfig.bookshelfSortAscending)
+                        list.sortedBy { it.latestChapterTime }
+                    else
+                        list.sortedByDescending { it.latestChapterTime }
+                    // 按名字
+                    2 -> if (AppConfig.bookshelfSortAscending)
+                        list.sortedWith { o1, o2 -> o1.name.cnCompare(o2.name) }
+                    else
+                        list.sortedWith { o1, o2 -> o2.name.cnCompare(o1.name) }
+                    // 手动排序
+                    3 -> if (AppConfig.bookshelfSortAscending)
+                        list.sortedBy { it.order }
+                    else
+                        list.sortedByDescending { it.order }
+                    // 综合排序
+                    4 -> if (AppConfig.bookshelfSortAscending)
+                        list.sortedBy { max(it.latestChapterTime, it.durChapterTime) }
+                    else
+                        list.sortedByDescending { max(it.latestChapterTime, it.durChapterTime) }
+                    // 按作者
+                    5 -> if (AppConfig.bookshelfSortAscending)
+                        list.sortedWith { o1, o2 -> o1.author.cnCompare(o2.author) }
+                    else
+                        list.sortedWith { o1, o2 -> o2.author.cnCompare(o1.author) }
+                    // 按文件大小
                     6 -> if (AppConfig.bookshelfSortAscending)
                         list.sortedBy { it.getFileSize() }
                     else
@@ -250,10 +256,11 @@ class BookshelfManageActivity :
                         list.sortedBy { it.getFileSize() }
                     else
                         list.sortedByDescending { it.getFileSize() }
-
-                    else -> list.sortedByDescending {
-                        it.durChapterTime
-                    }
+                    // 按最近阅读
+                    else -> if (AppConfig.bookshelfSortAscending)
+                        list.sortedBy { it.durChapterTime }
+                    else
+                        list.sortedByDescending { it.durChapterTime }
                 }
             }.catch {
                 AppLog.put("书架管理界面获取书籍列表失败\n${it.localizedMessage}", it)
