@@ -4,6 +4,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.ImageView
 import androidx.activity.viewModels
 import androidx.core.view.WindowInsetsCompat
 import io.legado.app.R
@@ -41,6 +42,9 @@ class BookInfoEditActivity :
             coverChangeTo(uri)
         }
     }
+
+    private var selectedRating = 1
+    private val starViews: MutableList<ImageView> = mutableListOf()
 
     override val binding by viewBinding(ActivityBookInfoEditBinding::inflate)
     override val viewModel by viewModels<BookInfoEditViewModel>()
@@ -94,6 +98,13 @@ class BookInfoEditActivity :
             viewModel.book?.customCoverUrl = tieCoverUrl.text?.toString()
             upCover()
         }
+        starViews.addAll(listOf(ivStar1, ivStar2, ivStar3, ivStar4, ivStar5))
+        starViews.forEachIndexed { index, star ->
+            star.setOnClickListener {
+                selectedRating = index + 1
+                upRating()
+            }
+        }
     }
 
     private fun upView(book: Book) = binding.run {
@@ -106,9 +117,20 @@ class BookInfoEditActivity :
                 else -> 0
             }
         )
+        selectedRating = book.rating
+        upRating()
         tieCoverUrl.setText(book.getDisplayCover())
         tieBookIntro.setText(book.getDisplayIntro())
         upCover()
+    }
+
+    private fun upRating() = binding.run {
+        starViews.forEachIndexed { index, star ->
+            star.setImageResource(
+                if (index < selectedRating) R.drawable.ic_star
+                else R.drawable.ic_star_border
+            )
+        }
     }
 
     private fun upCover() {
@@ -122,6 +144,7 @@ class BookInfoEditActivity :
         val oldBook = book.copy()
         book.name = tieBookName.text?.toString() ?: ""
         book.author = tieBookAuthor.text?.toString() ?: ""
+        book.rating = selectedRating
         val local = if (book.isLocal) BookType.local else 0
         val bookType = when (spType.selectedItemPosition) {
             2 -> BookType.image or local

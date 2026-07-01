@@ -93,6 +93,71 @@
 
             </LinearLayout>
 
+            <LinearLayout
+                android:id="@+id/ll_rating"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="6dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                tools:ignore="RtlHardcoded">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="6dp"
+                    android:text="@string/book_rating"
+                    tools:ignore="RtlHardcoded" />
+
+                <ImageView
+                    android:id="@+id/iv_star_1"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="4dp"
+                    android:contentDescription="@null"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_star_border" />
+
+                <ImageView
+                    android:id="@+id/iv_star_2"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="4dp"
+                    android:contentDescription="@null"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_star_border" />
+
+                <ImageView
+                    android:id="@+id/iv_star_3"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="4dp"
+                    android:contentDescription="@null"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_star_border" />
+
+                <ImageView
+                    android:id="@+id/iv_star_4"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="4dp"
+                    android:contentDescription="@null"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_star_border" />
+
+                <ImageView
+                    android:id="@+id/iv_star_5"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="4dp"
+                    android:contentDescription="@null"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_star_border" />
+
+            </LinearLayout>
+
             <io.legado.app.ui.widget.text.TextInputLayout
                 android:id="@+id/til_cover_url"
                 android:layout_width="match_parent"
