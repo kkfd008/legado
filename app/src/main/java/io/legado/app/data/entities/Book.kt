@@ -117,7 +117,12 @@ data class Book(
     var readConfig: ReadConfig? = null,
     //同步时间
     @ColumnInfo(defaultValue = "0")
-    var syncTime: Long = 0L
+    var syncTime: Long = 0L,
+    // 评分(1-5,默认1)
+    @ColumnInfo(defaultValue = "1")
+    var rating: Int = 1,
+    // 用户自定义标签(逗号分隔)
+    var tags: String? = null
 ) : Parcelable, BaseBook {
 
     override fun equals(other: Any?): Boolean {
@@ -354,6 +359,8 @@ data class Book(
         newBook.customTag = customTag
         newBook.canUpdate = canUpdate
         newBook.readConfig = readConfig
+        newBook.rating = rating
+        newBook.tags = tags
         return newBook
     }
 

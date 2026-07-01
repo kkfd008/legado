@@ -83,12 +83,12 @@ object BookController {
                         books.sortedBy { it.getFileSize() }
                     else
                         books.sortedByDescending { it.getFileSize() }
-                    // 文件大小（兼容旧版反序）
+                    // 按评分
                     7 -> if (AppConfig.bookshelfSortAscending)
-                        books.sortedBy { it.getFileSize() }
+                        books.sortedBy { it.rating }
                     else
-                        books.sortedByDescending { it.getFileSize() }
-                    // 按最近阅读
+                        books.sortedByDescending { it.rating }
+                    // 默认按最近阅读
                     else -> if (AppConfig.bookshelfSortAscending)
                         books.sortedBy { it.durChapterTime }
                     else

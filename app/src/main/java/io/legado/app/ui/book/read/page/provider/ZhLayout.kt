@@ -206,14 +206,15 @@ class ZhLayout(
     }
 
     private val gap = (cnCharWidth / 12.75).toFloat()
+    // 缓存Rect对象避免每次分配
+    private val textRect = Rect()
+
     private fun getPostPancOffset(string: String): Float {
-        val textRect = Rect()
         curPaint.getTextBounds(string, 0, 1, textRect)
         return max(textRect.left.toFloat() - gap, 0f)
     }
 
     private fun getPrePancOffset(string: String): Float {
-        val textRect = Rect()
         curPaint.getTextBounds(string, 0, 1, textRect)
         val d = max(cnCharWidth - textRect.right.toFloat() - gap, 0f)
         return cnCharWidth / 2 - d

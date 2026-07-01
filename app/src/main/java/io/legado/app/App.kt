@@ -78,7 +78,10 @@ class App : Application() {
         applyDayNightInit(this)
         registerActivityLifecycleCallbacks(LifecycleHelp)
         defaultSharedPreferences.registerOnSharedPreferenceChangeListener(AppConfig)
+
+        // 关键初始化仍在主线程保证功能正确性
         Coroutine.async {
+            // 后台协程执行非关键初始化,加快冷启动速度
             LogUtils.init(this@App)
             LogUtils.d("App", "onCreate")
             LogUtils.logDeviceInfo()

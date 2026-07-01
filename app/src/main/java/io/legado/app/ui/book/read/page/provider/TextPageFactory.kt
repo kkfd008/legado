@@ -10,6 +10,9 @@ import splitties.init.appCtx
 class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource) {
 
     private val keepSwipeTip = appCtx.getString(R.string.keep_swipe_tip)
+    // 缓存默认空页面,避免重复创建StaticLayout
+    private val defaultEmptyPage by lazy { TextPage().format() }
+    private val keepSwipeTipPage by lazy { TextPage(text = keepSwipeTip).format() }
 
     override fun hasPrev(): Boolean = with(dataSource) {
         return hasPrevChapter() || pageIndex > 0
@@ -88,7 +91,7 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
                 return@with it.getPage(pageIndex)
                     ?: TextPage(title = it.title).apply { textChapter = it }.format()
             }
-            return TextPage().format()
+            return defaultEmptyPage
         }
 
     override val nextPage: TextPage
@@ -110,7 +113,7 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
                 return@with it.getPage(0)?.removePageAloudSpan()
                     ?: TextPage(title = it.title).format()
             }
-            return TextPage().format()
+            return defaultEmptyPage
         }
 
     override val prevPage: TextPage
@@ -132,7 +135,7 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
                 return@with it.lastPage?.removePageAloudSpan()
                     ?: TextPage(title = it.title).format()
             }
-            return TextPage().format()
+            return defaultEmptyPage
         }
 
     override val nextPlusPage: TextPage
@@ -152,9 +155,9 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
                             ?: TextPage(title = nc.title).format()
                     }
                     return@with nc.getPage(1)?.removePageAloudSpan()
-                        ?: TextPage(text = keepSwipeTip).format()
+                        ?: keepSwipeTipPage
                 }
             }
-            return TextPage().format()
+            return defaultEmptyPage
         }
 }

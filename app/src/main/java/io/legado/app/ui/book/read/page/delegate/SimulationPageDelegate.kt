@@ -60,6 +60,10 @@ class SimulationPageDelegate(readView: ReadView) : HorizontalPageDelegate(readVi
     // 贝塞尔曲线结束点
     private var mBezierEnd2 = PointF()
 
+    // 缓存getCross使用的PointF对象,避免每帧分配
+    private val crossCache1 = PointF()
+    private val crossCache2 = PointF()
+
     private var mMiddleX = 0f
     private var mMiddleY = 0f
     private var mDegrees = 0f
@@ -583,11 +587,11 @@ class SimulationPageDelegate(readView: ReadView) : HorizontalPageDelegate(readVi
 
         mBezierEnd1 = getCross(
             PointF(mTouchX, mTouchY), mBezierControl1, mBezierStart1,
-            mBezierStart2
+            mBezierStart2, crossCache1
         )
         mBezierEnd2 = getCross(
             PointF(mTouchX, mTouchY), mBezierControl2, mBezierStart1,
-            mBezierStart2
+            mBezierStart2, crossCache2
         )
 
         mBezierVertex1.x = (mBezierStart1.x + 2 * mBezierControl1.x + mBezierEnd1.x) / 4
@@ -597,17 +601,16 @@ class SimulationPageDelegate(readView: ReadView) : HorizontalPageDelegate(readVi
     }
 
     /**
-     * 求解直线P1P2和直线P3P4的交点坐标
+     * 求解直线P1P2和直线P3P4的交点坐标(复用外部PointF对象)
      */
-    private fun getCross(P1: PointF, P2: PointF, P3: PointF, P4: PointF): PointF {
-        val crossP = PointF()
+    private fun getCross(P1: PointF, P2: PointF, P3: PointF, P4: PointF, target: PointF): PointF {
         // 二元函数通式： y=ax+b
         val a1 = (P2.y - P1.y) / (P2.x - P1.x)
         val b1 = (P1.x * P2.y - P2.x * P1.y) / (P1.x - P2.x)
         val a2 = (P4.y - P3.y) / (P4.x - P3.x)
         val b2 = (P3.x * P4.y - P4.x * P3.y) / (P3.x - P4.x)
-        crossP.x = (b2 - b1) / (a1 - a2)
-        crossP.y = a1 * crossP.x + b1
-        return crossP
+        target.x = (b2 - b1) / (a1 - a2)
+        target.y = a1 * target.x + b1
+        return target
     }
 }

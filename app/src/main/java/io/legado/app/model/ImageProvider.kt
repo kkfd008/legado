@@ -197,11 +197,10 @@ object ImageProvider {
             appCtx.toastOnUi(R.string.error_image_url_empty)
         }
         val vFile = BookHelp.getImage(book, src)
-        if (!vFile.exists()) return errorBitmap
-        //epub文件提供图片链接是相对链接，同时阅读多个epub文件，缓存命中错误
-        //bitmapLruCache的key同一改成缓存文件的路径
+        // 先检查缓存,避免不必要的文件系统调用
         val cacheBitmap = getNotRecycled(vFile.absolutePath)
         if (cacheBitmap != null) return cacheBitmap
+        if (!vFile.exists()) return errorBitmap
         return kotlin.runCatching {
             val bitmap = BitmapUtils.decodeBitmap(vFile.absolutePath, width, height)
                 ?: SvgUtils.createBitmap(vFile.absolutePath, width, height)

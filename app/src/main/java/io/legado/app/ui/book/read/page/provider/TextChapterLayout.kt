@@ -799,6 +799,10 @@ class TextChapterLayout(
         if (size > floatArray.size) {
             floatArray = FloatArray(size)
         }
+        // 如果数组过大(超过需求10倍),释放多余内存避免泄漏
+        if (floatArray.size > size * 10) {
+            floatArray = FloatArray(size)
+        }
         return floatArray
     }
 

@@ -186,6 +186,12 @@
                 android:text="@string/bookshelf_px_6"
                 tools:ignore="TouchTargetSizeCheck" />
 
+            <RadioButton
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/bookshelf_px_7"
+                tools:ignore="TouchTargetSizeCheck" />
+
         </RadioGroup>
 
         <RadioGroup

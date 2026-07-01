@@ -9,6 +9,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.widget.CheckBox
+import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -16,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
 import io.legado.app.constant.BookType
+import io.legado.app.constant.EventBus
 import io.legado.app.constant.Theme
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
@@ -69,6 +71,7 @@ import io.legado.app.utils.dpToPx
 import io.legado.app.utils.gone
 import io.legado.app.utils.longToastOnUi
 import io.legado.app.utils.openFileUri
+import io.legado.app.utils.postEvent
 import io.legado.app.utils.sendToClip
 import io.legado.app.utils.shareWithQr
 import io.legado.app.utils.showDialogFragment
@@ -336,6 +339,7 @@ class BookInfoActivity :
         showCover(book)
         tvName.text = book.name
         tvAuthor.text = getString(R.string.author_show, book.getRealAuthor())
+        tvRating?.text = getString(R.string.book_rating_format, book.rating)
         tvOrigin.text = getString(R.string.origin_show, book.originName)
         tvLasted.text = getString(R.string.lasted_show, book.latestChapterTitle)
         tvIntro.text = book.getDisplayIntro()
@@ -518,6 +522,55 @@ class BookInfoActivity :
         refreshLayout?.setOnRefreshListener {
             refreshLayout.isRefreshing = false
             refreshBook()
+        }
+        tvSetRating?.setOnClickListener {
+            viewModel.getBook()?.let { book ->
+                var selectedRating = book.rating
+                val starContainer = LinearLayout(this@BookInfoActivity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    setPadding(0, 16, 0, 16)
+                    gravity = android.view.Gravity.CENTER
+                }
+                val starViews = mutableListOf<ImageView>()
+                for (index in 1..5) {
+                    val star = ImageView(this@BookInfoActivity).apply {
+                        setImageResource(
+                            if (index <= selectedRating) R.drawable.ic_star
+                            else R.drawable.ic_star_border
+                        )
+                        layoutParams = LinearLayout.LayoutParams(48, 48).apply {
+                            setMargins(8, 0, 8, 0)
+                        }
+                        setOnClickListener {
+                            selectedRating = index
+                            starViews.forEachIndexed { i, s ->
+                                s.setImageResource(
+                                    if (i < selectedRating) R.drawable.ic_star
+                                    else R.drawable.ic_star_border
+                                )
+                            }
+                        }
+                    }
+                    starViews.add(star)
+                    starContainer.addView(star)
+                }
+                alert(title = getString(R.string.set_rating)) {
+                    customView { starContainer }
+                    yesButton {
+                        val newRating = kotlin.math.max(1, selectedRating)
+                        book.rating = newRating
+                        tvRating?.text = getString(R.string.book_rating_format, newRating)
+                        if (viewModel.inBookshelf) {
+                            lifecycleScope.launch {
+                                appDb.bookDao.update(book)
+                                postEvent(EventBus.UP_BOOKSHELF, book.bookUrl)
+                            }
+                        }
+                        setResult(RESULT_OK)
+                    }
+                    noButton()
+                }
+            }
         }
     }
 
@@ -753,6 +806,7 @@ class BookInfoActivity :
                     upTvBookshelf()
                 }
             }
+            setResult(RESULT_OK)
         }
     }
 

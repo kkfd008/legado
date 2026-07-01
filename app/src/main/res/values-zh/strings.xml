@@ -1145,6 +1145,11 @@
     <string name="bookshelf_px_6">按文件大小</string>
     <string name="bookshelf_sort_ascending">正序</string>
     <string name="bookshelf_sort_descending">反序</string>
+    <string name="book_rating">评分</string>
+    <string name="book_rating_unit">分</string>
+    <string name="book_rating_format">评分 %d 分</string>
+    <string name="set_rating">设置评分</string>
+    <string name="bookshelf_px_7">按评分</string>
     <string name="effective_replaces">起效的替换</string>
     <string name="export_book">导出书籍</string>
     <string name="export_book_notification_content">正在导出(%1$s),还有%2$d本待导出</string>

@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
+import io.legado.app.R
 import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.data.entities.Book
 import io.legado.app.databinding.ItemBookshelfListBinding
@@ -34,6 +35,7 @@ class BooksAdapterList(
         if (payloads.isEmpty()) {
             tvName.text = item.name
             tvAuthor.text = item.author
+            tvRating.text = context.getString(R.string.book_rating_format, item.rating)
             tvRead.text = item.durChapterTitle
             tvLast.text = item.latestChapterTitle
             ivCover.load(item.getDisplayCover(), item.name, item.author, false, item.origin)
@@ -58,7 +60,11 @@ class BooksAdapterList(
                             lifecycle
                         )
 
-                        "refresh" -> upRefresh(binding, item)
+                        "refresh" -> {
+                            upRefresh(binding, item)
+                            tvRating.text = context.getString(R.string.book_rating_format, item.rating)
+                        }
+
                         "lastUpdateTime" -> upLastUpdateTime(binding, item)
                     }
                 }

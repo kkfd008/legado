@@ -31,6 +31,7 @@ import io.legado.app.ui.main.MainViewModel
 import io.legado.app.utils.cnCompare
 import io.legado.app.utils.flowWithLifecycleAndDatabaseChangeFirst
 import io.legado.app.utils.observeEvent
+import io.legado.app.utils.observeEventSticky
 import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.startActivity
 import io.legado.app.utils.startActivityForBook
@@ -196,12 +197,12 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
                         list.sortedBy { it.getFileSize() }
                     else
                         list.sortedByDescending { it.getFileSize() }
-                    // 文件大小（兼容旧版反序）
+                    // 按评分
                     7 -> if (AppConfig.bookshelfSortAscending)
-                        list.sortedBy { it.getFileSize() }
+                        list.sortedBy { it.rating }
                     else
-                        list.sortedByDescending { it.getFileSize() }
-                    // 按最近阅读
+                        list.sortedByDescending { it.rating }
+                    // 默认按最近阅读
                     else -> if (AppConfig.bookshelfSortAscending)
                         list.sortedBy { it.durChapterTime }
                     else
@@ -280,7 +281,7 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
     @SuppressLint("NotifyDataSetChanged")
     override fun observeLiveBus() {
         super.observeLiveBus()
-        observeEvent<String>(EventBus.UP_BOOKSHELF) {
+        observeEventSticky<String>(EventBus.UP_BOOKSHELF) {
             booksAdapter.notification(it)
         }
         observeEvent<String>(EventBus.BOOKSHELF_REFRESH) {
