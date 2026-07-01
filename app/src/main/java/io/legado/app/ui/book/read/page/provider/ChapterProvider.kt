@@ -842,6 +842,7 @@ object ChapterProvider {
             while (i < length && widthsArray[i] == 0f) {
                 i++
             }
+            // 避免创建新String,使用构造函数指定范围
             stringList.add(text.substring(clusterBaseIndex, i))
         }
         return stringList to widths

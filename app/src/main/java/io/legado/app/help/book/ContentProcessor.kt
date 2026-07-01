@@ -18,6 +18,7 @@ import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.CancellationException
 import splitties.init.appCtx
 import java.lang.ref.WeakReference
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.regex.Pattern
 
@@ -29,6 +30,8 @@ class ContentProcessor private constructor(
     companion object {
         private val processors = hashMapOf<String, WeakReference<ContentProcessor>>()
         private val isAndroid8 = Build.VERSION.SDK_INT in 26..27
+        // 缓存编译后的正则表达式,避免重复编译
+        private val patternCache = ConcurrentHashMap<String, Pattern>()
 
         fun get(book: Book) = get(book.name, book.origin)
 
@@ -48,6 +51,9 @@ class ContentProcessor private constructor(
             }
         }
 
+        private fun getCachedPattern(regex: String): Pattern {
+            return patternCache.getOrPut(regex) { Pattern.compile(regex) }
+        }
     }
 
     private val titleReplaceRules = CopyOnWriteArrayList<ReplaceRule>()
@@ -106,8 +112,8 @@ class ContentProcessor private constructor(
             if (!removeSameTitleCache.contains(fileName)) try {
                 val name = Pattern.quote(book.name)
                 var title = chapter.title.escapeRegex().replace(spaceRegex, "\\\\s*")
-                var matcher = Pattern.compile("^(\\s|\\p{P}|${name})*${title}(\\s)*")
-                    .matcher(mContent)
+                var pattern = getCachedPattern("^(\\s|\\p{P}|${name})*${title}(\\s)*")
+                var matcher = pattern.matcher(mContent)
                 if (matcher.find()) {
                     mContent = mContent.substring(matcher.end())
                     sameTitleRemoved = true
@@ -118,8 +124,8 @@ class ContentProcessor private constructor(
                             chineseConvert = false
                         )
                     )
-                    matcher = Pattern.compile("^(\\s|\\p{P}|${name})*${title}(\\s)*")
-                        .matcher(mContent)
+                    pattern = getCachedPattern("^(\\s|\\p{P}|${name})*${title}(\\s)*")
+                    matcher = pattern.matcher(mContent)
                     if (matcher.find()) {
                         mContent = mContent.substring(matcher.end())
                         sameTitleRemoved = true
@@ -188,7 +194,7 @@ class ContentProcessor private constructor(
             mContent = mContent.replace('\u00A0', ' ')
         }
         val contents = arrayListOf<String>()
-        mContent.split("\n").forEach { str ->
+        mContent.lineSequence().forEach { str ->
             val paragraph = str.trim {
                 it.code <= 0x20 || it == '　'
             }

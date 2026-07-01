@@ -188,22 +188,33 @@ data class TextLine(
         } else {
             ReadBookConfig.textColor
         }
-        if (textPaint.color != textColor) {
+        // 保存原始颜色以便恢复
+        val savedColor = textPaint.color
+        if (savedColor != textColor) {
             textPaint.color = textColor
         }
-        val paint = PaintPool.obtain()
-        paint.set(textPaint)
-        val letterSpacing = paint.letterSpacing * paint.textSize
+        val letterSpacing = textPaint.letterSpacing * textPaint.textSize
         val letterSpacingHalf = letterSpacing * 0.5f
+        val extraLetterSpacingOrig = textPaint.letterSpacing
         if (extraLetterSpacing != 0f) {
-            paint.letterSpacing += extraLetterSpacing
+            textPaint.letterSpacing += extraLetterSpacing
         }
+        val wordSpacingOrig = textPaint.wordSpacing
         if (wordSpacing != 0f) {
-            paint.wordSpacing = wordSpacing
+            textPaint.wordSpacing = wordSpacing
         }
         val offsetX = if (atLeastApi35) letterSpacingHalf else extraLetterSpacingOffsetX
-        canvas.drawText(text, indentSize, text.length, startX + offsetX, lineBase - lineTop, paint)
-        PaintPool.recycle(paint)
+        canvas.drawText(text, indentSize, text.length, startX + offsetX, lineBase - lineTop, textPaint)
+        // 恢复原始值，避免影响下一次绘制
+        if (extraLetterSpacing != 0f) {
+            textPaint.letterSpacing = extraLetterSpacingOrig
+        }
+        if (wordSpacing != 0f) {
+            textPaint.wordSpacing = wordSpacingOrig
+        }
+        if (savedColor != textColor) {
+            textPaint.color = savedColor
+        }
         for (i in columns.indices) {
             val column = columns[i] as TextColumn
             if (column.selected) {

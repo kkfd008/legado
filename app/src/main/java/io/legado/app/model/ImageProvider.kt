@@ -149,6 +149,11 @@ object ImageProvider {
         }
     }
 
+    // 缓存图片尺寸信息,避免重复解码
+    private val imageSizeCache = object : LruCache<String, Size>(100) {
+        override fun sizeOf(key: String, value: Size): Int = 1
+    }
+
     /**
      *获取图片宽度高度信息
      */
@@ -158,19 +163,23 @@ object ImageProvider {
         bookSource: BookSource?
     ): Size {
         val file = cacheImage(book, src, bookSource)
+        val cached = imageSizeCache[file.absolutePath]
+        if (cached != null) return cached
         val op = BitmapFactory.Options()
         // inJustDecodeBounds如果设置为true,仅仅返回图片实际的宽和高,宽和高是赋值给opts.outWidth,opts.outHeight;
         op.inJustDecodeBounds = true
         BitmapFactory.decodeFile(file.absolutePath, op)
-        if (op.outWidth < 1 && op.outHeight < 1) {
+        val size = if (op.outWidth < 1 && op.outHeight < 1) {
             //svg size
-            val size = SvgUtils.getSize(file.absolutePath)
-            if (size != null) return size
-            putDebug("ImageProvider: $src Unsupported image type")
-            //file.delete() 重复下载
-            return Size(errorBitmap.width, errorBitmap.height)
+            SvgUtils.getSize(file.absolutePath)
+                ?: Size(errorBitmap.width, errorBitmap.height).also {
+                    putDebug("ImageProvider: $src Unsupported image type")
+                }
+        } else {
+            Size(op.outWidth, op.outHeight)
         }
-        return Size(op.outWidth, op.outHeight)
+        imageSizeCache.put(file.absolutePath, size)
+        return size
     }
 
     /**
