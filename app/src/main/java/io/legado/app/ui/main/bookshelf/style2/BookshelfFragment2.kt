@@ -144,7 +144,7 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
         }
         booksFlowJob?.cancel()
         booksFlowJob = viewLifecycleOwner.lifecycleScope.launch {
-            appDb.bookDao.flowByGroup(groupId).map { list ->
+            appDb.bookDao.flowByGroup(groupId, appDb.bookGroupDao.idsSum, appDb.bookGroupDao.getByID(BookGroup.IdNetNone)?.show != true).map { list ->
                 //排序
                 when (AppConfig.getBookSortByGroupId(groupId)) {
                     // 按更新时间

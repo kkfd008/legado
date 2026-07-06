@@ -239,7 +239,7 @@ class CacheActivity : VMBaseActivity<ActivityCacheBookBinding, CacheViewModel>()
     private fun initBookData() {
         booksFlowJob?.cancel()
         booksFlowJob = lifecycleScope.launch {
-            appDb.bookDao.flowByGroup(groupId).map { books ->
+            appDb.bookDao.flowByGroup(groupId, appDb.bookGroupDao.idsSum, appDb.bookGroupDao.getByID(BookGroup.IdNetNone)?.show != true).map { books ->
                 val booksDownload = books.filter {
                     !it.isAudio
                 }

@@ -18,28 +18,41 @@ import kotlinx.coroutines.flow.map
 @Dao
 interface BookDao {
 
-    fun flowByGroup(groupId: Long): Flow<List<Book>> {
+    fun flowByGroup(groupId: Long, sumGroupId: Long, hideNetNone: Boolean): Flow<List<Book>> {
         return when (groupId) {
-            BookGroup.IdRoot -> flowRoot()
-            BookGroup.IdAll -> flowAll()
-            BookGroup.IdLocal -> flowLocal()
-            BookGroup.IdAudio -> flowAudio()
-            BookGroup.IdNetNone -> flowNetNoGroup()
-            BookGroup.IdLocalNone -> flowLocalNoGroup()
-            BookGroup.IdError -> flowUpdateError()
-            else -> flowByUserGroup(groupId)
-        }.map { list ->
-            list.filterNot { it.isNotShelf }
+            BookGroup.IdRoot -> flowRoot().map { list ->
+                list.filter { book ->
+                    book.type and BookType.text > 0
+                            && book.type and BookType.local == 0
+                            && (sumGroupId and book.group) == 0L
+                            && hideNetNone
+                            && !book.isNotShelf
+                }
+            }
+            BookGroup.IdAll -> flowAll().map { list -> list.filterNot { it.isNotShelf } }
+            BookGroup.IdLocal -> flowLocal().map { list -> list.filterNot { it.isNotShelf } }
+            BookGroup.IdAudio -> flowAudio().map { list -> list.filterNot { it.isNotShelf } }
+            BookGroup.IdNetNone -> {
+                flowNetNoGroup().map { list ->
+                    list.filter { book ->
+                        (sumGroupId and book.group) == 0L && !book.isNotShelf
+                    }
+                }
+            }
+            BookGroup.IdLocalNone -> {
+                flowLocalNoGroup().map { list ->
+                    list.filter { book ->
+                        (sumGroupId and book.group) == 0L && !book.isNotShelf
+                    }
+                }
+            }
+            BookGroup.IdError -> flowUpdateError().map { list -> list.filterNot { it.isNotShelf } }
+            else -> flowByUserGroup(groupId).map { list -> list.filterNot { it.isNotShelf } }
         }
     }
 
     @Query(
-        """
-        select * from books where type & ${BookType.text} > 0
-        and type & ${BookType.local} = 0
-        and ((SELECT sum(groupId) FROM book_groups where groupId > 0) & `group`) = 0
-        and (select show from book_groups where groupId = ${BookGroup.IdNetNone}) != 1
-        """
+        """select * from books where type & ${BookType.text} > 0 and type & ${BookType.local} = 0"""
     )
     fun flowRoot(): Flow<List<Book>>
 
@@ -53,18 +66,12 @@ interface BookDao {
     fun flowLocal(): Flow<List<Book>>
 
     @Query(
-        """
-        select * from books where type & ${BookType.audio} = 0 and type & ${BookType.local} = 0
-        and ((SELECT sum(groupId) FROM book_groups where groupId > 0) & `group`) = 0
-        """
+        """select * from books where type & ${BookType.audio} = 0 and type & ${BookType.local} = 0"""
     )
     fun flowNetNoGroup(): Flow<List<Book>>
 
     @Query(
-        """
-        select * from books where type & ${BookType.local} > 0
-        and ((SELECT sum(groupId) FROM book_groups where groupId > 0) & `group`) = 0
-        """
+        """select * from books where type & ${BookType.local} > 0"""
     )
     fun flowLocalNoGroup(): Flow<List<Book>>
 

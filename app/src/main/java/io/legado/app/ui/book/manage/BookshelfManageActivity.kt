@@ -219,7 +219,7 @@ class BookshelfManageActivity :
         booksFlowJob?.cancel()
         booksFlowJob = lifecycleScope.launch {
             val bookSort = AppConfig.getBookSortByGroupId(viewModel.groupId)
-            appDb.bookDao.flowByGroup(viewModel.groupId).map { list ->
+            appDb.bookDao.flowByGroup(viewModel.groupId, appDb.bookGroupDao.idsSum, appDb.bookGroupDao.getByID(BookGroup.IdNetNone)?.show != true).map { list ->
                 when (bookSort) {
                     // 按更新时间
                     1 -> if (AppConfig.bookshelfSortAscending)

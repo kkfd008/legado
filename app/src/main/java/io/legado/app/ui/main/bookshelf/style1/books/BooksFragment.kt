@@ -164,7 +164,7 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
     private fun upRecyclerData() {
         booksFlowJob?.cancel()
         booksFlowJob = viewLifecycleOwner.lifecycleScope.launch {
-            appDb.bookDao.flowByGroup(groupId).map { list ->
+            appDb.bookDao.flowByGroup(groupId, appDb.bookGroupDao.idsSum, appDb.bookGroupDao.getByID(BookGroup.IdNetNone)?.show != true).map { list ->
                 //排序
                 when (bookSort) {
                     // 按更新时间
