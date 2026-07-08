@@ -42,6 +42,7 @@ abstract class BaseBooksAdapter<VH : RecyclerView.ViewHolder>(
                             oldItem.durChapterTitle == newItem.durChapterTitle &&
                             oldItem.latestChapterTitle == newItem.latestChapterTitle &&
                             oldItem.lastCheckCount == newItem.lastCheckCount &&
+                            oldItem.rating == newItem.rating &&
                             oldItem.getDisplayCover() == newItem.getDisplayCover() &&
                             oldItem.getUnreadChapterNum() == newItem.getUnreadChapterNum()
                 }
@@ -72,13 +73,14 @@ abstract class BaseBooksAdapter<VH : RecyclerView.ViewHolder>(
                         bundle.putString("last", newItem.latestChapterTitle)
                     }
                     if (oldItem.getDisplayCover() != newItem.getDisplayCover()) {
-                        bundle.putString("cover", newItem.getDisplayCover())
-                    }
-                    if (oldItem.lastCheckCount != newItem.lastCheckCount
-                        || oldItem.durChapterTime != newItem.durChapterTime
-                        || oldItem.getUnreadChapterNum() != newItem.getUnreadChapterNum()
-                        || oldItem.lastCheckCount != newItem.lastCheckCount
-                    ) {
+                    bundle.putString("cover", newItem.getDisplayCover())
+                }
+                if (oldItem.lastCheckCount != newItem.lastCheckCount
+                    || oldItem.durChapterTime != newItem.durChapterTime
+                    || oldItem.getUnreadChapterNum() != newItem.getUnreadChapterNum()
+                    || oldItem.rating != newItem.rating
+                    || oldItem.lastCheckCount != newItem.lastCheckCount
+                ) {
                         bundle.putBoolean("refresh", true)
                     }
                 }

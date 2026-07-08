@@ -1147,7 +1147,7 @@
     <string name="bookshelf_sort_descending">反序</string>
     <string name="book_rating">评分</string>
     <string name="book_rating_unit">分</string>
-    <string name="book_rating_format">评分 %d 分</string>
+    <string name="book_rating_format">评分：%d分</string>
     <string name="set_rating">设置评分</string>
     <string name="bookshelf_px_7">按评分</string>
     <string name="effective_replaces">起效的替换</string>

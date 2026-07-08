@@ -7,6 +7,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import io.legado.app.R
 import io.legado.app.base.adapter.ItemViewHolder
+import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.databinding.ItemBookshelfListBinding
 import io.legado.app.help.book.isLocal
@@ -34,8 +35,9 @@ class BooksAdapterList(
     ) = binding.run {
         if (payloads.isEmpty()) {
             tvName.text = item.name
-            tvAuthor.text = item.author
+            tvAuthor.text = context.getString(R.string.author_show, item.author)
             tvRating.text = context.getString(R.string.book_rating_format, item.rating)
+            tvGroups.text = appDb.bookGroupDao.getGroupNames(item.group).joinToString("，")
             tvRead.text = item.durChapterTitle
             tvLast.text = item.latestChapterTitle
             ivCover.load(item.getDisplayCover(), item.name, item.author, false, item.origin)
@@ -47,7 +49,7 @@ class BooksAdapterList(
                 bundle.keySet().forEach {
                     when (it) {
                         "name" -> tvName.text = item.name
-                        "author" -> tvAuthor.text = item.author
+                        "author" -> tvAuthor.text = context.getString(R.string.author_show, item.author)
                         "dur" -> tvRead.text = item.durChapterTitle
                         "last" -> tvLast.text = item.latestChapterTitle
                         "cover" -> ivCover.load(
@@ -63,6 +65,7 @@ class BooksAdapterList(
                         "refresh" -> {
                             upRefresh(binding, item)
                             tvRating.text = context.getString(R.string.book_rating_format, item.rating)
+                            tvGroups.text = appDb.bookGroupDao.getGroupNames(item.group).joinToString("，")
                         }
 
                         "lastUpdateTime" -> upLastUpdateTime(binding, item)

@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import io.legado.app.R
+import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.databinding.ItemBookshelfListBinding
@@ -50,14 +51,18 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
 
         fun onBind(item: Book, position: Int) = binding.run {
             tvName.text = item.name
-            tvAuthor.text = item.author
+            tvAuthor.text = context.getString(R.string.author_show, item.author)
             tvRating.text = context.getString(R.string.book_rating_format, item.rating)
+            tvGroups.text = appDb.bookGroupDao.getGroupNames(item.group).joinToString("，")
             tvRead.text = item.durChapterTitle
             tvLast.text = item.latestChapterTitle
             ivCover.load(item.getDisplayCover(), item.name, item.author, false, item.origin)
             flHasNew.visible()
             ivAuthor.visible()
             ivRating.visible()
+            tvRating.visible()
+            ivGroups.visible()
+            tvGroups.visible()
             ivLast.visible()
             ivRead.visible()
             upRefresh(this, item)
@@ -86,6 +91,7 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                             "refresh" -> {
                             upRefresh(this, item)
                             tvRating.text = context.getString(R.string.book_rating_format, item.rating)
+                            tvGroups.text = appDb.bookGroupDao.getGroupNames(item.group).joinToString("，")
                         }
                         }
                     }

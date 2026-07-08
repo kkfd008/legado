@@ -93,13 +93,19 @@ fun String.splitNotBlank(regex: Regex, limit: Int = 0): Array<String> = run {
     this.split(regex, limit).map { it.trim() }.filterNot { it.isBlank() }.toTypedArray()
 }
 
-@SuppressLint("ObsoleteSdkInt")
-fun String.cnCompare(other: String): Int {
-    return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-        Collator.getInstance(ULocale.SIMPLIFIED_CHINESE).compare(this, other)
+private val cnCollator: Comparator<String> by lazy {
+    @SuppressLint("ObsoleteSdkInt")
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+        @Suppress("UNCHECKED_CAST")
+        Collator.getInstance(ULocale.SIMPLIFIED_CHINESE) as Comparator<String>
     } else {
-        java.text.Collator.getInstance(Locale.CHINA).compare(this, other)
+        @Suppress("UNCHECKED_CAST")
+        java.text.Collator.getInstance(Locale.CHINA) as Comparator<String>
     }
+}
+
+fun String.cnCompare(other: String): Int {
+    return cnCollator.compare(this, other)
 }
 
 /**

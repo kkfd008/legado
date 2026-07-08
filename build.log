@@ -1,0 +1,294 @@
+﻿> Task :app:preBuild UP-TO-DATE
+> Task :app:preAppDebugBuild UP-TO-DATE
+> Task :app:mergeAppDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:dataBindingMergeDependencyArtifactsAppDebug UP-TO-DATE
+> Task :app:generateAppDebugResources UP-TO-DATE
+> Task :app:processAppDebugGoogleServices UP-TO-DATE
+> Task :modules:book:preBuild UP-TO-DATE
+> Task :modules:book:preDebugBuild UP-TO-DATE
+> Task :modules:book:generateDebugResources UP-TO-DATE
+> Task :modules:book:packageDebugResources UP-TO-DATE
+> Task :modules:rhino:preBuild UP-TO-DATE
+> Task :modules:rhino:preDebugBuild UP-TO-DATE
+> Task :modules:rhino:generateDebugResources UP-TO-DATE
+> Task :modules:rhino:packageDebugResources UP-TO-DATE
+> Task :app:mergeAppDebugResources UP-TO-DATE
+> Task :app:packageAppDebugResources UP-TO-DATE
+> Task :modules:book:processDebugNavigationResources UP-TO-DATE
+> Task :modules:rhino:processDebugNavigationResources UP-TO-DATE
+> Task :app:processAppDebugNavigationResources UP-TO-DATE
+> Task :app:parseAppDebugLocalResources UP-TO-DATE
+> Task :modules:book:parseDebugLocalResources UP-TO-DATE
+> Task :modules:book:generateDebugRFile UP-TO-DATE
+> Task :modules:rhino:parseDebugLocalResources UP-TO-DATE
+> Task :modules:rhino:generateDebugRFile UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesAppDebug UP-TO-DATE
+> Task :app:generateAppDebugBuildConfig UP-TO-DATE
+> Task :modules:book:writeDebugAarMetadata UP-TO-DATE
+> Task :modules:rhino:writeDebugAarMetadata UP-TO-DATE
+> Task :app:checkAppDebugAarMetadata UP-TO-DATE
+> Task :app:compileAppDebugNavigationResources UP-TO-DATE
+> Task :app:mapAppDebugSourceSetPaths UP-TO-DATE
+> Task :app:createAppDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksAppDebug UP-TO-DATE
+> Task :modules:book:extractDeepLinksDebug UP-TO-DATE
+> Task :modules:book:processDebugManifest UP-TO-DATE
+> Task :modules:rhino:extractDeepLinksDebug UP-TO-DATE
+> Task :modules:rhino:processDebugManifest UP-TO-DATE
+> Task :app:processAppDebugMainManifest UP-TO-DATE
+> Task :app:processAppDebugManifest UP-TO-DATE
+> Task :app:processAppDebugManifestForPackage UP-TO-DATE
+> Task :modules:book:compileDebugLibraryResources UP-TO-DATE
+> Task :modules:rhino:compileDebugLibraryResources UP-TO-DATE
+> Task :app:processAppDebugResources UP-TO-DATE
+> Task :modules:book:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :modules:book:compileDebugKotlin NO-SOURCE
+> Task :modules:book:javaPreCompileDebug UP-TO-DATE
+> Task :modules:book:compileDebugJavaWithJavac UP-TO-DATE
+> Task :modules:book:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :modules:rhino:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :modules:rhino:compileDebugKotlin UP-TO-DATE
+> Task :modules:rhino:javaPreCompileDebug UP-TO-DATE
+> Task :modules:rhino:compileDebugJavaWithJavac NO-SOURCE
+> Task :modules:rhino:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :app:kspAppDebugKotlin UP-TO-DATE
+> Task :app:kaptGenerateStubsAppDebugKotlin UP-TO-DATE
+> Task :app:kaptAppDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileAppDebug UP-TO-DATE
+> Task :app:generateAppDebugAssets UP-TO-DATE
+> Task :modules:book:generateDebugAssets UP-TO-DATE
+> Task :modules:book:mergeDebugAssets UP-TO-DATE
+> Task :modules:rhino:generateDebugAssets UP-TO-DATE
+> Task :modules:rhino:mergeDebugAssets UP-TO-DATE
+> Task :app:mergeAppDebugAssets UP-TO-DATE
+> Task :app:compressAppDebugAssets UP-TO-DATE
+> Task :app:l8DexDesugarLibAppDebug UP-TO-DATE
+> Task :modules:book:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :modules:rhino:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :app:desugarAppDebugFileDependencies UP-TO-DATE
+
+> Task :app:compileAppDebugKotlin
+.\gradlew.bat : e: java.nio.file.AccessDeniedException: C:\Users\Liuwen\AppData\Local\kotlin\daemon\kotlin-daemon-clien
+t-tsmarker4220105706397835104.tmp
+At line:15 char:4485
++ ... es\@vscode\ripgrep\bin'; .\gradlew.bat assembleDebug > build.log 2>&1
++                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (e: java.nio.fil...06397835104.tmp:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+e: Daemon compilation failed: Could not connect to Kotlin compile daemon
+java.lang.RuntimeException: Could not connect to Kotlin compile daemon
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemon(GradleKotlinCompilerWork.kt:198)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWo
+rk.kt:143)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:107)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCo
+mpilerRunnerWithWorkers.kt:75)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperati
+onRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperati
+onRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQ
+ueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQue
+ue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.ja
+va:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue
+.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java
+:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+
+Failed to compile with Kotlin daemon: java.lang.RuntimeException: Could not connect to Kotlin compile daemon
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemon(GradleKotlinCompilerWork.kt:198)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:143)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:107)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:75)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+Using fallback strategy: Compile without Kotlin daemon
+Try ./gradlew --stop if this issue persists
+If it does not look related to your configuration, please file an issue with logs to https://kotl.in/issue
+
+> Task :modules:book:processDebugJavaRes UP-TO-DATE
+> Task :modules:rhino:processDebugJavaRes UP-TO-DATE
+> Task :app:checkAppDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexAppDebug UP-TO-DATE
+> Task :app:mergeLibDexAppDebug UP-TO-DATE
+> Task :app:mergeAppDebugJniLibFolders UP-TO-DATE
+> Task :modules:book:mergeDebugJniLibFolders UP-TO-DATE
+> Task :modules:book:mergeDebugNativeLibs NO-SOURCE
+> Task :modules:book:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :modules:rhino:mergeDebugJniLibFolders UP-TO-DATE
+> Task :modules:rhino:mergeDebugNativeLibs NO-SOURCE
+> Task :modules:rhino:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :app:mergeAppDebugNativeLibs UP-TO-DATE
+> Task :app:stripAppDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningAppDebug UP-TO-DATE
+> Task :app:writeAppDebugAppMetadata UP-TO-DATE
+> Task :app:writeAppDebugSigningConfigVersions UP-TO-DATE
+> Task :modules:book:checkDebugAarMetadata UP-TO-DATE
+> Task :modules:book:stripDebugDebugSymbols NO-SOURCE
+> Task :modules:book:copyDebugJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :modules:book:extractDebugAnnotations UP-TO-DATE
+> Task :modules:book:extractDeepLinksForAarDebug UP-TO-DATE
+> Task :modules:book:mergeDebugGeneratedProguardFiles UP-TO-DATE
+> Task :modules:book:mergeDebugConsumerProguardFiles UP-TO-DATE
+> Task :modules:book:prepareDebugArtProfile UP-TO-DATE
+> Task :modules:book:prepareLintJarForPublish UP-TO-DATE
+> Task :modules:book:mergeDebugJavaResource UP-TO-DATE
+> Task :modules:book:syncDebugLibJars UP-TO-DATE
+> Task :modules:book:bundleDebugAar UP-TO-DATE
+> Task :modules:book:assembleDebug UP-TO-DATE
+> Task :modules:rhino:checkDebugAarMetadata UP-TO-DATE
+> Task :modules:rhino:stripDebugDebugSymbols NO-SOURCE
+> Task :modules:rhino:copyDebugJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :modules:rhino:extractDebugAnnotations UP-TO-DATE
+> Task :modules:rhino:extractDeepLinksForAarDebug UP-TO-DATE
+> Task :modules:rhino:mergeDebugGeneratedProguardFiles UP-TO-DATE
+> Task :modules:rhino:mergeDebugConsumerProguardFiles UP-TO-DATE
+> Task :modules:rhino:prepareDebugArtProfile UP-TO-DATE
+> Task :modules:rhino:prepareLintJarForPublish UP-TO-DATE
+> Task :modules:rhino:mergeDebugJavaResource UP-TO-DATE
+> Task :modules:rhino:syncDebugLibJars UP-TO-DATE
+> Task :modules:rhino:bundleDebugAar UP-TO-DATE
+> Task :modules:rhino:assembleDebug UP-TO-DATE
+
+> Task :app:compileAppDebugKotlin
+exception: app\src\main\java\io\legado\app\utils\StringExtensions.kt:96:1: error: this annotation is not applicable to 
+target 'top level property with delegate'. Applicable targets: class, field, local variable, value parameter, construct
+or, function, getter, setter, file, expression
+exception: @SuppressLint("ObsoleteSdkInt")
+exception: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+exception: app\src\main\java\io\legado\app\utils\StringExtensions.kt:97:50: error: function 'getValue' of property dele
+gate is expected to return 'Function2<String, String, Int>', but returns 'Unit'.
+exception: private val cnCompareFn: (String, String) -> Int by lazy {
+exception:                                                  ^^
+exception: app\src\main\java\io\legado\app\utils\StringExtensions.kt:99:26: error: none of the following candidates is 
+applicable:
+exception: 
+exception: static fun getInstance(): Collator!:
+exception:   Too many arguments for 'static fun getInstance(): Collator!'.
+exception:   Expression is treated as a trailing lambda argument; consider separating it from the call with semicolon.
+exception: 
+exception: static fun getInstance(p0: ULocale!): Collator!:
+exception:   Expression is treated as a trailing lambda argument; consider separating it from the call with semicolon.
+exception: 
+exception: static fun getInstance(p0: Locale!): Collator!:
+exception:   Expression is treated as a trailing lambda argument; consider separating it from the call with semicolon.
+exception:   Argument type mismatch: actual type is 'ULocale!', but 'Locale!' was expected.
+exception:         val c = Collator.getInstance(ULocale.SIMPLIFIED_CHINESE)
+exception:                          ^^^^^^^^^^^
+exception: app\src\main\java\io\legado\app\utils\StringExtensions.kt:100:11: error: cannot infer type for value paramet
+er 'o1'. Specify it explicitly.
+exception:         { o1, o2 -> c.compare(o1, o2) }
+exception:           ^^
+exception: app\src\main\java\io\legado\app\utils\StringExtensions.kt:100:15: error: cannot infer type for value paramet
+er 'o2'. Specify it explicitly.
+exception:         { o1, o2 -> c.compare(o1, o2) }
+exception:               ^^
+exception: app\src\main\java\io\legado\app\utils\StringExtensions.kt:100:21: error: unresolved reference 'c'.
+exception:         { o1, o2 -> c.compare(o1, o2) }
+exception:                     ^
+exception: app\src\main\java\io\legado\app\utils\StringExtensions.kt:102:36: error: none of the following candidates is
+ applicable:
+exception: 
+exception: static fun getInstance(): Collator!:
+exception:   Too many arguments for 'static fun getInstance(): Collator!'.
+exception:   Expression is treated as a trailing lambda argument; consider separating it from the call with semicolon.
+exception: 
+exception: static fun getInstance(p0: Locale!): Collator!:
+exception:   Expression is treated as a trailing lambda argument; consider separating it from the call with semicolon.
+exception:         val c = java.text.Collator.getInstance(Locale.CHINA)
+exception:                                    ^^^^^^^^^^^
+exception: app\src\main\java\io\legado\app\utils\StringExtensions.kt:103:11: error: cannot infer type for value paramet
+er 'o1'. Specify it explicitly.
+exception:         { o1, o2 -> c.compare(o1, o2) }
+exception:           ^^
+exception: app\src\main\java\io\legado\app\utils\StringExtensions.kt:103:15: error: cannot infer type for value paramet
+er 'o2'. Specify it explicitly.
+exception:         { o1, o2 -> c.compare(o1, o2) }
+exception:               ^^
+exception: app\src\main\java\io\legado\app\utils\StringExtensions.kt:103:21: error: unresolved reference 'c'.
+exception:         { o1, o2 -> c.compare(o1, o2) }
+exception:                     ^
+
+> Task :app:compileAppDebugKotlin FAILED
+> Task :app:copyRoomSchemas NO-SOURCE
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileAppDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCo
+mpilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 57s
+92 actionable tasks: 1 executed, 91 up-to-date

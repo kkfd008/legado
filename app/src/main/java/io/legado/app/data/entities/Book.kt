@@ -162,15 +162,37 @@ data class Book(
     @IgnoredOnParcel
     private var folderName: String? = null
 
+    @Ignore
+    @IgnoredOnParcel
+    var cachedFileSize: Long? = null
+
+    @Ignore
+    @IgnoredOnParcel
+    var cachedUnreadChapterNum: Int? = null
+
+    @Ignore
+    @IgnoredOnParcel
+    var cachedDisplayCover: String? = null
+
     @get:Ignore
     @IgnoredOnParcel
     val lastChapterIndex get() = totalChapterNum - 1
 
     fun getRealAuthor() = author.replace(AppPattern.authorRegex, "")
 
-    fun getUnreadChapterNum() = max(simulatedTotalChapterNum() - durChapterIndex - 1, 0)
+    fun getUnreadChapterNum(): Int {
+        if (cachedUnreadChapterNum == null) {
+            cachedUnreadChapterNum = max(simulatedTotalChapterNum() - durChapterIndex - 1, 0)
+        }
+        return cachedUnreadChapterNum!!
+    }
 
-    fun getDisplayCover() = if (customCoverUrl.isNullOrEmpty()) coverUrl else customCoverUrl
+    fun getDisplayCover(): String? {
+        if (cachedDisplayCover == null) {
+            cachedDisplayCover = if (customCoverUrl.isNullOrEmpty()) coverUrl else customCoverUrl
+        }
+        return cachedDisplayCover
+    }
 
     fun getDisplayIntro() = if (customIntro.isNullOrEmpty()) intro else customIntro
 

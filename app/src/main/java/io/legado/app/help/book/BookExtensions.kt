@@ -302,14 +302,17 @@ fun Book.isLocalModified(): Boolean {
  * 获取本地书籍文件大小，非本地书籍返回0
  */
 fun Book.getFileSize(): Long {
+    if (cachedFileSize != null) return cachedFileSize!!
     return kotlin.runCatching {
         val uri = Uri.parse(bookUrl)
-        if (uri.scheme == "content") {
+        val size = if (uri.scheme == "content") {
             DocumentFile.fromSingleUri(appCtx, uri)?.length() ?: 0L
         } else {
             val file = File(uri.path!!)
             if (file.exists()) file.length() else 0L
         }
+        cachedFileSize = size
+        size
     }.getOrDefault(0L)
 }
 

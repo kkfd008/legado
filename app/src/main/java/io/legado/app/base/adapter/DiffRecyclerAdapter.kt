@@ -61,7 +61,7 @@ abstract class DiffRecyclerAdapter<ITEM, VB : ViewBinding>(protected val context
             if (keepScrollPosition) {
                 layoutState = layoutManager?.onSaveInstanceState()
             }
-            asyncListDiffer.submitList(items?.toMutableList())
+            asyncListDiffer.submitList(items)
         }
     }
 

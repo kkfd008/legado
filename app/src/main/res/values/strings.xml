@@ -1150,7 +1150,7 @@
     <string name="bookshelf_sort_descending">Descending</string>
     <string name="book_rating">Rating</string>
     <string name="book_rating_unit">points</string>
-    <string name="book_rating_format">Rating %d points</string>
+    <string name="book_rating_format">Rating: %d points</string>
     <string name="set_rating">Rate</string>
     <string name="bookshelf_px_7">By rating</string>
     <string name="effective_replaces">Effective replacement</string>
