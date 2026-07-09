@@ -15,6 +15,9 @@ import io.legado.app.R
 import io.legado.app.data.appDb
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.LocalConfig
+import android.content.Intent
+import io.legado.app.ui.config.ConfigActivity
+import io.legado.app.ui.config.ConfigTag
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.model.remote.RemoteBook
@@ -75,6 +78,18 @@ class RemoteBookActivity : BaseImportBookActivity<RemoteBookViewModel>(),
         viewModel.permissionDenialLiveData.observe(this) {
             localBookTreeSelect.launch {
                 title = getString(R.string.select_book_folder)
+            }
+        }
+        viewModel.webDavNotConfiguredLiveData.observe(this) { msg ->
+            alert(getString(R.string.webdav_not_configured), msg) {
+                okButton {
+                    startActivity(Intent(this@RemoteBookActivity, ConfigActivity::class.java).apply {
+                        putExtra("configTag", ConfigTag.BACKUP_CONFIG)
+                    })
+                }
+                noButton {
+                    finish()
+                }
             }
         }
     }

@@ -1126,6 +1126,7 @@
     <string name="only_latest_backup_t">Keep only the latest backup</string>
     <string name="only_latest_backup_s">Local backup keeps only the latest backup file</string>
     <string name="webdav_application_authorization_error">Fail to authorize WebDav application</string>
+    <string name="webdav_not_configured">WebDAV not configured</string>
     <string name="respondTime">respondTime: %1$d ms</string>
     <string name="load_word_count">Load word count</string>
     <string name="replace_exclude_scope">Exclude range, optional title or source URL</string>

@@ -28,6 +28,7 @@ class RemoteBookViewModel(application: Application) : BaseViewModel(application)
     var sortAscending = false
     val dirList = arrayListOf<RemoteBook>()
     val permissionDenialLiveData = MutableLiveData<Int>()
+    val webDavNotConfiguredLiveData = MutableLiveData<String>()
 
     var dataCallback: DataCallback? = null
 
@@ -107,7 +108,8 @@ class RemoteBookViewModel(application: Application) : BaseViewModel(application)
             remoteBookWebDav = AppWebDav.defaultBookWebDav
                 ?: throw NoStackTraceException("webDav没有配置")
         }.onError {
-            context.toastOnUi("初始化webDav出错:${it.localizedMessage}")
+            val msg = it.localizedMessage ?: "webDav没有配置"
+            webDavNotConfiguredLiveData.postValue(msg)
         }.onSuccess {
             onSuccess.invoke()
         }
