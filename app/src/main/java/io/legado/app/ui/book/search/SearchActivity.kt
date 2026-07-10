@@ -376,7 +376,18 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
                 binding.tvBookShow.gone()
                 binding.rvBookshelfSearch.gone()
             } else {
-                appDb.bookDao.flowSearch(key).conflate().collect {
+                val flow = if (key.startsWith("#")) {
+                    val tag = key.removePrefix("#")
+                    val tagIds = appDb.bookTagDao.all().filter { it.name == tag }.map { it.tagId }
+                    if (tagIds.isNotEmpty()) {
+                        appDb.bookDao.flowSearchByTag(tagIds.first())
+                    } else {
+                        appDb.bookDao.flowSearch(key)
+                    }
+                } else {
+                    appDb.bookDao.flowSearch(key)
+                }
+                flow.conflate().collect {
                     if (it.isEmpty()) {
                         binding.tvBookShow.gone()
                         binding.rvBookshelfSearch.gone()

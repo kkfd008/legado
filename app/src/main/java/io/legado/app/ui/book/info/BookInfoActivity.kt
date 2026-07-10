@@ -46,6 +46,7 @@ import io.legado.app.ui.about.AppLogDialog
 import io.legado.app.ui.book.audio.AudioPlayActivity
 import io.legado.app.ui.book.changecover.ChangeCoverDialog
 import io.legado.app.ui.book.changesource.ChangeBookSourceDialog
+import io.legado.app.ui.book.tag.TagSelectDialog
 import io.legado.app.ui.book.group.GroupSelectDialog
 import io.legado.app.ui.book.info.edit.BookInfoEditActivity
 import io.legado.app.ui.book.manga.ReadMangaActivity
@@ -83,6 +84,7 @@ import kotlinx.coroutines.withContext
 class BookInfoActivity :
     VMBaseActivity<ActivityBookInfoBinding, BookInfoViewModel>(toolBarTheme = Theme.Dark),
     GroupSelectDialog.CallBack,
+    TagSelectDialog.CallBack,
     ChangeBookSourceDialog.CallBack,
     ChangeCoverDialog.CallBack,
     VariableDialog.Callback {
@@ -335,8 +337,8 @@ class BookInfoActivity :
     private fun showBook(book: Book) = binding.run {
         showCover(book)
         tvName.text = book.name
-        tvAuthor.text = getString(R.string.author_show, book.getRealAuthor())
-        tvRating?.text = getString(R.string.book_rating_format, book.rating)
+        tvAuthor.text = book.getRealAuthor()
+        tvRating?.text = book.rating.toString()
         tvOrigin.text = getString(R.string.origin_show, book.originName)
         tvLasted.text = getString(R.string.lasted_show, book.latestChapterTitle)
         tvIntro.text = book.getDisplayIntro()
@@ -344,6 +346,7 @@ class BookInfoActivity :
         upTvBookshelf()
         upKinds(book)
         upGroup(book.group)
+        upTags(book.tags)
     }
 
     private fun upKinds(book: Book) = binding.run {
@@ -418,6 +421,15 @@ class BookInfoActivity :
             } else {
                 binding.tvGroup.text = getString(R.string.group_s, it)
             }
+        }
+    }
+
+    private fun upTags(tags: Long) {
+        val tagNames = appDb.bookTagDao.getTagNames(tags)
+        binding.tvTags?.text = if (tagNames.isEmpty()) {
+            getString(R.string.tag_s, "")
+        } else {
+            getString(R.string.tag_s, tagNames.joinToString("，"))
         }
     }
 
@@ -499,6 +511,13 @@ class BookInfoActivity :
             viewModel.getBook()?.let {
                 showDialogFragment(
                     GroupSelectDialog(it.group)
+                )
+            }
+        }
+        tvChangeTags?.setOnClickListener {
+            viewModel.getBook()?.let {
+                showDialogFragment(
+                    TagSelectDialog(it.tags)
                 )
             }
         }
@@ -741,6 +760,16 @@ class BookInfoActivity :
                 viewModel.saveBook(book)
             }
         }
+    }
+
+override fun upTags(requestCode: Int, tags: Long) {
+        val book = viewModel.getBook() ?: return
+        book.tags = tags
+        if (viewModel.inBookshelf) {
+            viewModel.saveBook(book)
+        }
+        upTags(book.tags)
+        setResult(RESULT_OK)
     }
 
     override fun upGroup(requestCode: Int, groupId: Long) {

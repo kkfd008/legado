@@ -371,4 +371,11 @@ object DatabaseMigrations {
     )
     class Migration_64_65 : AutoMigrationSpec
 
+    @Suppress("ClassName")
+    @DeleteColumn(
+        tableName = "books",
+        columnName = "tags"
+    )
+    class Migration_77_78 : AutoMigrationSpec
+
 }

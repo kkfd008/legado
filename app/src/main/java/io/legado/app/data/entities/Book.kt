@@ -124,8 +124,9 @@ data class Book(
     // 评分(1-5,默认1)
     @ColumnInfo(defaultValue = "1")
     var rating: Int = 1,
-    // 用户自定义标签(逗号分隔)
-    var tags: String? = null
+    // 用户自定义标签(位掩码,参考group)
+    @ColumnInfo(defaultValue = "0")
+    var tags: Long = 0L
 ) : Parcelable, BaseBook {
 
     override fun equals(other: Any?): Boolean {

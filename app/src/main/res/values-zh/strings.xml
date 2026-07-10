@@ -685,6 +685,13 @@
     <string name="save_image">保存图片</string>
     <string name="no_default_path">没有默认路径</string>
     <string name="change_group">设置分组</string>
+    <string name="change_tags">设置标签</string>
+    <string name="tag_select">选择标签</string>
+    <string name="tag_manage">标签管理</string>
+    <string name="add_tag">添加标签</string>
+    <string name="tag_name">标签名称</string>
+    <string name="tag_s">标签：%s</string>
+    <string name="tag_hint">输入标签，多个标签用逗号分隔</string>
     <string name="view_toc">查看目录</string>
     <string name="bar_elevation">导航栏阴影</string>
     <string name="bar_elevation_s">当前阴影大小（elevation）：%s</string>
@@ -1124,6 +1131,7 @@
     <string name="only_latest_backup_t">仅保留最新备份</string>
     <string name="only_latest_backup_s">本地备份仅保留最新备份文件</string>
     <string name="webdav_application_authorization_error">webDav应用验证失败</string>
+    <string name="webdav_not_configured">WebDAV 未配置</string>
     <string name="load_word_count">加载字数</string>
     <string name="replace_exclude_scope">排除范围，选填书名或者书源 URL</string>
     <string name="format_js_rule">格式化规则(formatJs)</string>

@@ -21,6 +21,22 @@
     </item>
 
     <item
+        android:id="@+id/menu_book_tag"
+        android:icon="@drawable/ic_label_outline"
+        android:title="@string/change_tags"
+        app:showAsAction="always">
+
+        <menu>
+
+            <item
+                android:id="@+id/menu_tag_manage"
+                android:title="@string/tag_manage" />
+
+        </menu>
+
+    </item>
+
+    <item
         android:id="@+id/menu_export_all_use_book_source"
         android:title="@string/export_all_use_book_source" />
 

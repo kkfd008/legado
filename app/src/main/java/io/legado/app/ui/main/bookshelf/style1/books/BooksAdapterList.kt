@@ -35,9 +35,8 @@ class BooksAdapterList(
     ) = binding.run {
         if (payloads.isEmpty()) {
             tvName.text = item.name
-            tvAuthor.text = context.getString(R.string.author_show, item.author)
-            tvRating.text = context.getString(R.string.book_rating_format, item.rating)
             tvGroups.text = appDb.bookGroupDao.getGroupNames(item.group).joinToString("，")
+            tvTags.text = appDb.bookTagDao.getTagNames(item.tags).joinToString(",")
             tvRead.text = item.durChapterTitle
             tvLast.text = item.latestChapterTitle
             ivCover.load(item.getDisplayCover(), item.name, item.author, false, item.origin)
@@ -49,7 +48,6 @@ class BooksAdapterList(
                 bundle.keySet().forEach {
                     when (it) {
                         "name" -> tvName.text = item.name
-                        "author" -> tvAuthor.text = context.getString(R.string.author_show, item.author)
                         "dur" -> tvRead.text = item.durChapterTitle
                         "last" -> tvLast.text = item.latestChapterTitle
                         "cover" -> ivCover.load(
@@ -61,13 +59,11 @@ class BooksAdapterList(
                             fragment,
                             lifecycle
                         )
-
                         "refresh" -> {
                             upRefresh(binding, item)
-                            tvRating.text = context.getString(R.string.book_rating_format, item.rating)
                             tvGroups.text = appDb.bookGroupDao.getGroupNames(item.group).joinToString("，")
+                            tvTags.text = appDb.bookTagDao.getTagNames(item.tags).joinToString("，")
                         }
-
                         "lastUpdateTime" -> upLastUpdateTime(binding, item)
                     }
                 }

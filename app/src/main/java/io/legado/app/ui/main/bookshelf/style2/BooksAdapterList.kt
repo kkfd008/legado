@@ -51,18 +51,16 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
 
         fun onBind(item: Book, position: Int) = binding.run {
             tvName.text = item.name
-            tvAuthor.text = context.getString(R.string.author_show, item.author)
-            tvRating.text = context.getString(R.string.book_rating_format, item.rating)
             tvGroups.text = appDb.bookGroupDao.getGroupNames(item.group).joinToString("，")
+            tvTags.text = appDb.bookTagDao.getTagNames(item.tags).joinToString(",")
             tvRead.text = item.durChapterTitle
             tvLast.text = item.latestChapterTitle
             ivCover.load(item.getDisplayCover(), item.name, item.author, false, item.origin)
             flHasNew.visible()
-            ivAuthor.visible()
-            ivRating.visible()
-            tvRating.visible()
             ivGroups.visible()
             tvGroups.visible()
+            ivTags.visible()
+            tvTags.visible()
             ivLast.visible()
             ivRead.visible()
             upRefresh(this, item)
@@ -77,7 +75,6 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                     bundle.keySet().forEach {
                         when (it) {
                             "name" -> tvName.text = item.name
-                            "author" -> tvAuthor.text = item.author
                             "dur" -> tvRead.text = item.durChapterTitle
                             "last" -> tvLast.text = item.latestChapterTitle
                             "cover" -> ivCover.load(
@@ -89,10 +86,10 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                             )
 
                             "refresh" -> {
-                            upRefresh(this, item)
-                            tvRating.text = context.getString(R.string.book_rating_format, item.rating)
-                            tvGroups.text = appDb.bookGroupDao.getGroupNames(item.group).joinToString("，")
-                        }
+                                upRefresh(this, item)
+                                tvGroups.text = appDb.bookGroupDao.getGroupNames(item.group).joinToString("，")
+                                tvTags.text = appDb.bookTagDao.getTagNames(item.tags).joinToString("，")
+                            }
                         }
                     }
                 }

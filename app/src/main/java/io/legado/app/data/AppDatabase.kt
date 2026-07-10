@@ -12,6 +12,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import io.legado.app.data.dao.BookChapterDao
 import io.legado.app.data.dao.BookDao
 import io.legado.app.data.dao.BookGroupDao
+import io.legado.app.data.dao.BookTagDao
 import io.legado.app.data.dao.BookSourceDao
 import io.legado.app.data.dao.BookmarkDao
 import io.legado.app.data.dao.CacheDao
@@ -33,6 +34,7 @@ import io.legado.app.data.dao.TxtTocRuleDao
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookGroup
+import io.legado.app.data.entities.BookTag
 import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.BookSourcePart
 import io.legado.app.data.entities.Bookmark
@@ -67,9 +69,9 @@ val appDb by lazy {
 }
 
 @Database(
-    version = 77,
+    version = 78,
     exportSchema = true,
-    entities = [Book::class, BookGroup::class, BookSource::class, BookChapter::class,
+    entities = [Book::class, BookGroup::class, BookTag::class, BookSource::class, BookChapter::class,
         ReplaceRule::class, SearchBook::class, SearchKeyword::class, Cookie::class,
         RssSource::class, Bookmark::class, RssArticle::class, RssReadRecord::class,
         RssStar::class, TxtTocRule::class, ReadRecord::class, HttpTTS::class, Cache::class,
@@ -110,12 +112,14 @@ val appDb by lazy {
         AutoMigration(from = 74, to = 75),
         AutoMigration(from = 75, to = 76),
         AutoMigration(from = 76, to = 77),
+        AutoMigration(from = 77, to = 78, spec = DatabaseMigrations.Migration_77_78::class),
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract val bookDao: BookDao
     abstract val bookGroupDao: BookGroupDao
+    abstract val bookTagDao: BookTagDao
     abstract val bookSourceDao: BookSourceDao
     abstract val bookChapterDao: BookChapterDao
     abstract val replaceRuleDao: ReplaceRuleDao
