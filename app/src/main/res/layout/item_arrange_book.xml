@@ -55,7 +55,6 @@
         android:padding="3dp"
         android:textColor="@color/tv_text_summary"
         android:textSize="12sp"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toRightOf="@+id/checkbox"
         app:layout_constraintTop_toBottomOf="@id/tv_author"
         tools:text="书源" />
@@ -70,7 +69,7 @@
         android:singleLine="true"
         android:textColor="@color/secondaryText"
         android:textSize="12sp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_origin"
         app:layout_constraintLeft_toRightOf="@+id/tv_origin"
         app:layout_constraintRight_toLeftOf="@+id/tv_group"
         app:layout_constraintTop_toBottomOf="@id/tv_author" />
@@ -83,7 +82,7 @@
         android:padding="10dp"
         android:text="@string/group"
         android:textColor="@color/secondaryText"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_origin"
         app:layout_constraintRight_toLeftOf="@+id/tv_delete"
         app:layout_constraintTop_toBottomOf="@id/tv_author" />
 
@@ -95,8 +94,26 @@
         android:padding="10dp"
         android:text="@string/delete"
         android:textColor="@color/secondaryText"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_origin"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_author" />
+
+    <TextView
+        android:id="@+id/tv_tags_s"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="4dp"
+        android:ellipsize="end"
+        android:maxLines="3"
+        android:paddingLeft="3dp"
+        android:paddingRight="3dp"
+        android:textColor="@color/secondaryText"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@+id/checkbox"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_group_s"
+        tools:ignore="RtlHardcoded" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

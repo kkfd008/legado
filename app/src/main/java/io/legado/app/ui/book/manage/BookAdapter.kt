@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import io.legado.app.R
 import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
+import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.databinding.ItemArrangeBookBinding
@@ -54,6 +55,7 @@ class BookAdapter(context: Context, val callBack: CallBack) :
             tvAuthor.text = item.author
             tvAuthor.visibility = if (item.author.isEmpty()) View.GONE else View.VISIBLE
             tvGroupS.text = getGroupName(item.group)
+            tvTagsS.text = getTagName(item.tags)
             checkbox.isChecked = selectedBooks.contains(item)
             if (item.isLocal) {
                 tvOrigin.setText(R.string.local_book)
@@ -168,6 +170,14 @@ class BookAdapter(context: Context, val callBack: CallBack) :
             return ""
         }
         return groupNames.joinToString(",")
+    }
+
+    private fun getTagName(tags: Long): String {
+        val tagNames = appDb.bookTagDao.getTagNames(tags)
+        if (tagNames.isEmpty()) {
+            return ""
+        }
+        return tagNames.joinToString(",")
     }
 
     private var isMoved = false

@@ -33,6 +33,7 @@ import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.ui.book.group.GroupManageDialog
 import io.legado.app.ui.book.group.GroupSelectDialog
 import io.legado.app.ui.book.tag.TagManageDialog
+import io.legado.app.ui.book.tag.TagSelectDialog
 import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.widget.SelectActionBar
@@ -68,13 +69,15 @@ class BookshelfManageActivity :
     SelectActionBar.CallBack,
     BookAdapter.CallBack,
     SourcePickerDialog.Callback,
-    GroupSelectDialog.CallBack {
+    GroupSelectDialog.CallBack,
+    TagSelectDialog.CallBack {
 
     override val binding by viewBinding(ActivityArrangeBookBinding::inflate)
     override val viewModel by viewModels<BookshelfManageViewModel>()
     override val groupList: ArrayList<BookGroup> = arrayListOf()
     private val groupRequestCode = 22
     private val addToGroupRequestCode = 34
+    private val addTagsRequestCode = 44
     private val adapter by lazy { BookAdapter(this, this) }
     private val itemTouchCallback by lazy { ItemTouchCallback(adapter) }
     private var booksFlowJob: Job? = null
@@ -154,7 +157,7 @@ class BookshelfManageActivity :
     }
 
     override fun onClickSelectBarMainAction() {
-        selectGroup(groupRequestCode, 0)
+        selectTag(addTagsRequestCode, 0L)
     }
 
     private fun upTitle() {
@@ -193,7 +196,7 @@ class BookshelfManageActivity :
     }
 
     private fun initOtherView() {
-        binding.selectActionBar.setMainActionText(R.string.move_to_group)
+        binding.selectActionBar.setMainActionText(R.string.add_to_tags)
         binding.selectActionBar.inflateMenu(R.menu.bookshelf_menage_sel)
         binding.selectActionBar.setOnMenuItemClickListener(this)
         binding.selectActionBar.setCallBack(this)
@@ -329,7 +332,7 @@ class BookshelfManageActivity :
             R.id.menu_update_disable ->
                 viewModel.upCanUpdate(adapter.selection, false)
 
-            R.id.menu_add_to_group -> selectGroup(addToGroupRequestCode, 0)
+            R.id.menu_add_to_group -> selectTag(addTagsRequestCode, 0L)
             R.id.menu_change_source -> showDialogFragment<SourcePickerDialog>()
             R.id.menu_clear_cache -> viewModel.clearCache(adapter.selection)
             R.id.menu_check_selected_interval -> adapter.checkSelectedInterval()
@@ -371,6 +374,12 @@ class BookshelfManageActivity :
         )
     }
 
+    fun selectTag(requestCode: Int, tags: Long) {
+        showDialogFragment(
+            TagSelectDialog(tags, requestCode)
+        )
+    }
+
     override fun upGroup(requestCode: Int, groupId: Long) {
         when (requestCode) {
             groupRequestCode -> adapter.selection.let { books ->
@@ -390,6 +399,18 @@ class BookshelfManageActivity :
                 val array = Array(books.size) { index ->
                     val book = books[index]
                     book.copy(group = book.group or groupId)
+                }
+                viewModel.updateBook(*array)
+            }
+        }
+    }
+
+    override fun upTags(requestCode: Int, tags: Long) {
+        when (requestCode) {
+            addTagsRequestCode -> adapter.selection.let { books ->
+                val array = Array(books.size) { index ->
+                    val book = books[index]
+                    book.copy(tags = book.tags or tags)
                 }
                 viewModel.updateBook(*array)
             }
