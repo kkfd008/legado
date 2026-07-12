@@ -692,6 +692,7 @@
     <string name="name_exist">名称重复</string>
     <string name="add_tag">添加标签</string>
     <string name="tag_name">标签名称</string>
+    <string name="edit_tag">修改标签</string>
     <string name="tag_s">标签：%s</string>
     <string name="tag_hint">输入标签，多个标签用逗号分隔</string>
     <string name="view_toc">查看目录</string>

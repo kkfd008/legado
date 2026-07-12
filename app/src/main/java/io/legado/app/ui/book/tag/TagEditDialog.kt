@@ -10,11 +10,9 @@ import io.legado.app.base.BaseDialogFragment
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookTag
 import io.legado.app.databinding.DialogBookTagEditBinding
-import io.legado.app.lib.theme.accentColor
 import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -36,8 +34,8 @@ class TagEditDialog() : BaseDialogFragment(R.layout.dialog_book_tag_edit) {
         } else {
             getString(R.string.edit_tag)
         }
-        binding.btnOk.setTextColor(requireContext().accentColor)
         binding.run {
+            btnDelete.isVisible = false
             tag?.let {
                 tieTagName.setText(it.name)
                 btnDelete.isVisible = true
