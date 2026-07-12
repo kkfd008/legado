@@ -195,7 +195,7 @@
                                     android:layout_height="18sp"
                                     android:contentDescription="@string/book_rating"
                                     android:paddingRight="2dp"
-                                    android:src="@drawable/ic_star_border"
+                                    android:src="@drawable/ic_heart"
                                     app:tint="@color/tv_text_summary"
                                     tools:ignore="RtlHardcoded,RtlSymmetry" />
 
@@ -208,17 +208,45 @@
                                     android:textColor="@color/tv_text_summary"
                                     android:textSize="13sp" />
 
-                                <TextView
-                                    android:id="@+id/tv_rating"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:ellipsize="end"
-                                    android:includeFontPadding="false"
-                                    android:singleLine="true"
-                                    android:textColor="@color/tv_text_summary"
-                                    android:textSize="13sp"
-                                    tools:ignore="NestedWeights,RtlHardcoded,RtlSymmetry" />
+                                <ImageView
+                                    android:id="@+id/iv_rating_star1"
+                                    android:layout_width="18sp"
+                                    android:layout_height="18sp"
+                                    android:contentDescription="@string/book_rating"
+                                    android:src="@drawable/ic_heart_border"
+                                    app:tint="@color/tv_text_summary" />
+
+                                <ImageView
+                                    android:id="@+id/iv_rating_star2"
+                                    android:layout_width="18sp"
+                                    android:layout_height="18sp"
+                                    android:contentDescription="@string/book_rating"
+                                    android:src="@drawable/ic_heart_border"
+                                    app:tint="@color/tv_text_summary" />
+
+                                <ImageView
+                                    android:id="@+id/iv_rating_star3"
+                                    android:layout_width="18sp"
+                                    android:layout_height="18sp"
+                                    android:contentDescription="@string/book_rating"
+                                    android:src="@drawable/ic_heart_border"
+                                    app:tint="@color/tv_text_summary" />
+
+                                <ImageView
+                                    android:id="@+id/iv_rating_star4"
+                                    android:layout_width="18sp"
+                                    android:layout_height="18sp"
+                                    android:contentDescription="@string/book_rating"
+                                    android:src="@drawable/ic_heart_border"
+                                    app:tint="@color/tv_text_summary" />
+
+                                <ImageView
+                                    android:id="@+id/iv_rating_star5"
+                                    android:layout_width="18sp"
+                                    android:layout_height="18sp"
+                                    android:contentDescription="@string/book_rating"
+                                    android:src="@drawable/ic_heart_border"
+                                    app:tint="@color/tv_text_summary" />
 
                             </LinearLayout>
 

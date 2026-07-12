@@ -41,6 +41,9 @@ interface BookTagDao {
     @Query("select max(tagId) from book_tags")
     fun maxTagId(): Long?
 
+    @Query("select * from book_tags where name = :name limit 1")
+    fun getByName(name: String): BookTag?
+
     @get:Query("SELECT sum(tagId) FROM book_tags")
     val idsSum: Long
 }

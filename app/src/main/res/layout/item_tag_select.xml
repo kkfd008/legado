@@ -13,8 +13,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_weight="1"
-        android:background="@drawable/bg_tag_chip"
-        android:padding="6dp"
         android:singleLine="true"
         android:textColor="@color/primaryText" />
 

@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
+import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.databinding.DialogBookGroupEditBinding
 import io.legado.app.lib.dialogs.alert
@@ -93,6 +94,12 @@ class GroupEditDialog() : BaseDialogFragment(R.layout.dialog_book_group_edit) {
                 if (groupName.isNullOrEmpty()) {
                     toastOnUi("分组名称不能为空")
                 } else {
+                    // Check duplicate name
+                    val existing = appDb.bookGroupDao.getByName(groupName)
+                    if (existing != null && existing.groupId != bookGroup?.groupId) {
+                        toastOnUi(R.string.name_exist)
+                        return@onClick
+                    }
                     val bookSort = binding.spSort.selectedItemPosition - 1
                     val coverPath = binding.ivCover.bitmapPath
                     val enableRefresh = binding.cbEnableRefresh.isChecked

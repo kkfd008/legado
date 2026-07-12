@@ -121,9 +121,9 @@ data class Book(
     //同步时间
     @ColumnInfo(defaultValue = "0")
     var syncTime: Long = 0L,
-    // 评分(1-5,默认1)
-    @ColumnInfo(defaultValue = "1")
-    var rating: Int = 1,
+    // 评分(0-5,默认0)
+    @ColumnInfo(defaultValue = "0")
+    var rating: Int = 0,
     // 用户自定义标签(位掩码,参考group)
     @ColumnInfo(defaultValue = "0")
     var tags: Long = 0L

@@ -338,7 +338,7 @@ class BookInfoActivity :
         showCover(book)
         tvName.text = book.name
         tvAuthor.text = book.getRealAuthor()
-        tvRating?.text = book.rating.toString()
+        upRatingStars(book.rating)
         tvOrigin.text = getString(R.string.origin_show, book.originName)
         tvLasted.text = getString(R.string.lasted_show, book.latestChapterTitle)
         tvIntro.text = book.getDisplayIntro()
@@ -538,6 +538,26 @@ class BookInfoActivity :
         refreshLayout?.setOnRefreshListener {
             refreshLayout.isRefreshing = false
             refreshBook()
+        }
+    }
+
+    private fun upRatingStars(rating: Int) {
+        val stars = listOf(
+            binding.ivRatingStar1,
+            binding.ivRatingStar2,
+            binding.ivRatingStar3,
+            binding.ivRatingStar4,
+            binding.ivRatingStar5
+        )
+        val accentColor = accentColor
+        stars.forEachIndexed { index, iv ->
+            if (index < rating) {
+                iv?.setImageResource(R.drawable.ic_heart)
+                iv?.setColorFilter(accentColor, android.graphics.PorterDuff.Mode.SRC_IN)
+            } else {
+                iv?.setImageResource(R.drawable.ic_heart_border)
+                iv?.setColorFilter(resources.getColor(R.color.tv_text_summary, theme), android.graphics.PorterDuff.Mode.SRC_IN)
+            }
         }
     }
 

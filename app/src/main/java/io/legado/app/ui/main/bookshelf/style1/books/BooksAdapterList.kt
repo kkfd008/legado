@@ -62,8 +62,9 @@ class BooksAdapterList(
                         "refresh" -> {
                             upRefresh(binding, item)
                             tvGroups.text = appDb.bookGroupDao.getGroupNames(item.group).joinToString("，")
-                            tvTags.text = appDb.bookTagDao.getTagNames(item.tags).joinToString("，")
+                            tvTags.text = appDb.bookTagDao.getTagNames(item.tags).joinToString(",")
                         }
+                        "tags" -> tvTags.text = appDb.bookTagDao.getTagNames(item.tags).joinToString(",")
                         "lastUpdateTime" -> upLastUpdateTime(binding, item)
                     }
                 }

@@ -690,6 +690,7 @@
     <string name="change_tags">Tag settings</string>
     <string name="tag_select">Tag selection</string>
     <string name="tag_manage">Tag management</string>
+    <string name="name_exist">Name already exists</string>
     <string name="add_tag">Add tag</string>
     <string name="edit_tag">Edit tag</string>
     <string name="tag_name">Tag name</string>

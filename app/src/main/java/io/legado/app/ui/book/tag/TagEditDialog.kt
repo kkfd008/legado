@@ -10,6 +10,8 @@ import io.legado.app.base.BaseDialogFragment
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookTag
 import io.legado.app.databinding.DialogBookTagEditBinding
+import io.legado.app.lib.theme.accentColor
+import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
@@ -34,6 +36,7 @@ class TagEditDialog() : BaseDialogFragment(R.layout.dialog_book_tag_edit) {
         } else {
             getString(R.string.edit_tag)
         }
+        binding.btnOk.setTextColor(requireContext().accentColor)
         binding.run {
             tag?.let {
                 tieTagName.setText(it.name)
@@ -54,6 +57,12 @@ class TagEditDialog() : BaseDialogFragment(R.layout.dialog_book_tag_edit) {
                 val tagName = tieTagName.text.toString().trim()
                 if (tagName.isEmpty()) {
                     dismissAllowingStateLoss()
+                    return@setOnClickListener
+                }
+                // Check duplicate name
+                val existing = appDb.bookTagDao.getByName(tagName)
+                if (existing != null && existing.tagId != tag?.tagId) {
+                    toastOnUi(R.string.name_exist)
                     return@setOnClickListener
                 }
                 lifecycleScope.launch {

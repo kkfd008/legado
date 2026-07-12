@@ -72,6 +72,11 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
             }
 
             override fun registerListener(holder: ItemViewHolder, binding: ItemTagSelectBinding) {
+                binding.tvEdit.setOnClickListener {
+                    getItem(holder.layoutPosition)?.let {
+                        showDialogFragment(TagEditDialog(it))
+                    }
+                }
                 holder.itemView.setOnLongClickListener {
                     getItem(holder.layoutPosition)?.let {
                         showDialogFragment(TagEditDialog(it))
