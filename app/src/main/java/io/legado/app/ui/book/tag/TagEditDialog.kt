@@ -10,6 +10,7 @@ import io.legado.app.base.BaseDialogFragment
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookTag
 import io.legado.app.databinding.DialogBookTagEditBinding
+import io.legado.app.lib.theme.primaryColor
 import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import kotlinx.coroutines.Dispatchers.IO
@@ -29,6 +30,7 @@ class TagEditDialog() : BaseDialogFragment(R.layout.dialog_book_tag_edit) {
     private val binding by viewBinding(DialogBookTagEditBinding::bind)
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
+        binding.toolBar.setBackgroundColor(primaryColor)
         binding.toolBar.title = if (tag == null) {
             getString(R.string.add_tag)
         } else {
