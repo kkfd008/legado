@@ -11,16 +11,16 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface BookTagDao {
-    @Query("select * from book_tags order by `order`")
+    @Query("select * from book_tags order by `order` desc")
     fun flowSelect(): Flow<List<BookTag>>
 
-    @Query("select * from book_tags order by `order`")
+    @Query("select * from book_tags order by `order` desc")
     fun all(): List<BookTag>
 
-    @Query("select name from book_tags order by `order`")
+    @Query("select name from book_tags order by `order` desc")
     fun getTagNames(): List<String>
 
-    @Query("select name from book_tags where tagId & :ids > 0 order by `order`")
+    @Query("select name from book_tags where tagId & :ids > 0 order by `order` desc")
     fun getTagNames(ids: Long): List<String>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
