@@ -642,79 +642,559 @@ app/
 
 ## 四、数据模型
 
-### 4.1 核心实体关系
+### 4.1 数据库概述
 
+数据库名称：`legado.db`  
+数据库版本：78  
+数据库类型：SQLite (Room)  
+字符集：UTF-8
+
+### 4.2 实体关系图
+
+```mermaid
+erDiagram
+    BookSource ||--o{ Book : "origin"
+    BookSource ||--o{ SearchBook : "origin"
+    Book ||--o{ BookChapter : "bookUrl"
+    Book ||--o{ Bookmark : "bookName, bookAuthor"
+    Book }o--|| BookGroup : "group"
+    Book }o--|| BookTag : "tags(位掩码)"
+    RssSource ||--o{ RssArticle : "origin"
+    RssSource ||--o{ RssStar : "origin"
+    RssSource ||--o{ RssReadRecord : "sourceUrl"
+    
+    BookSource {
+        String bookSourceUrl PK
+        String bookSourceName
+    }
+    Book {
+        String bookUrl PK
+        String origin FK
+        Long group FK
+        Long tags
+    }
+    BookChapter {
+        String url PK
+        String bookUrl PK,FK
+    }
+    BookGroup {
+        Long groupId PK
+    }
+    BookTag {
+        Long tagId PK
+    }
 ```
-BookSource (书源) 1───N SearchBook (搜索书籍)
-BookSource (书源) 1───N Book (书籍)
-Book (书籍) 1───N BookChapter (章节)
-Book (书籍) 1───N Bookmark (书签)
-Book (书籍) N───M BookGroup (分组)
-Book (书籍) N───M BookTag (标签，位掩码)
-RssSource (订阅源) 1───N RssArticle (文章)
-ReplaceRule (替换规则) ─── 独立
-DictRule (词典规则) ─── 独立
-HttpTTS (在线朗读) ─── 独立
-ReadRecord (阅读记录) ─── 按设备+书名
-```
 
-### 4.2 书籍实体 (Book)
+### 4.3 数据表清单
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| bookUrl | String (PK) | 详情页URL |
-| tocUrl | String | 目录页URL |
-| origin | String | 书源URL |
-| originName | String | 书源名称 |
-| name | String | 书名 |
-| author | String | 作者 |
-| kind | String | 分类 |
-| customTag | String | 用户自定义分类 |
-| coverUrl | String | 封面URL |
-| customCoverUrl | String | 用户自定义封面 |
-| intro | String | 简介 |
-| customIntro | String | 用户自定义简介 |
-| charset | String | 编码（本地书籍） |
-| type | Int | 书籍类型 |
-| group | Long | 分组ID |
-| latestChapterTitle | String | 最新章节 |
-| latestChapterTime | Long | 更新时间 |
-| totalChapterNum | Int | 总章节数 |
-| durChapterIndex | Int | 当前章节索引 |
-| durChapterPos | Int | 当前章节内进度 |
-| canUpdate | Boolean | 是否允许更新 |
-| order | Int | 手动排序 |
-| rating | Int | 用户评分（0-5，默认0） |
-| tags | Long | 用户自定义标签（位掩码，关联BookTag） |
-| readConfig | ReadConfig | 阅读配置 |
-| variable | String | 自定义变量 |
+| 序号 | 表名 | 实体类 | 说明 |
+|------|------|--------|------|
+| 1 | books | Book | 书籍表 |
+| 2 | book_groups | BookGroup | 分组表 |
+| 3 | book_tags | BookTag | 标签表 |
+| 4 | book_sources | BookSource | 书源表 |
+| 5 | chapters | BookChapter | 章节表 |
+| 6 | replace_rules | ReplaceRule | 替换规则表 |
+| 7 | searchBooks | SearchBook | 搜索书籍表 |
+| 8 | search_keywords | SearchKeyword | 搜索关键词表 |
+| 9 | cookies | Cookie | Cookie表 |
+| 10 | rssSources | RssSource | RSS源表 |
+| 11 | bookmarks | Bookmark | 书签表 |
+| 12 | rssArticles | RssArticle | RSS文章表 |
+| 13 | rssReadRecords | RssReadRecord | RSS阅读记录表 |
+| 14 | rssStars | RssStar | RSS收藏表 |
+| 15 | txtTocRules | TxtTocRule | TXT目录规则表 |
+| 16 | readRecord | ReadRecord | 阅读记录表 |
+| 17 | httpTTS | HttpTTS | 在线朗读引擎表 |
+| 18 | caches | Cache | 缓存表 |
+| 19 | ruleSubs | RuleSub | 规则订阅表 |
+| 20 | dictRules | DictRule | 词典规则表 |
+| 21 | keyboardAssists | KeyboardAssist | 键盘辅助表 |
+| 22 | servers | Server | 服务器表 |
 
-### 4.3 章节实体 (BookChapter)
+### 4.4 视图清单
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| url | String (PK) | 章节URL |
-| title | String | 章节标题 |
-| isVolume | Boolean | 是否卷名 |
-| isVip | Boolean | 是否VIP |
-| isPay | Boolean | 是否已购买 |
-| resourceUrl | String | 音频真实URL |
-| tag | String | 附加信息 |
-| wordCount | String | 字数 |
-| start/end | Long | EPUB章节位置 |
-| bookUrl | String (FK) | 关联书籍 |
+| 序号 | 视图名 | 说明 |
+|------|--------|------|
+| 1 | book_sources_part | 书源部分字段视图，用于列表展示优化性能 |
 
-### 4.4 标签实体 (BookTag)
+### 4.5 详细字段定义
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| tagId | Long (PK) | 标签ID（2的幂次，位掩码） |
-| name | String | 标签名称 |
-| order | Int | 排序顺序 |
+#### 4.5.1 books（书籍表）
 
-- 标签与书籍通过位掩码关联：Book.tags 字段存储选中的标签ID的按位OR结果
+**用途**：存储书架上的书籍信息
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| bookUrl | String | "" | PK | 详情页URL（本地书源存储完整文件路径） |
+| tocUrl | String | "" | - | 目录页URL |
+| origin | String | "local" | - | 书源URL，本地书籍为"local" |
+| originName | String | "" | - | 书源名称或本地书籍文件名 |
+| name | String | "" | - | 书名 |
+| author | String | "" | - | 作者名称 |
+| kind | String | null | - | 分类信息（书源获取） |
+| customTag | String | null | - | 用户自定义分类标签 |
+| coverUrl | String | null | - | 封面URL（书源获取） |
+| customCoverUrl | String | null | - | 用户自定义封面URL |
+| intro | String | null | - | 简介内容（书源获取） |
+| customIntro | String | null | - | 用户自定义简介 |
+| charset | String | null | - | 自定义字符集名称（仅适用于本地书籍） |
+| type | Int | 0 | - | 书籍类型：0文本/1音频/2图片/3文件 |
+| group | Long | 0 | - | 分组ID，关联book_groups.groupId |
+| latestChapterTitle | String | null | - | 最新章节标题 |
+| latestChapterTime | Long | System.currentTimeMillis() | - | 最新章节更新时间 |
+| lastCheckTime | Long | System.currentTimeMillis() | - | 最近一次更新书籍信息的时间 |
+| lastCheckCount | Int | 0 | - | 最近一次发现新章节的数量 |
+| totalChapterNum | Int | 0 | - | 书籍目录总数 |
+| durChapterTitle | String | null | - | 当前章节名称 |
+| durChapterIndex | Int | 0 | - | 当前章节索引 |
+| durChapterPos | Int | 0 | - | 当前阅读进度（首行字符索引位置） |
+| durChapterTime | Long | System.currentTimeMillis() | - | 最近一次阅读书籍的时间 |
+| wordCount | String | null | - | 字数 |
+| canUpdate | Boolean | true | - | 是否允许更新（1=是，0=否） |
+| order | Int | 0 | - | 手动排序序号 |
+| originOrder | Int | 0 | - | 书源排序序号 |
+| variable | String | null | - | 自定义书籍变量（JSON格式） |
+| readConfig | ReadConfig | null | - | 阅读设置（JSON序列化） |
+| syncTime | Long | 0 | - | 同步时间戳 |
+| rating | Int | 0 | - | 评分（0-5分） |
+| tags | Long | 0 | - | 用户自定义标签（位掩码） |
+
+**索引**：`(name, author)` UNIQUE, `(type)`
+
+**ReadConfig结构**：
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| reverseToc | Boolean | false | 反转目录顺序 |
+| pageAnim | Int | null | 翻页动画类型 |
+| reSegment | Boolean | false | 是否重新分段 |
+| imageStyle | String | null | 图片显示样式 |
+| useReplaceRule | Boolean | null | 是否使用净化规则 |
+| delTag | Long | 0 | 删除标签掩码 |
+| ttsEngine | String | null | TTS引擎名称 |
+| splitLongChapter | Boolean | true | 是否拆分长章节 |
+| readSimulating | Boolean | false | 是否阅读模拟 |
+| startDate | LocalDate | null | 模拟起始日期 |
+| startChapter | Int | null | 模拟起始章节 |
+| dailyChapters | Int | 3 | 每日阅读章节数 |
+
+#### 4.5.2 book_groups（分组表）
+
+**用途**：存储书籍分组信息
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| groupId | Long | 0b1 | PK | 分组ID |
+| groupName | String | "" | - | 分组名称 |
+| cover | String | null | - | 分组封面URL |
+| order | Int | 0 | - | 排序顺序 |
+| enableRefresh | Boolean | true | - | 是否启用刷新（1=是，0=否） |
+| show | Boolean | true | - | 是否显示（1=是，0=否） |
+| bookSort | Int | -1 | - | 书籍排序方式（-1=使用全局设置） |
+
+**系统预设分组ID**：
+
+| ID | 名称 | 说明 |
+|----|------|------|
+| -100 | Root | 根分组（内部使用） |
+| -1 | 全部 | 全部书籍 |
+| -2 | 本地 | 本地书籍 |
+| -3 | 音频 | 有声书 |
+| -4 | 网络未分组 | 网络书籍未分组 |
+| -5 | 本地未分组 | 本地书籍未分组 |
+| -11 | 更新失败 | 更新失败书籍 |
+
+#### 4.5.3 book_tags（标签表）
+
+**用途**：存储书籍标签定义
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| tagId | Long | 0b1 | PK | 标签ID（2的幂次，位掩码） |
+| name | String | "" | - | 标签名称 |
+| order | Int | 0 | - | 排序顺序 |
+
+**位掩码设计**：
+- tagId必须为2的幂次（1, 2, 4, 8, 16...）
+- Book.tags字段存储选中标签ID的按位OR结果
 - 支持最多64个标签（Long类型64位）
-- 排序支持拖拽调整
+
+#### 4.5.4 book_sources（书源表）
+
+**用途**：存储书源规则定义
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| bookSourceUrl | String | "" | PK | 书源地址（http/https） |
+| bookSourceName | String | "" | - | 书源名称 |
+| bookSourceGroup | String | null | - | 分组（逗号分隔） |
+| bookSourceType | Int | 0 | - | 类型：0文本/1音频/2图片/3文件 |
+| bookUrlPattern | String | null | - | 详情页URL正则表达式 |
+| customOrder | Int | 0 | - | 手动排序编号 |
+| enabled | Boolean | true | - | 是否启用 |
+| enabledExplore | Boolean | true | - | 是否启用发现 |
+| jsLib | String | null | - | 自定义JavaScript库 |
+| enabledCookieJar | Boolean | true | - | 是否启用Cookie自动管理 |
+| concurrentRate | String | null | - | 并发率限制 |
+| header | String | null | - | 自定义HTTP请求头（JSON格式） |
+| loginUrl | String | null | - | 登录页面URL |
+| loginUi | String | null | - | 自定义登录界面（JSON格式） |
+| loginCheckJs | String | null | - | 登录状态检测JavaScript |
+| coverDecodeJs | String | null | - | 封面图片解密JavaScript |
+| bookSourceComment | String | null | - | 注释说明 |
+| variableComment | String | null | - | 自定义变量说明 |
+| lastUpdateTime | Long | 0 | - | 最后更新时间 |
+| respondTime | Long | 180000 | - | 响应时间（毫秒） |
+| weight | Int | 0 | - | 智能排序权重 |
+| exploreUrl | String | null | - | 发现页URL |
+| exploreScreen | String | null | - | 发现筛选规则 |
+| ruleExplore | ExploreRule | null | - | 发现规则（JSON序列化） |
+| searchUrl | String | null | - | 搜索页URL |
+| ruleSearch | SearchRule | null | - | 搜索规则（JSON序列化） |
+| ruleBookInfo | BookInfoRule | null | - | 书籍信息规则（JSON序列化） |
+| ruleToc | TocRule | null | - | 目录规则（JSON序列化） |
+| ruleContent | ContentRule | null | - | 正文规则（JSON序列化） |
+| ruleReview | ReviewRule | null | - | 段评规则（JSON序列化） |
+
+**索引**：`(bookSourceUrl)`
+
+**规则引擎六大规则**：
+
+| 规则名称 | 对应字段 | 用途 |
+|----------|----------|------|
+| 搜索规则 | ruleSearch | 按关键词搜索书籍 |
+| 发现规则 | ruleExplore | 发现页浏览/分类 |
+| 书籍信息规则 | ruleBookInfo | 解析书籍详情页 |
+| 目录规则 | ruleToc | 解析章节目录 |
+| 正文规则 | ruleContent | 解析章节正文 |
+| 段评规则 | ruleReview | 解析段落评论（预留） |
+
+#### 4.5.5 chapters（章节表）
+
+**用途**：存储书籍章节信息
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| url | String | "" | PK | 章节地址 |
+| bookUrl | String | "" | PK, FK | 书籍地址 |
+| title | String | "" | - | 章节标题 |
+| isVolume | Boolean | false | - | 是否是卷名 |
+| baseUrl | String | "" | - | 用于拼接相对URL的基准URL |
+| index | Int | 0 | - | 章节序号 |
+| isVip | Boolean | false | - | 是否VIP章节 |
+| isPay | Boolean | false | - | 是否已购买 |
+| resourceUrl | String | null | - | 音频真实URL |
+| tag | String | null | - | 更新时间或其他附加信息 |
+| wordCount | String | null | - | 本章节字数 |
+| start | Long | null | - | 章节起始位置（EPUB） |
+| end | Long | null | - | 章节终止位置（EPUB） |
+| startFragmentId | String | null | - | EPUB当前章节fragmentId |
+| endFragmentId | String | null | - | EPUB下一章节fragmentId |
+| variable | String | null | - | 自定义变量（JSON格式） |
+
+**索引**：`(bookUrl)`, `(bookUrl, index)` UNIQUE  
+**外键**：`bookUrl → books(bookUrl)` ON DELETE CASCADE
+
+#### 4.5.6 replace_rules（替换规则表）
+
+**用途**：存储内容净化替换规则
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| id | Long | System.currentTimeMillis() | PK, AUTO | 规则ID |
+| name | String | "" | - | 规则名称 |
+| group | String | null | - | 分组 |
+| pattern | String | "" | - | 匹配模式 |
+| replacement | String | "" | - | 替换内容 |
+| scope | String | null | - | 作用范围（URL正则） |
+| scopeTitle | Boolean | false | - | 是否作用于标题 |
+| scopeContent | Boolean | true | - | 是否作用于正文 |
+| excludeScope | String | null | - | 排除范围（URL正则） |
+| isEnabled | Boolean | true | - | 是否启用 |
+| isRegex | Boolean | true | - | 是否正则表达式匹配 |
+| timeoutMillisecond | Long | 3000 | - | 正则匹配超时时间（毫秒） |
+| sortOrder | Int | Int.MIN_VALUE | - | 规则执行顺序 |
+
+**索引**：`(id)`
+
+#### 4.5.7 searchBooks（搜索书籍表）
+
+**用途**：存储搜索结果缓存
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| bookUrl | String | "" | PK | 详情页URL |
+| origin | String | "" | FK | 书源URL |
+| originName | String | "" | - | 书源名称 |
+| type | Int | 0 | - | 书籍类型 |
+| name | String | "" | - | 书名 |
+| author | String | "" | - | 作者 |
+| kind | String | null | - | 分类 |
+| coverUrl | String | null | - | 封面URL |
+| intro | String | null | - | 简介 |
+| wordCount | String | null | - | 字数 |
+| latestChapterTitle | String | null | - | 最新章节标题 |
+| tocUrl | String | "" | - | 目录页URL |
+| time | Long | System.currentTimeMillis() | - | 搜索时间 |
+| variable | String | null | - | 自定义变量 |
+| originOrder | Int | 0 | - | 书源排序 |
+| chapterWordCountText | String | null | - | 章节字数文本 |
+| chapterWordCount | Int | -1 | - | 章节字数 |
+| respondTime | Int | -1 | - | 响应时间（毫秒） |
+
+**索引**：`(bookUrl)` UNIQUE, `(origin)`  
+**外键**：`origin → book_sources(bookSourceUrl)` ON DELETE CASCADE
+
+#### 4.5.8 search_keywords（搜索关键词表）
+
+**用途**：存储搜索关键词历史
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| word | String | "" | PK, UNIQUE | 搜索关键词 |
+| usage | Int | 1 | - | 使用次数 |
+| lastUseTime | Long | System.currentTimeMillis() | - | 最后使用时间 |
+
+**索引**：`(word)` UNIQUE
+
+#### 4.5.9 cookies（Cookie表）
+
+**用途**：存储网站Cookie
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| url | String | "" | PK, UNIQUE | 网站URL |
+| cookie | String | "" | - | Cookie值 |
+
+**索引**：`(url)` UNIQUE
+
+#### 4.5.10 rssSources（RSS源表）
+
+**用途**：存储RSS订阅源配置
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| sourceUrl | String | "" | PK | 订阅源地址 |
+| sourceName | String | "" | - | 订阅源名称 |
+| sourceIcon | String | "" | - | 订阅源图标URL |
+| sourceGroup | String | null | - | 分组 |
+| sourceComment | String | null | - | 注释 |
+| enabled | Boolean | true | - | 是否启用 |
+| variableComment | String | null | - | 自定义变量说明 |
+| jsLib | String | null | - | JS库 |
+| enabledCookieJar | Boolean | true | - | 是否启用Cookie自动管理 |
+| concurrentRate | String | null | - | 并发率 |
+| header | String | null | - | 请求头（JSON格式） |
+| loginUrl | String | null | - | 登录地址 |
+| loginUi | String | null | - | 登录UI（JSON格式） |
+| loginCheckJs | String | null | - | 登录检测JS |
+| coverDecodeJs | String | null | - | 封面解密JS |
+| sortUrl | String | null | - | 分类URL |
+| singleUrl | Boolean | false | - | 是否单URL源 |
+| articleStyle | Int | 0 | - | 列表样式：0列表/1卡片/2图文 |
+| ruleArticles | String | null | - | 列表规则 |
+| ruleNextPage | String | null | - | 下一页规则 |
+| ruleTitle | String | null | - | 标题规则 |
+| rulePubDate | String | null | - | 发布日期规则 |
+| ruleDescription | String | null | - | 描述规则 |
+| ruleImage | String | null | - | 图片规则 |
+| ruleLink | String | null | - | 链接规则 |
+| ruleContent | String | null | - | 正文规则 |
+| contentWhitelist | String | null | - | 正文URL白名单 |
+| contentBlacklist | String | null | - | 正文URL黑名单 |
+| shouldOverrideUrlLoading | String | null | - | 跳转URL拦截JS |
+| style | String | null | - | WebView样式（CSS） |
+| enableJs | Boolean | true | - | 是否启用JS |
+| loadWithBaseUrl | Boolean | true | - | 是否使用BaseURL加载 |
+| injectJs | String | null | - | 注入JS |
+| lastUpdateTime | Long | 0 | - | 最后更新时间 |
+| customOrder | Int | 0 | - | 自定义排序 |
+
+**索引**：`(sourceUrl)`
+
+#### 4.5.11 bookmarks（书签表）
+
+**用途**：存储阅读书签
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| time | Long | System.currentTimeMillis() | PK | 创建时间 |
+| bookName | String | "" | - | 书名 |
+| bookAuthor | String | "" | - | 作者 |
+| chapterIndex | Int | 0 | - | 章节索引 |
+| chapterPos | Int | 0 | - | 章节内位置（字符索引） |
+| chapterName | String | "" | - | 章节名称 |
+| bookText | String | "" | - | 书签文本（选中文本） |
+| content | String | "" | - | 备注内容 |
+
+**索引**：`(bookName, bookAuthor)`
+
+#### 4.5.12 rssArticles（RSS文章表）
+
+**用途**：存储RSS文章列表
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| origin | String | "" | PK | 订阅源URL |
+| link | String | "" | PK | 文章链接 |
+| sort | String | "" | - | 分类 |
+| title | String | "" | - | 文章标题 |
+| order | Long | 0 | - | 排序序号 |
+| pubDate | String | null | - | 发布日期 |
+| description | String | null | - | 描述/摘要 |
+| content | String | null | - | 正文内容 |
+| image | String | null | - | 图片URL |
+| group | String | "默认分组" | - | 分组 |
+| read | Boolean | false | - | 是否已读 |
+| variable | String | null | - | 自定义变量（JSON格式） |
+
+#### 4.5.13 rssReadRecords（RSS阅读记录表）
+
+**用途**：存储RSS文章阅读记录
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| record | String | - | PK | 记录标识（设备ID+文章链接） |
+| title | String | null | - | 文章标题 |
+| readTime | Long | null | - | 阅读时间 |
+| read | Boolean | true | - | 是否已读 |
+
+#### 4.5.14 rssStars（RSS收藏表）
+
+**用途**：存储RSS文章收藏
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| origin | String | "" | PK | 订阅源URL |
+| link | String | "" | PK | 文章链接 |
+| sort | String | "" | - | 分类 |
+| title | String | "" | - | 文章标题 |
+| starTime | Long | 0 | - | 收藏时间 |
+| pubDate | String | null | - | 发布日期 |
+| description | String | null | - | 描述/摘要 |
+| content | String | null | - | 正文内容 |
+| image | String | null | - | 图片URL |
+| group | String | "默认分组" | - | 分组 |
+| variable | String | null | - | 自定义变量（JSON格式） |
+
+#### 4.5.15 txtTocRules（TXT目录规则表）
+
+**用途**：存储TXT书籍目录解析规则
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| id | Long | System.currentTimeMillis() | PK | 规则ID |
+| name | String | "" | - | 规则名称 |
+| rule | String | "" | - | 目录规则（正则表达式） |
+| example | String | null | - | 匹配示例 |
+| serialNumber | Int | -1 | - | 序列号（执行顺序） |
+| enable | Boolean | true | - | 是否启用 |
+
+#### 4.5.16 readRecord（阅读记录表）
+
+**用途**：存储阅读时长统计
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| deviceId | String | "" | PK | 设备ID |
+| bookName | String | "" | PK | 书名 |
+| readTime | Long | 0 | - | 阅读时长（毫秒） |
+| lastRead | Long | System.currentTimeMillis() | - | 最后阅读时间 |
+
+#### 4.5.17 httpTTS（在线朗读引擎表）
+
+**用途**：存储在线TTS朗读引擎配置
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| id | Long | System.currentTimeMillis() | PK | 引擎ID |
+| name | String | "" | - | 引擎名称 |
+| url | String | "" | - | 合成接口地址 |
+| contentType | String | null | - | 响应格式 |
+| concurrentRate | String | "0" | - | 并发率 |
+| loginUrl | String | null | - | 登录地址 |
+| loginUi | String | null | - | 登录UI（JSON格式） |
+| header | String | null | - | 请求头（JSON格式） |
+| jsLib | String | null | - | JS库 |
+| enabledCookieJar | Boolean | false | - | 是否启用Cookie自动管理 |
+| loginCheckJs | String | null | - | 登录检测JS |
+| lastUpdateTime | Long | System.currentTimeMillis() | - | 最后更新时间 |
+
+#### 4.5.18 caches（缓存表）
+
+**用途**：存储通用缓存数据
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| key | String | "" | PK, UNIQUE | 缓存键 |
+| value | String | null | - | 缓存值 |
+| deadline | Long | 0 | - | 过期时间戳（0=永不过期） |
+
+**索引**：`(key)` UNIQUE
+
+#### 4.5.19 ruleSubs（规则订阅表）
+
+**用途**：存储规则自动订阅配置
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| id | Long | System.currentTimeMillis() | PK | 订阅ID |
+| name | String | "" | - | 订阅名称 |
+| url | String | "" | - | 订阅URL |
+| type | Int | 0 | - | 类型（0=书源/1=替换规则等） |
+| customOrder | Int | 0 | - | 自定义排序 |
+| autoUpdate | Boolean | false | - | 是否自动更新 |
+| update | Long | System.currentTimeMillis() | - | 更新时间 |
+
+#### 4.5.20 dictRules（词典规则表）
+
+**用途**：存储词典查询规则
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| name | String | "" | PK | 词典名称 |
+| urlRule | String | "" | - | 查词接口地址规则 |
+| showRule | String | "" | - | 结果解析规则 |
+| enabled | Boolean | true | - | 是否启用 |
+| sortNumber | Int | 0 | - | 排序编号 |
+
+#### 4.5.21 keyboardAssists（键盘辅助表）
+
+**用途**：存储键盘快捷键配置
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| type | Int | 0 | PK | 类型（0=阅读等） |
+| key | String | "" | PK | 键名 |
+| value | String | "" | - | 键值（执行动作） |
+| serialNo | Int | 0 | - | 序列号（显示顺序） |
+
+#### 4.5.22 servers（服务器表）
+
+**用途**：存储外部服务器配置（如WebDAV）
+
+| 字段 | 类型 | 默认值 | 约束 | 说明 |
+|------|------|--------|------|------|
+| id | Long | System.currentTimeMillis() | PK | 服务器ID |
+| name | String | "" | - | 服务器名称 |
+| type | TYPE | WEBDAV | - | 类型（WEBDAV枚举） |
+| config | String | null | - | 配置（JSON格式） |
+| sortNumber | Int | 0 | - | 排序编号 |
+
+**Server.TYPE枚举**：
+
+| 值 | 说明 |
+|----|------|
+| WEBDAV | WebDAV协议 |
+
+**Server.WebDavConfig结构**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| url | String | WebDAV服务器地址 |
+| username | String | 用户名 |
+| password | String | 密码 |
 
 ---
 
