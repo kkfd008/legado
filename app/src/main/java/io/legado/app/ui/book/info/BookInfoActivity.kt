@@ -521,6 +521,11 @@ class BookInfoActivity :
                 )
             }
         }
+        ivRatingStar1?.setOnClickListener { setRating(1) }
+        ivRatingStar2?.setOnClickListener { setRating(2) }
+        ivRatingStar3?.setOnClickListener { setRating(3) }
+        ivRatingStar4?.setOnClickListener { setRating(4) }
+        ivRatingStar5?.setOnClickListener { setRating(5) }
         tvAuthor.setOnClickListener {
             viewModel.getBook(false)?.let { book ->
                 startActivity<SearchActivity> {
@@ -557,6 +562,16 @@ class BookInfoActivity :
             } else {
                 iv?.setImageResource(R.drawable.ic_heart_border)
                 iv?.setColorFilter(resources.getColor(R.color.tv_text_summary, theme), android.graphics.PorterDuff.Mode.SRC_IN)
+            }
+        }
+    }
+
+    private fun setRating(rating: Int) {
+        viewModel.getBook()?.let { book ->
+            book.rating = rating
+            upRatingStars(rating)
+            if (viewModel.inBookshelf) {
+                viewModel.saveBook(book)
             }
         }
     }
