@@ -147,9 +147,8 @@ class TagManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
 
         override fun onClearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
             if (isMoved) {
-                val size = getItems().size
                 for ((index, item) in getItems().withIndex()) {
-                    item.order = size - index
+                    item.order = index + 1
                 }
                 viewModel.upTag(*getItems().toTypedArray())
             }
