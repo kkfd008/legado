@@ -1,0 +1,48 @@
+name: Debug Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      product:
+        description: 'Product flavor'
+        required: true
+        default: 'app'
+        type: choice
+        options:
+          - app
+          - google
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      product: ${{ inputs.product }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Debug APK
+        run: |
+          echo "开始构建${{ env.product }} Debug版本"
+          chmod +x gradlew
+          ./gradlew assemble${{ env.product }}Debug --build-cache --parallel --daemon --warning-mode all
+
+      - name: Organize the Files
+        run: |
+          mkdir -p ${{ github.workspace }}/apk/
+          cp -rf ${{ github.workspace }}/app/build/outputs/apk/*/*/*.apk ${{ github.workspace }}/apk/
+          ls -la ${{ github.workspace }}/apk/
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: legado_${{ env.product }}_debug
+          path: ${{ github.workspace }}/apk/*.apk
