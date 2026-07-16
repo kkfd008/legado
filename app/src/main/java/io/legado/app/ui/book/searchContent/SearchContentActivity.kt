@@ -24,6 +24,7 @@ import io.legado.app.databinding.ActivitySearchContentBinding
 import io.legado.app.help.IntentData
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.isLocal
+import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.bottomBackground
 import io.legado.app.lib.theme.getPrimaryTextColor
 import io.legado.app.lib.theme.primaryTextColor
@@ -332,7 +333,7 @@ class SearchContentActivity :
     }
 
     private fun alertClearHistory() {
-        io.legado.app.lib.dialogs.alert(R.string.draw) {
+        alert(R.string.draw) {
             setMessage(R.string.sure_clear_search_history)
             yesButton {
                 viewModel.clearHistory()
