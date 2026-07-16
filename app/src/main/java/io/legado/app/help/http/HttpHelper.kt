@@ -150,35 +150,40 @@ fun getProxyClient(proxy: String? = null): OkHttpClient {
         return it
     }
     val r = Regex("(http|socks4|socks5)://(.*):(\\d{2,5})(@.*@.*)?")
-    val ms = r.findAll(proxy)
-    val group = ms.first()
-    var username = ""       //代理服务器验证用户名
-    var password = ""       //代理服务器验证密码
-    val type = if (group.groupValues[1] == "http") "http" else "socks"
-    val host = group.groupValues[2]
-    val port = group.groupValues[3].toInt()
-    if (group.groupValues[4] != "") {
-        username = group.groupValues[4].split("@")[1]
-        password = group.groupValues[4].split("@")[2]
-    }
-    if (host != "") {
-        val builder = okHttpClient.newBuilder()
-        if (type == "http") {
-            builder.proxy(Proxy(Proxy.Type.HTTP, InetSocketAddress(host, port)))
-        } else {
-            builder.proxy(Proxy(Proxy.Type.SOCKS, InetSocketAddress(host, port)))
-        }
-        if (username != "" && password != "") {
-            builder.proxyAuthenticator { _, response -> //设置代理服务器账号密码
-                val credential: String = Credentials.basic(username, password)
-                response.request.newBuilder()
-                    .header("Proxy-Authorization", credential)
-                    .build()
+    return kotlin.runCatching {
+        val ms = r.findAll(proxy)
+        val group = ms.first()
+        var username = ""
+        var password = ""
+        val type = if (group.groupValues[1] == "http") "http" else "socks"
+        val host = group.groupValues[2]
+        val port = group.groupValues[3].toInt()
+        if (group.groupValues.size > 4 && group.groupValues[4].isNotBlank()) {
+            val authParts = group.groupValues[4].split("@")
+            if (authParts.size >= 3) {
+                username = authParts[1]
+                password = authParts[2]
             }
         }
-        val proxyClient = builder.build()
-        proxyClientCache[proxy] = proxyClient
-        return proxyClient
-    }
-    return okHttpClient
+        if (host.isNotBlank()) {
+            val builder = okHttpClient.newBuilder()
+            if (type == "http") {
+                builder.proxy(Proxy(Proxy.Type.HTTP, InetSocketAddress(host, port)))
+            } else {
+                builder.proxy(Proxy(Proxy.Type.SOCKS, InetSocketAddress(host, port)))
+            }
+            if (username.isNotBlank() && password.isNotBlank()) {
+                builder.proxyAuthenticator { _, response ->
+                    val credential: String = Credentials.basic(username, password)
+                    response.request.newBuilder()
+                        .header("Proxy-Authorization", credential)
+                        .build()
+                }
+            }
+            val proxyClient = builder.build()
+            proxyClientCache[proxy] = proxyClient
+            return proxyClient
+        }
+        okHttpClient
+    }.getOrDefault(okHttpClient)
 }

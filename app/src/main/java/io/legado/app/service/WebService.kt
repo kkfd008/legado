@@ -59,18 +59,18 @@ class WebService : BaseService() {
         }
     }
 
-    private val useWakeLock = appCtx.getPrefBoolean(PreferKey.webServiceWakeLock, false)
+    private var useWakeLock = false
     private val wakeLock: PowerManager.WakeLock by lazy {
         powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "legado:WebService")
             .apply {
-                setReferenceCounted(false)
+                setReferenceCounted(true)
             }
     }
     private val wifiLock by lazy {
         @Suppress("DEPRECATION")
         wifiManager?.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "legado:WebService")
             ?.apply {
-                setReferenceCounted(false)
+                setReferenceCounted(true)
             }
     }
     private var httpServer: HttpServer? = null
@@ -83,6 +83,7 @@ class WebService : BaseService() {
     @SuppressLint("WakelockTimeout")
     override fun onCreate() {
         super.onCreate()
+        useWakeLock = appCtx.getPrefBoolean(PreferKey.webServiceWakeLock, false)
         if (useWakeLock) {
             wakeLock.acquire()
             wifiLock?.acquire()
