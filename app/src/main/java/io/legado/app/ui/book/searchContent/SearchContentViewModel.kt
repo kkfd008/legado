@@ -6,6 +6,7 @@ import io.legado.app.base.BaseViewModel
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
+import io.legado.app.data.entities.BookSearchKeyword
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.ContentProcessor
 import io.legado.app.help.config.AppConfig
@@ -53,14 +54,14 @@ class SearchContentViewModel(application: Application) : BaseViewModel(applicati
             book, chapter, chapterContent, useReplace = replaceEnabled
         ).toString()
         val positions = searchPosition(mContent, query)
-        positions.forEachIndexed { index, position ->
+        positions.forEachIndexed { index, (position, matchedKeyword) ->
             coroutineContext.ensureActive()
-            val construct = getResultAndQueryIndex(mContent, position, query)
+            val construct = getResultAndQueryIndex(mContent, position, matchedKeyword)
             val result = SearchResult(
                 resultCountWithinChapter = index,
                 resultText = construct.second,
                 chapterTitle = chapter.title,
-                query = query,
+                query = matchedKeyword,
                 chapterIndex = chapter.index,
                 queryIndexInResult = construct.first,
                 queryIndexInChapter = position
@@ -71,15 +72,28 @@ class SearchContentViewModel(application: Application) : BaseViewModel(applicati
         return searchResultsWithinChapter
     }
 
-    private suspend fun searchPosition(content: String, pattern: String): List<Int> {
-        val position: MutableList<Int> = mutableListOf()
-        var index = content.indexOf(pattern)
-        while (index >= 0) {
-            coroutineContext.ensureActive()
-            position.add(index)
-            index = content.indexOf(pattern, index + pattern.length)
+    /**
+     * 搜索关键词在内容中的位置
+     * 支持多个关键字用、分割，匹配任意一个即返回（OR逻辑）
+     */
+    private suspend fun searchPosition(content: String, pattern: String): List<Pair<Int, String>> {
+        val keywords = if (pattern.contains("、")) {
+            pattern.split("、").filter { it.isNotBlank() }
+        } else {
+            listOf(pattern)
         }
-        return position
+        val positionMap = linkedMapOf<Int, String>()
+        for (keyword in keywords) {
+            var index = content.indexOf(keyword)
+            while (index >= 0) {
+                coroutineContext.ensureActive()
+                if (!positionMap.containsKey(index)) {
+                    positionMap[index] = keyword
+                }
+                index = content.indexOf(keyword, index + keyword.length)
+            }
+        }
+        return positionMap.toList().sortedBy { it.first }
     }
 
     private fun getResultAndQueryIndex(
@@ -103,6 +117,34 @@ class SearchContentViewModel(application: Application) : BaseViewModel(applicati
         val queryIndexInResult = queryIndexInContent - po1
         val newText = content.substring(po1, po2)
         return queryIndexInResult to newText
+    }
+
+    /**
+     * 保存搜索关键字
+     */
+    fun saveSearchKey(key: String) {
+        execute {
+            appDb.bookSearchKeywordDao.get(key)?.let {
+                it.usage += 1
+                it.lastUseTime = System.currentTimeMillis()
+                appDb.bookSearchKeywordDao.update(it)
+            } ?: appDb.bookSearchKeywordDao.insert(BookSearchKeyword(key, 1))
+        }
+    }
+
+    /**
+     * 清除搜索关键字历史
+     */
+    fun clearHistory() {
+        execute {
+            appDb.bookSearchKeywordDao.deleteAll()
+        }
+    }
+
+    fun deleteHistory(searchKeyword: BookSearchKeyword) {
+        execute {
+            appDb.bookSearchKeywordDao.delete(searchKeyword)
+        }
     }
 
 }

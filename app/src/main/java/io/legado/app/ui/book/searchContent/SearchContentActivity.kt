@@ -5,6 +5,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.widget.EditText
 import androidx.activity.viewModels
 import androidx.appcompat.widget.SearchView
@@ -17,6 +19,7 @@ import io.legado.app.constant.EventBus
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
+import io.legado.app.data.entities.BookSearchKeyword
 import io.legado.app.databinding.ActivitySearchContentBinding
 import io.legado.app.help.IntentData
 import io.legado.app.help.book.BookHelp
@@ -29,6 +32,7 @@ import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.applyNavigationBarMargin
 import io.legado.app.utils.applyTint
+import io.legado.app.utils.gone
 import io.legado.app.utils.invisible
 import io.legado.app.utils.observeEvent
 import io.legado.app.utils.postEvent
@@ -38,17 +42,26 @@ import io.legado.app.utils.visible
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
 class SearchContentActivity :
     VMBaseActivity<ActivitySearchContentBinding, SearchContentViewModel>(),
-    SearchContentAdapter.Callback {
+    SearchContentAdapter.Callback,
+    BookSearchHistoryAdapter.CallBack {
 
     override val binding by viewBinding(ActivitySearchContentBinding::inflate)
     override val viewModel by viewModels<SearchContentViewModel>()
     private val adapter by lazy { SearchContentAdapter(this, this) }
+    private val historyAdapter by lazy {
+        BookSearchHistoryAdapter(this, this).apply {
+            setHasStableIds(true)
+        }
+    }
     private val mLayoutManager by lazy { UpLinearLayoutManager(this) }
     private val searchView: SearchView by lazy {
         binding.titleBar.findViewById(R.id.search_view)
@@ -56,6 +69,7 @@ class SearchContentActivity :
     private var durChapterIndex = 0
     private var searchJob: Job? = null
     private var initJob: Job? = null
+    private var historyFlowJob: Job? = null
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         val bbg = bottomBackground
@@ -113,21 +127,38 @@ class SearchContentActivity :
         if (requestFocus) searchView.isIconified = false
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
-                startContentSearch(query.trim())
+                val trimmedQuery = query.trim()
+                startContentSearch(trimmedQuery)
                 searchView.clearFocus()
+                // 保存搜索关键字
+                if (trimmedQuery.isNotBlank()) {
+                    viewModel.saveSearchKey(trimmedQuery)
+                }
                 return false
             }
 
             override fun onQueryTextChange(newText: String): Boolean {
+                upHistory(newText.trim())
                 return false
             }
         })
+        searchView.setOnQueryTextFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                visibleInputHelp(true)
+            } else {
+                visibleInputHelp(false)
+            }
+        }
+        visibleInputHelp(true)
     }
 
     private fun initRecyclerView() {
         binding.recyclerView.layoutManager = mLayoutManager
         binding.recyclerView.addItemDecoration(VerticalDivider(this))
         binding.recyclerView.adapter = adapter
+        binding.rvHistoryKey.layoutManager = com.google.android.flexbox.FlexboxLayoutManager(this)
+        binding.rvHistoryKey.adapter = historyAdapter
+        binding.rvHistoryKey.applyNavigationBarMargin()
     }
 
     private fun initView() {
@@ -150,6 +181,7 @@ class SearchContentActivity :
         binding.fbStop.setOnClickListener {
             searchJob?.cancel()
         }
+        binding.tvClearHistory.setOnClickListener { alertClearHistory() }
     }
 
     @SuppressLint("SetTextI18n")
@@ -253,6 +285,60 @@ class SearchContentActivity :
 
     override fun durChapterIndex(): Int {
         return durChapterIndex
+    }
+
+    /**
+     * 打开关闭输入帮助
+     */
+    private fun visibleInputHelp(visible: Boolean) {
+        if (visible) {
+            upHistory(searchView.query.toString())
+            binding.llInputHelp.visibility = VISIBLE
+            binding.recyclerView.visibility = GONE
+        } else {
+            binding.llInputHelp.visibility = GONE
+            binding.recyclerView.visibility = VISIBLE
+        }
+    }
+
+    /**
+     * 更新搜索历史
+     */
+    private fun upHistory(key: String? = null) {
+        historyFlowJob?.cancel()
+        historyFlowJob = lifecycleScope.launch {
+            when {
+                key.isNullOrBlank() -> appDb.bookSearchKeywordDao.flowByTime()
+                else -> appDb.bookSearchKeywordDao.flowSearch(key)
+            }.catch {
+                AppLog.put("内容搜索界面获取搜索历史数据失败\n${it.localizedMessage}", it)
+            }.flowOn(IO).conflate().collect {
+                historyAdapter.setItems(it)
+                if (it.isEmpty()) {
+                    binding.tvClearHistory.invisible()
+                } else {
+                    binding.tvClearHistory.visible()
+                }
+            }
+        }
+    }
+
+    override fun searchHistory(key: String) {
+        searchView.setQuery(key, true)
+    }
+
+    override fun deleteHistory(searchKeyword: BookSearchKeyword) {
+        viewModel.deleteHistory(searchKeyword)
+    }
+
+    private fun alertClearHistory() {
+        io.legado.app.lib.dialogs.alert(R.string.draw) {
+            setMessage(R.string.sure_clear_search_history)
+            yesButton {
+                viewModel.clearHistory()
+            }
+            noButton()
+        }
     }
 
 }

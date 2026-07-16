@@ -12,6 +12,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import io.legado.app.data.dao.BookChapterDao
 import io.legado.app.data.dao.BookDao
 import io.legado.app.data.dao.BookGroupDao
+import io.legado.app.data.dao.BookSearchKeywordDao
 import io.legado.app.data.dao.BookTagDao
 import io.legado.app.data.dao.BookSourceDao
 import io.legado.app.data.dao.BookmarkDao
@@ -33,6 +34,7 @@ import io.legado.app.data.dao.ServerDao
 import io.legado.app.data.dao.TxtTocRuleDao
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
+import io.legado.app.data.entities.BookSearchKeyword
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.data.entities.BookTag
 import io.legado.app.data.entities.BookSource
@@ -69,13 +71,14 @@ val appDb by lazy {
 }
 
 @Database(
-    version = 78,
+    version = 79,
     exportSchema = true,
     entities = [Book::class, BookGroup::class, BookTag::class, BookSource::class, BookChapter::class,
         ReplaceRule::class, SearchBook::class, SearchKeyword::class, Cookie::class,
         RssSource::class, Bookmark::class, RssArticle::class, RssReadRecord::class,
         RssStar::class, TxtTocRule::class, ReadRecord::class, HttpTTS::class, Cache::class,
-        RuleSub::class, DictRule::class, KeyboardAssist::class, Server::class],
+        RuleSub::class, DictRule::class, KeyboardAssist::class, Server::class,
+        BookSearchKeyword::class],
     views = [BookSourcePart::class],
     autoMigrations = [
         AutoMigration(from = 43, to = 44),
@@ -113,6 +116,7 @@ val appDb by lazy {
         AutoMigration(from = 75, to = 76),
         AutoMigration(from = 76, to = 77),
         AutoMigration(from = 77, to = 78, spec = DatabaseMigrations.Migration_77_78::class),
+        AutoMigration(from = 78, to = 79),
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -125,6 +129,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract val replaceRuleDao: ReplaceRuleDao
     abstract val searchBookDao: SearchBookDao
     abstract val searchKeywordDao: SearchKeywordDao
+    abstract val bookSearchKeywordDao: BookSearchKeywordDao
     abstract val rssSourceDao: RssSourceDao
     abstract val bookmarkDao: BookmarkDao
     abstract val rssArticleDao: RssArticleDao
