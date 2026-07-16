@@ -19,6 +19,7 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.data.entities.BookSource
+import io.legado.app.data.entities.BookTag
 import io.legado.app.databinding.ActivityArrangeBookBinding
 import io.legado.app.databinding.DialogEditTextBinding
 import io.legado.app.help.DirectLinkUpload
@@ -75,9 +76,15 @@ class BookshelfManageActivity :
     override val binding by viewBinding(ActivityArrangeBookBinding::inflate)
     override val viewModel by viewModels<BookshelfManageViewModel>()
     override val groupList: ArrayList<BookGroup> = arrayListOf()
+    private val tagList: ArrayList<BookTag> = arrayListOf()
     private val groupRequestCode = 22
     private val addToGroupRequestCode = 34
     private val addTagsRequestCode = 44
+    private val removeFromGroupRequestCode = 54
+    private val removeTagsRequestCode = 64
+    private var currentTagId: Long = -1
+    private var currentTagName: String = ""
+    private val NO_TAG_ID = -2L
     private val adapter by lazy { BookAdapter(this, this) }
     private val itemTouchCallback by lazy { ItemTouchCallback(adapter) }
     private var booksFlowJob: Job? = null
@@ -118,6 +125,7 @@ class BookshelfManageActivity :
         initRecyclerView()
         initOtherView()
         initGroupData()
+        initTagData()
         upBookDataByGroupId()
     }
 
@@ -161,7 +169,11 @@ class BookshelfManageActivity :
     }
 
     private fun upTitle() {
-        searchView.queryHint = getString(R.string.screen) + " • " + viewModel.groupName
+        if (currentTagId > 0) {
+            searchView.queryHint = getString(R.string.screen) + " • " + currentTagName
+        } else {
+            searchView.queryHint = getString(R.string.screen) + " • " + viewModel.groupName
+        }
     }
 
     private fun initSearchView() {
@@ -196,7 +208,6 @@ class BookshelfManageActivity :
     }
 
     private fun initOtherView() {
-        binding.selectActionBar.setMainActionText(R.string.add_to_tags)
         binding.selectActionBar.inflateMenu(R.menu.bookshelf_menage_sel)
         binding.selectActionBar.setOnMenuItemClickListener(this)
         binding.selectActionBar.setCallBack(this)
@@ -219,48 +230,65 @@ class BookshelfManageActivity :
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
+    private fun initTagData() {
+        lifecycleScope.launch {
+            appDb.bookTagDao.flowSelect().catch {
+                AppLog.put("书架管理界面获取标签数据失败\n${it.localizedMessage}", it)
+            }.flowOn(IO).conflate().collect {
+                tagList.clear()
+                tagList.addAll(it)
+                adapter.notifyDataSetChanged()
+                upMenu()
+            }
+        }
+    }
+
     private fun upBookDataByGroupId() {
         booksFlowJob?.cancel()
         booksFlowJob = lifecycleScope.launch {
             val bookSort = AppConfig.getBookSortByGroupId(viewModel.groupId)
-            appDb.bookDao.flowByGroup(viewModel.groupId, appDb.bookGroupDao.idsSum, appDb.bookGroupDao.getByID(BookGroup.IdNetNone)?.show != true).map { list ->
+            val flow = when {
+                currentTagId == NO_TAG_ID -> {
+                    appDb.bookDao.flowSearchByNoTag()
+                }
+                currentTagId > 0 -> {
+                    appDb.bookDao.flowSearchByTag(currentTagId)
+                }
+                else -> {
+                    appDb.bookDao.flowByGroup(viewModel.groupId, appDb.bookGroupDao.idsSum, appDb.bookGroupDao.getByID(BookGroup.IdNetNone)?.show != true)
+                }
+            }
+            flow.map { list ->
                 when (bookSort) {
-                    // 按更新时间
                     1 -> if (AppConfig.bookshelfSortAscending)
                         list.sortedBy { it.latestChapterTime }
                     else
                         list.sortedByDescending { it.latestChapterTime }
-                    // 按名字
                     2 -> if (AppConfig.bookshelfSortAscending)
                         list.sortedWith { o1, o2 -> o1.name.cnCompare(o2.name) }
                     else
                         list.sortedWith { o1, o2 -> o2.name.cnCompare(o1.name) }
-                    // 手动排序
                     3 -> if (AppConfig.bookshelfSortAscending)
                         list.sortedBy { it.order }
                     else
                         list.sortedByDescending { it.order }
-                    // 综合排序
                     4 -> if (AppConfig.bookshelfSortAscending)
                         list.sortedBy { max(it.latestChapterTime, it.durChapterTime) }
                     else
                         list.sortedByDescending { max(it.latestChapterTime, it.durChapterTime) }
-                    // 按作者
                     5 -> if (AppConfig.bookshelfSortAscending)
                         list.sortedWith { o1, o2 -> o1.author.cnCompare(o2.author) }
                     else
                         list.sortedWith { o1, o2 -> o2.author.cnCompare(o1.author) }
-                    // 按文件大小
                     6 -> if (AppConfig.bookshelfSortAscending)
                         list.sortedBy { it.getFileSize() }
                     else
                         list.sortedByDescending { it.getFileSize() }
-                    // 按评分
                     7 -> if (AppConfig.bookshelfSortAscending)
                         list.sortedBy { it.rating }
                     else
                         list.sortedByDescending { it.rating }
-                    // 默认按最近阅读
                     else -> if (AppConfig.bookshelfSortAscending)
                         list.sortedBy { it.durChapterTime }
                     else
@@ -314,9 +342,20 @@ class BookshelfManageActivity :
 
             else -> if (item.groupId == R.id.menu_group) {
                 viewModel.groupName = item.title.toString()
+                currentTagId = -1
+                currentTagName = ""
                 upTitle()
                 viewModel.groupId =
                     appDb.bookGroupDao.getByName(item.title.toString())?.groupId ?: 0
+                upBookDataByGroupId()
+            } else if (item.groupId == R.id.menu_tag) {
+                currentTagName = item.title.toString()
+                currentTagId = item.itemId.toLong()
+                if (currentTagId == 0L) {
+                    currentTagName = ""
+                }
+                viewModel.groupName = ""
+                upTitle()
                 upBookDataByGroupId()
             }
         }
@@ -332,7 +371,10 @@ class BookshelfManageActivity :
             R.id.menu_update_disable ->
                 viewModel.upCanUpdate(adapter.selection, false)
 
-            R.id.menu_add_to_group -> selectTag(addTagsRequestCode, 0L)
+            R.id.menu_add_to_group -> selectGroup(addToGroupRequestCode, 0L)
+            R.id.menu_remove_from_group -> selectGroup(removeFromGroupRequestCode, 0L)
+            R.id.menu_add_tags -> selectTag(addTagsRequestCode, 0L)
+            R.id.menu_remove_tags -> selectTag(removeTagsRequestCode, 0L)
             R.id.menu_change_source -> showDialogFragment<SourcePickerDialog>()
             R.id.menu_clear_cache -> viewModel.clearCache(adapter.selection)
             R.id.menu_check_selected_interval -> adapter.checkSelectedInterval()
@@ -345,6 +387,14 @@ class BookshelfManageActivity :
             subMenu.removeGroup(R.id.menu_group)
             groupList.forEach { bookGroup ->
                 subMenu.add(R.id.menu_group, bookGroup.order, Menu.NONE, bookGroup.groupName)
+            }
+        }
+        menu?.findItem(R.id.menu_book_tag)?.subMenu?.let { subMenu ->
+            subMenu.removeGroup(R.id.menu_tag)
+            subMenu.add(R.id.menu_tag, 0, Menu.NONE, getString(R.string.all))
+            subMenu.add(R.id.menu_tag, NO_TAG_ID.toInt(), Menu.NONE, getString(R.string.no_tag))
+            tagList.forEach { bookTag ->
+                subMenu.add(R.id.menu_tag, bookTag.tagId.toInt(), Menu.NONE, bookTag.name)
             }
         }
     }
@@ -374,7 +424,7 @@ class BookshelfManageActivity :
         )
     }
 
-    fun selectTag(requestCode: Int, tags: Long) {
+    override fun selectTag(requestCode: Int, tags: Long) {
         showDialogFragment(
             TagSelectDialog(tags, requestCode)
         )
@@ -402,6 +452,14 @@ class BookshelfManageActivity :
                 }
                 viewModel.updateBook(*array)
             }
+
+            removeFromGroupRequestCode -> adapter.selection.let { books ->
+                val array = Array(books.size) { index ->
+                    val book = books[index]
+                    book.copy(group = book.group and groupId.inv())
+                }
+                viewModel.updateBook(*array)
+            }
         }
     }
 
@@ -413,6 +471,20 @@ class BookshelfManageActivity :
                     book.copy(tags = book.tags or tags)
                 }
                 viewModel.updateBook(*array)
+            }
+
+            removeTagsRequestCode -> adapter.selection.let { books ->
+                val array = Array(books.size) { index ->
+                    val book = books[index]
+                    book.copy(tags = book.tags and tags.inv())
+                }
+                viewModel.updateBook(*array)
+            }
+
+            adapter.tagRequestCode -> {
+                adapter.actionItem?.let {
+                    viewModel.updateBook(it.copy(tags = tags))
+                }
             }
         }
     }

@@ -92,7 +92,13 @@ class TextFile(private var book: Book) {
                 }
             }
         }
-        val (toc, wordCount) = analyze(book.tocUrl.toPattern(Pattern.MULTILINE))
+        val pattern = try {
+            if (book.tocUrl.isBlank()) null else Pattern.compile(book.tocUrl, Pattern.MULTILINE)
+        } catch (e: PatternSyntaxException) {
+            AppLog.put("TXT目录规则正则语法错误\n$e", e)
+            null
+        }
+        val (toc, wordCount) = analyze(pattern)
         book.wordCount = StringUtils.wordCountFormat(wordCount)
         toc.forEachIndexed { index, bookChapter ->
             bookChapter.index = index
@@ -439,7 +445,7 @@ class TextFile(private var book: Book) {
         var tocPattern: Pattern? = null
         for (tocRule in rules) {
             val pattern = try {
-                tocRule.rule.toPattern(Pattern.MULTILINE)
+                Pattern.compile(tocRule.rule, Pattern.MULTILINE)
             } catch (e: PatternSyntaxException) {
                 AppLog.put("TXT目录规则正则语法错误:${tocRule.name}\n$e", e)
                 continue
@@ -466,11 +472,17 @@ class TextFile(private var book: Book) {
      */
     private fun getTocRules(): List<TxtTocRule> {
         var rules = appDb.txtTocRuleDao.enabled
-        if (appDb.txtTocRuleDao.count == 0) {
-            rules = DefaultData.txtTocRules.apply {
-                appDb.txtTocRuleDao.insert(*this.toTypedArray())
-            }.filter {
-                it.enable
+        if (rules.isEmpty()) {
+            if (appDb.txtTocRuleDao.count == 0) {
+                rules = DefaultData.txtTocRules.apply {
+                    appDb.txtTocRuleDao.insert(*this.toTypedArray())
+                }.filter {
+                    it.enable
+                }
+            } else {
+                rules = DefaultData.txtTocRules.filter {
+                    it.enable
+                }
             }
         }
         return rules

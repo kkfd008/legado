@@ -589,9 +589,11 @@
     <string name="add_to_tags">Add tags</string>
     <string name="move_to_group">Move to group</string>
     <string name="add_group">Add to Groups</string>
-    <string name="remove_group">Remove from Groups</string>
+    <string name="remove_group">移出分组</string>
     <string name="add_replace_rule">New replacement</string>
     <string name="group">Group</string>
+    <string name="tag">标签</string>
+    <string name="no_tag">未设标签</string>
     <string name="group_s">Group: %s</string>
     <string name="toc_s">Chapters: %s</string>
     <string name="enable_explore">Enable Discovery</string>
@@ -684,7 +686,9 @@
     <string name="title_left">Left</string>
     <string name="title_center">Center</string>
     <string name="title_hide">Hide</string>
-    <string name="add_to_group">Add to Group</string>
+    <string name="add_to_group">加入分组</string>
+    <string name="add_tags">加入标签</string>
+    <string name="remove_tags">移除标签</string>
     <string name="save_image">Save image</string>
     <string name="no_default_path">No default path</string>
     <string name="change_group">Group settings</string>

@@ -15,7 +15,19 @@
 
     <item
         android:id="@+id/menu_add_to_group"
-        android:title="@string/add_to_tags" />
+        android:title="@string/add_to_group" />
+
+    <item
+        android:id="@+id/menu_remove_from_group"
+        android:title="@string/remove_group" />
+
+    <item
+        android:id="@+id/menu_add_tags"
+        android:title="@string/add_tags" />
+
+    <item
+        android:id="@+id/menu_remove_tags"
+        android:title="@string/remove_tags" />
 
     <item
         android:id="@+id/menu_change_source"

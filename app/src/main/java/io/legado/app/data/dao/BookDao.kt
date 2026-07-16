@@ -84,6 +84,9 @@ interface BookDao {
     @Query("SELECT * FROM books WHERE tags & :tagId > 0")
     fun flowSearchByTag(tagId: Long): Flow<List<Book>>
 
+    @Query("SELECT * FROM books WHERE tags = 0")
+    fun flowSearchByNoTag(): Flow<List<Book>>
+
     @Query("SELECT * FROM books where type & ${BookType.updateError} > 0 order by durChapterTime desc")
     fun flowUpdateError(): Flow<List<Book>>
 

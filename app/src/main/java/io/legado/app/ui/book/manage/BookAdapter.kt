@@ -22,9 +22,9 @@ import java.util.Collections
 
 class BookAdapter(context: Context, val callBack: CallBack) :
     RecyclerAdapter<Book, ItemArrangeBookBinding>(context),
-
     ItemTouchCallback.Callback {
     val groupRequestCode = 12
+    val tagRequestCode = 13
     private val selectedBooks: HashSet<Book> = hashSetOf()
     var actionItem: Book? = null
 
@@ -104,6 +104,12 @@ class BookAdapter(context: Context, val callBack: CallBack) :
                 getItem(holder.layoutPosition)?.let {
                     actionItem = it
                     callBack.selectGroup(groupRequestCode, it.group)
+                }
+            }
+            tvTag.setOnClickListener {
+                getItem(holder.layoutPosition)?.let {
+                    actionItem = it
+                    callBack.selectTag(tagRequestCode, it.tags)
                 }
             }
         }
@@ -243,6 +249,8 @@ class BookAdapter(context: Context, val callBack: CallBack) :
         fun deleteBook(book: Book)
 
         fun selectGroup(requestCode: Int, groupId: Long)
+
+        fun selectTag(requestCode: Int, tags: Long)
 
         fun openBook(book: Book)
     }

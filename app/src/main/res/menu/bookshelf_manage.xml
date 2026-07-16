@@ -23,7 +23,7 @@
     <item
         android:id="@+id/menu_book_tag"
         android:icon="@drawable/ic_label_outline"
-        android:title="@string/change_tags"
+        android:title="@string/tag"
         app:showAsAction="always">
 
         <menu>
