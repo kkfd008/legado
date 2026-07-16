@@ -12,7 +12,7 @@ description: "每次完成需求后自动将代码推送到远程仓库。Invoke
 ### 1. 拉取最新代码
 
 ```bash
-git pull
+git pull --rebase
 ```
 
 先拉取远程仓库最新代码，避免与他人提交冲突。
