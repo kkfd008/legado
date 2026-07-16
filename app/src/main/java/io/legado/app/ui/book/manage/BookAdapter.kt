@@ -106,7 +106,7 @@ class BookAdapter(context: Context, val callBack: CallBack) :
                     callBack.selectGroup(groupRequestCode, it.group)
                 }
             }
-            tvTag.setOnClickListener {
+tvTags.setOnClickListener {
                 getItem(holder.layoutPosition)?.let {
                     actionItem = it
                     callBack.selectTag(tagRequestCode, it.tags)
@@ -241,6 +241,7 @@ class BookAdapter(context: Context, val callBack: CallBack) :
 
     interface CallBack {
         val groupList: List<BookGroup>
+        val bookTagRequestCode: Int
 
         fun upSelectCount()
 

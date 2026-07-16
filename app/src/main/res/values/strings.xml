@@ -587,6 +587,9 @@
     <string name="group_select">Group selection</string>
     <string name="group_edit">Group editing</string>
     <string name="add_to_tags">Add tags</string>
+    <string name="add_tags">Add tag</string>
+    <string name="remove_tags">Remove tag</string>
+    <string name="no_tag">No tag</string>
     <string name="move_to_group">Move to group</string>
     <string name="add_group">Add to Groups</string>
     <string name="remove_group">移出分组</string>
@@ -692,6 +695,7 @@
     <string name="save_image">Save image</string>
     <string name="no_default_path">No default path</string>
     <string name="change_group">Group settings</string>
+    <string name="tag">Tag</string>
     <string name="change_tags">Tag settings</string>
     <string name="tag_select">Tag selection</string>
     <string name="tag_manage">Tag management</string>

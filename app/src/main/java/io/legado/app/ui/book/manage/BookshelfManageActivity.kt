@@ -79,12 +79,14 @@ class BookshelfManageActivity :
     private val tagList: ArrayList<BookTag> = arrayListOf()
     private val groupRequestCode = 22
     private val addToGroupRequestCode = 34
+    private val removeFromGroupRequestCode = 35
     private val addTagsRequestCode = 44
-    private val removeFromGroupRequestCode = 54
     private val removeTagsRequestCode = 64
     private var currentTagId: Long = -1
     private var currentTagName: String = ""
     private val NO_TAG_ID = -2L
+    override val bookTagRequestCode: Int
+        get() = 46
     private val adapter by lazy { BookAdapter(this, this) }
     private val itemTouchCallback by lazy { ItemTouchCallback(adapter) }
     private var booksFlowJob: Job? = null
@@ -307,11 +309,15 @@ class BookshelfManageActivity :
 
     private fun upBookData() {
         books?.let { books ->
+            var filteredBooks = books
+            if (viewModel.noTagFilter) {
+                filteredBooks = filteredBooks.filter { it.tags == 0L }
+            }
             val searchKey = searchView.query
             if (searchKey.isNullOrEmpty()) {
-                adapter.setItems(books)
+                adapter.setItems(filteredBooks)
             } else {
-                books.filter {
+                filteredBooks.filter {
                     it.contains(searchKey.toString())
                 }.let {
                     adapter.setItems(it)
@@ -324,6 +330,11 @@ class BookshelfManageActivity :
         when (item.itemId) {
             R.id.menu_group_manage -> showDialogFragment<GroupManageDialog>()
             R.id.menu_tag_manage -> showDialogFragment<TagManageDialog>()
+            R.id.menu_no_tag -> {
+                viewModel.noTagFilter = !viewModel.noTagFilter
+                item.isChecked = viewModel.noTagFilter
+                upBookData()
+            }
             R.id.menu_open_book_info_by_click_title -> {
                 AppConfig.openBookInfoByClickTitle = !item.isChecked
                 adapter.notifyItemRangeChanged(0, adapter.itemCount)
@@ -481,10 +492,14 @@ class BookshelfManageActivity :
                 viewModel.updateBook(*array)
             }
 
-            adapter.tagRequestCode -> {
+adapter.tagRequestCode -> {
                 adapter.actionItem?.let {
-                    viewModel.updateBook(it.copy(tags = tags))
+                    viewModel.updateBook(it.copy(tags = it.tags or tags))
                 }
+            }
+
+            bookTagRequestCode -> adapter.actionItem?.let { book ->
+                viewModel.updateBook(book.copy(tags = book.tags or tags))
             }
         }
     }

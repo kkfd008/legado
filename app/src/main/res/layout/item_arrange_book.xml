@@ -83,11 +83,11 @@
         android:text="@string/group"
         android:textColor="@color/secondaryText"
         app:layout_constraintBottom_toBottomOf="@+id/tv_origin"
-        app:layout_constraintRight_toLeftOf="@+id/tv_tag"
+app:layout_constraintRight_toLeftOf="@+id/tv_tags"
         app:layout_constraintTop_toBottomOf="@id/tv_author" />
 
     <TextView
-        android:id="@+id/tv_tag"
+        android:id="@+id/tv_tags"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="?attr/selectableItemBackgroundBorderless"

@@ -586,6 +586,9 @@
     <string name="group_select">分组选择</string>
     <string name="group_edit">编辑分组</string>
     <string name="add_to_tags">新增标签</string>
+    <string name="add_tags">增加标签</string>
+    <string name="remove_tags">移除标签</string>
+    <string name="no_tag">无标签</string>
     <string name="move_to_group">移入分组</string>
     <string name="add_group">添加分组</string>
     <string name="remove_group">移除分组</string>
@@ -686,6 +689,7 @@
     <string name="save_image">保存图片</string>
     <string name="no_default_path">没有默认路径</string>
     <string name="change_group">设置分组</string>
+    <string name="tag">标签</string>
     <string name="change_tags">设置标签</string>
     <string name="tag_select">选择标签</string>
     <string name="tag_manage">标签管理</string>

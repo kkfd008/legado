@@ -29,6 +29,7 @@ import java.io.File
 class BookshelfManageViewModel(application: Application) : BaseViewModel(application) {
     var groupId: Long = -1L
     var groupName: String? = null
+    var noTagFilter: Boolean = false
     val batchChangeSourceState = MutableLiveData<Boolean>()
     val batchChangeSourceProcessLiveData = MutableLiveData<String>()
     var batchChangeSourceCoroutine: Coroutine<Unit>? = null
