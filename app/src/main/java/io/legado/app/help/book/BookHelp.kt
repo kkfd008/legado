@@ -10,7 +10,7 @@ import io.legado.app.constant.EventBus
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
-import io.legado.app.data.entities.BookSource
+import io.legado.app.data.entities.BaseSource
 import io.legado.app.help.config.AppConfig
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.localBook.LocalBook
@@ -158,7 +158,6 @@ object BookHelp {
     }
 
     suspend fun saveContent(
-        bookSource: BookSource,
         book: Book,
         bookChapter: BookChapter,
         content: String
@@ -205,7 +204,7 @@ object BookHelp {
     }
 
     suspend fun saveImages(
-        bookSource: BookSource,
+        bookSource: BaseSource? = null,
         book: Book,
         bookChapter: BookChapter,
         content: String,
@@ -217,7 +216,7 @@ object BookHelp {
     }
 
     suspend fun saveImage(
-        bookSource: BookSource?,
+        bookSource: BaseSource? = null,
         book: Book,
         src: String,
         chapter: BookChapter? = null

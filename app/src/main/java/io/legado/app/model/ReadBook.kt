@@ -7,7 +7,7 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookProgress
-import io.legado.app.data.entities.BookSource
+
 import io.legado.app.data.entities.ReadRecord
 import io.legado.app.help.AppWebDav
 import io.legado.app.help.book.BookHelp
@@ -24,7 +24,7 @@ import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.help.globalExecutor
 import io.legado.app.model.localBook.TextFile
-import io.legado.app.model.webBook.WebBook
+
 import io.legado.app.service.BaseReadAloudService
 import io.legado.app.service.CacheBookService
 import io.legado.app.ui.book.read.page.entities.TextChapter
@@ -71,7 +71,6 @@ object ReadBook : CoroutineScope by MainScope() {
     var prevTextChapter: TextChapter? = null
     var curTextChapter: TextChapter? = null
     var nextTextChapter: TextChapter? = null
-    var bookSource: BookSource? = null
     var msg: String? = null
     private val loadingChapters = arrayListOf<Int>()
     private val readRecord = ReadRecord()
@@ -158,27 +157,8 @@ object ReadBook : CoroutineScope by MainScope() {
     }
 
     fun upWebBook(book: Book) {
-        if (book.isLocal) {
-            bookSource = null
-            if (book.getImageStyle().isNullOrBlank() && (book.isImage || book.isPdf)) {
-                book.setImageStyle(Book.imgStyleFull)
-            }
-        } else {
-            appDb.bookSourceDao.getBookSource(book.origin)?.let {
-                bookSource = it
-                if (book.getImageStyle().isNullOrBlank()) {
-                    var imageStyle = it.getContentRule().imageStyle
-                    if (imageStyle.isNullOrBlank() && (book.isImage || book.isPdf)) {
-                        imageStyle = Book.imgStyleFull
-                    }
-                    book.setImageStyle(imageStyle)
-                    if (imageStyle.equals(Book.imgStyleSingle, true)) {
-                        book.setPageAnim(0)
-                    }
-                }
-            } ?: let {
-                bookSource = null
-            }
+        if (book.getImageStyle().isNullOrBlank() && (book.isImage || book.isPdf)) {
+            book.setImageStyle(Book.imgStyleFull)
         }
     }
 
@@ -646,30 +626,20 @@ object ReadBook : CoroutineScope by MainScope() {
         success: (() -> Unit)? = null
     ) {
         val book = book ?: return removeLoading(chapter.index)
-        val bookSource = bookSource
-        if (bookSource != null) {
-            CacheBook.getOrCreate(bookSource, book).download(scope, chapter, semaphore)
-        } else {
-            val msg = if (book.isLocal) "无内容" else "没有书源"
-            contentLoadFinish(
-                book,
-                chapter,
-                "加载正文失败\n$msg",
-                resetPageOffset = resetPageOffset,
-                success = success
-            )
-        }
+        val msg = if (book.isLocal) "无内容" else "不支持网络书源"
+        contentLoadFinish(
+            book,
+            chapter,
+            "加载正文失败\n$msg",
+            resetPageOffset = resetPageOffset,
+            success = success
+        )
     }
 
     private suspend fun downloadAwait(chapter: BookChapter): String {
         val book = book!!
-        val bookSource = bookSource
-        if (bookSource != null) {
-            return CacheBook.getOrCreate(bookSource, book).downloadAwait(chapter)
-        } else {
-            val msg = if (book.isLocal) "无内容" else "没有书源"
-            return "加载正文失败\n$msg"
-        }
+        val msg = if (book.isLocal) "无内容" else "不支持网络书源"
+        return "加载正文失败\n$msg"
     }
 
     @Synchronized
@@ -862,28 +832,6 @@ object ReadBook : CoroutineScope by MainScope() {
 
     @Synchronized
     fun upToc() {
-        val bookSource = bookSource ?: return
-        val book = book ?: return
-        if (!book.canUpdate) return
-        if (chapterSize - durChapterIndex - 1 >= 3) return
-        if (System.currentTimeMillis() - book.lastCheckTime < 600000) return
-        book.lastCheckTime = System.currentTimeMillis()
-        val oldBook = book.copy()
-        WebBook.getChapterList(this, bookSource, book).onSuccess(IO) { cList ->
-            ensureActive()
-            if (cList.size > chapterSize) {
-                if (oldBook.bookUrl == book.bookUrl) {
-                    appDb.bookDao.update(book)
-                } else {
-                    appDb.bookDao.replace(oldBook, book)
-                    BookHelp.updateCacheFolder(oldBook, book)
-                }
-                appDb.bookChapterDao.delByBook(oldBook.bookUrl)
-                appDb.bookChapterDao.insert(*cList.toTypedArray())
-                onChapterListUpdated(book, false)
-                nextTextChapter ?: loadContent(durChapterIndex + 1)
-            }
-        }
     }
 
     fun pageAnim(): Int {

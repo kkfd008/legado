@@ -172,12 +172,7 @@
         <activity
             android:name=".ui.rss.subscription.RuleSubActivity"
             android:launchMode="singleTask" />
-        <!-- 书源编辑 -->
-        <activity
-            android:name=".ui.book.source.edit.BookSourceEditActivity"
-            android:configChanges="locale|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
-            android:launchMode="singleTask"
-            android:windowSoftInputMode="adjustResize|stateHidden" />
+        
         <!-- 订阅源编辑 -->
         <activity
             android:name=".ui.rss.source.edit.RssSourceEditActivity"
@@ -203,11 +198,7 @@
             android:name=".ui.about.AboutActivity"
             android:launchMode="singleTask"
             android:screenOrientation="behind" />
-        <!-- 书源管理 -->
-        <activity
-            android:name=".ui.book.source.manage.BookSourceActivity"
-            android:launchMode="singleTop"
-            android:screenOrientation="behind" />
+        
         <!-- 订阅源管理 -->
         <activity
             android:name=".ui.rss.source.manage.RssSourceActivity"
@@ -228,11 +219,7 @@
             android:name=".ui.book.manage.BookshelfManageActivity"
             android:launchMode="singleTop"
             android:screenOrientation="behind" />
-        <!-- 书源调试 -->
-        <activity
-            android:name=".ui.book.source.debug.BookSourceDebugActivity"
-            android:launchMode="singleTop"
-            android:screenOrientation="behind" />
+        
         <!-- 目录 -->
         <activity
             android:name=".ui.book.toc.TocActivity"
@@ -261,10 +248,7 @@
         <activity
             android:name=".ui.book.import.remote.RemoteBookActivity"
             android:launchMode="singleTop" />
-        <!-- 发现界面 -->
-        <activity
-            android:name=".ui.book.explore.ExploreShowActivity"
-            android:launchMode="singleTop" />
+        
         <!-- 订阅源调试 -->
         <activity
             android:name=".ui.rss.source.debug.RssSourceDebugActivity"
@@ -286,12 +270,7 @@
             android:name=".ui.browser.WebViewActivity"
             android:configChanges="locale|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
             android:launchMode="standard" />
-        <!-- 书源登录 -->
-        <activity
-            android:name="io.legado.app.ui.login.SourceLoginActivity"
-            android:configChanges="orientation|screenSize"
-            android:hardwareAccelerated="true"
-            android:theme="@style/AppTheme.Transparent" />
+        
         <!-- 阅读记录 -->
         <activity
             android:name=".ui.about.ReadRecordActivity"
@@ -451,12 +430,7 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".service.CheckSourceService"
-            android:foregroundServiceType="dataSync" />
-        <service
-            android:name=".service.CacheBookService"
-            android:foregroundServiceType="dataSync" />
+        
         <service
             android:name=".service.ExportBookService"
             android:foregroundServiceType="dataSync" />

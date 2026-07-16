@@ -5,7 +5,7 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookProgress
-import io.legado.app.data.entities.BookSource
+
 import io.legado.app.data.entities.ReadRecord
 import io.legado.app.help.AppWebDav
 import io.legado.app.help.ConcurrentRateLimiter
@@ -19,7 +19,7 @@ import io.legado.app.help.book.update
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.help.globalExecutor
-import io.legado.app.model.webBook.WebBook
+
 import io.legado.app.ui.book.manga.entities.BaseMangaPage
 import io.legado.app.ui.book.manga.entities.MangaChapter
 import io.legado.app.ui.book.manga.entities.MangaContent
@@ -27,7 +27,7 @@ import io.legado.app.ui.book.manga.entities.MangaPage
 import io.legado.app.ui.book.manga.entities.ReaderLoading
 import io.legado.app.utils.mapIndexed
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
+
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
@@ -53,7 +53,7 @@ object ReadManga : CoroutineScope by MainScope() {
     var prevMangaChapter: MangaChapter? = null
     var curMangaChapter: MangaChapter? = null
     var nextMangaChapter: MangaChapter? = null
-    var bookSource: BookSource? = null
+    
     var readStartTime: Long = System.currentTimeMillis()
     private val readRecord = ReadRecord()
     private val loadingChapters = arrayListOf<Int>()
@@ -112,11 +112,8 @@ object ReadManga : CoroutineScope by MainScope() {
     }
 
     fun upWebBook(book: Book) {
-        appDb.bookSourceDao.getBookSource(book.origin)?.let {
-            bookSource = it
-            rateLimiter = ConcurrentRateLimiter(it)
-        } ?: let {
-            bookSource = null
+        rateLimiter = appDb.bookSourceDao.getBookSource(book.origin)?.let {
+            ConcurrentRateLimiter(it)
         }
     }
 
@@ -349,33 +346,6 @@ object ReadManga : CoroutineScope by MainScope() {
         }
     }
 
-    private fun downloadNetworkContent(
-        bookSource: BookSource,
-        scope: CoroutineScope,
-        chapter: BookChapter,
-        book: Book,
-        semaphore: Semaphore?,
-        success: suspend (String) -> Unit = {},
-        error: suspend () -> Unit = {},
-        cancel: suspend () -> Unit = {},
-    ) {
-        WebBook.getContent(
-            scope,
-            bookSource,
-            book,
-            chapter,
-            start = CoroutineStart.LAZY,
-            executeContext = IO,
-            semaphore = semaphore
-        ).onSuccess { content ->
-            success.invoke(content)
-        }.onError {
-            error.invoke()
-        }.onCancel {
-            cancel.invoke()
-        }.start()
-    }
-
     private fun preDownload() {
         if (book?.isLocal == true) return
         executor.execute {
@@ -440,49 +410,17 @@ object ReadManga : CoroutineScope by MainScope() {
         chapter: BookChapter,
         semaphore: Semaphore? = null,
     ) {
-        val book = book ?: return removeLoading(chapter.index)
-        val bookSource = bookSource
-        if (bookSource != null) {
-            downloadNetworkContent(bookSource, scope, chapter, book, semaphore, success = {
-                downloadedChapters.add(chapter.index)
-                downloadFailChapters.remove(chapter.index)
-                contentLoadFinish(chapter, it)
-            }, error = {
-                downloadFailChapters[chapter.index] =
-                    (downloadFailChapters[chapter.index] ?: 0) + 1
-                contentLoadFinish(chapter, null)
-            }, cancel = {
-                contentLoadFinish(chapter, null, canceled = true)
-            })
-        } else {
-            contentLoadFinish(chapter, null, "加载内容失败 没有书源")
-        }
+        removeLoading(chapter.index)
+        contentLoadFinish(chapter, null, "加载内容失败 没有书源")
     }
 
     @Synchronized
     fun upToc() {
-        val bookSource = bookSource ?: return
         val book = book ?: return
         if (!book.canUpdate) return
         if (chapterSize - durChapterIndex - 1 >= 3) return
         if (System.currentTimeMillis() - book.lastCheckTime < 600000) return
         book.lastCheckTime = System.currentTimeMillis()
-        val oldBook = book.copy()
-        WebBook.getChapterList(this, bookSource, book).onSuccess(IO) { cList ->
-            ensureActive()
-            if (cList.size > chapterSize) {
-                if (oldBook.bookUrl == book.bookUrl) {
-                    appDb.bookDao.update(book)
-                } else {
-                    appDb.bookDao.replace(oldBook, book)
-                    BookHelp.updateCacheFolder(oldBook, book)
-                }
-                appDb.bookChapterDao.delByBook(oldBook.bookUrl)
-                appDb.bookChapterDao.insert(*cList.toTypedArray())
-                onChapterListUpdated(book, false)
-                nextMangaChapter ?: loadContent(durChapterIndex + 1)
-            }
-        }
     }
 
     fun uploadProgress(successAction: (() -> Unit)? = null) {

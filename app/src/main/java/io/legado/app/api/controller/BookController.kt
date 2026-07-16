@@ -8,7 +8,6 @@ import io.legado.app.api.ReturnData
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookProgress
-import io.legado.app.data.entities.BookSource
 import io.legado.app.help.AppWebDav
 import io.legado.app.help.CacheManager
 import io.legado.app.help.book.BookHelp
@@ -21,13 +20,11 @@ import io.legado.app.model.BookCover
 import io.legado.app.model.ImageProvider
 import io.legado.app.model.ReadBook
 import io.legado.app.model.localBook.LocalBook
-import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.GSON
 import io.legado.app.utils.cnCompare
 import kotlin.math.max
 import io.legado.app.utils.fromJsonObject
 import io.legado.app.utils.printOnDebug
-import io.legado.app.utils.stackTraceStr
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import splitties.init.appCtx
@@ -38,7 +35,6 @@ import java.util.concurrent.TimeUnit
 object BookController {
 
     private lateinit var book: Book
-    private var bookSource: BookSource? = null
     private var bookUrl: String = ""
     private val defaultCoverCache by lazy { WeakHashMap<Drawable, Bitmap>() }
 
@@ -141,11 +137,10 @@ object BookController {
         if (this.bookUrl != bookUrl) {
             this.book = appDb.bookDao.getBook(bookUrl)
                 ?: return returnData.setErrorMsg("bookUrl不对")
-            this.bookSource = appDb.bookSourceDao.getBookSource(book.origin)
         }
         this.bookUrl = bookUrl
         val bitmap = runBlocking {
-            ImageProvider.cacheImage(book, src, bookSource)
+            ImageProvider.cacheImage(book, src, null)
             ImageProvider.getImage(book, src, width)
         }
         return returnData.setData(bitmap)
@@ -170,18 +165,7 @@ object BookController {
                 appDb.bookDao.update(book)
                 return returnData.setData(toc)
             } else {
-                val bookSource = appDb.bookSourceDao.getBookSource(book.origin)
-                    ?: return returnData.setErrorMsg("未找到对应书源,请换源")
-                val toc = runBlocking {
-                    if (book.tocUrl.isBlank()) {
-                        WebBook.getBookInfoAwait(bookSource, book)
-                    }
-                    WebBook.getChapterListAwait(bookSource, book).getOrThrow()
-                }
-                appDb.bookChapterDao.delByBook(book.bookUrl)
-                appDb.bookChapterDao.insert(*toc.toTypedArray())
-                appDb.bookDao.update(book)
-                return returnData.setData(toc)
+                return returnData.setErrorMsg("未找到对应书源,请换源")
             }
         } catch (e: Exception) {
             return returnData.setErrorMsg(e.localizedMessage ?: "refresh toc error")
@@ -240,21 +224,7 @@ object BookController {
             }
             return returnData.setData(content)
         }
-        val bookSource = appDb.bookSourceDao.getBookSource(book.origin)
-            ?: return returnData.setErrorMsg("未找到书源")
-        try {
-            content = runBlocking {
-                WebBook.getContentAwait(bookSource, book, chapter).let {
-                    val contentProcessor = ContentProcessor.get(book.name, book.origin)
-                    contentProcessor.getContent(book, chapter, it, includeTitle = false)
-                        .toString()
-                }
-            }
-            returnData.setData(content)
-        } catch (e: Exception) {
-            returnData.setErrorMsg(e.stackTraceStr)
-        }
-        return returnData
+        return returnData.setErrorMsg("未找到书源")
     }
 
     /**

@@ -20,7 +20,6 @@ import io.legado.app.constant.Theme
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
-import io.legado.app.data.entities.BookSource
 import io.legado.app.databinding.ActivityBookInfoBinding
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.AppWebDav
@@ -45,7 +44,6 @@ import io.legado.app.model.remote.RemoteBookWebDav
 import io.legado.app.ui.about.AppLogDialog
 import io.legado.app.ui.book.audio.AudioPlayActivity
 import io.legado.app.ui.book.changecover.ChangeCoverDialog
-import io.legado.app.ui.book.changesource.ChangeBookSourceDialog
 import io.legado.app.ui.book.tag.TagSelectDialog
 import io.legado.app.ui.book.group.GroupSelectDialog
 import io.legado.app.ui.book.info.edit.BookInfoEditActivity
@@ -53,12 +51,9 @@ import io.legado.app.ui.book.manga.ReadMangaActivity
 import io.legado.app.ui.book.read.ReadBookActivity
 import io.legado.app.ui.book.read.ReadBookActivity.Companion.RESULT_DELETED
 import io.legado.app.ui.book.search.SearchActivity
-import io.legado.app.ui.book.source.edit.BookSourceEditActivity
 import io.legado.app.ui.book.toc.TocActivityResult
 import io.legado.app.ui.file.HandleFileContract
-import io.legado.app.ui.login.SourceLoginActivity
 import io.legado.app.ui.widget.dialog.PhotoDialog
-import io.legado.app.ui.widget.dialog.VariableDialog
 import io.legado.app.ui.widget.dialog.WaitDialog
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.ConvertUtils
@@ -85,9 +80,7 @@ class BookInfoActivity :
     VMBaseActivity<ActivityBookInfoBinding, BookInfoViewModel>(toolBarTheme = Theme.Dark),
     GroupSelectDialog.CallBack,
     TagSelectDialog.CallBack,
-    ChangeBookSourceDialog.CallBack,
-    ChangeCoverDialog.CallBack,
-    VariableDialog.Callback {
+    ChangeCoverDialog.CallBack {
 
     private val tocActivityResult = registerForActivityResult(TocActivityResult()) {
         it?.let {
@@ -136,17 +129,6 @@ class BookInfoActivity :
             viewModel.upEditBook()
         }
     }
-    private val editSourceResult = registerForActivityResult(
-        StartActivityContract(BookSourceEditActivity::class.java)
-    ) {
-        if (it.resultCode == RESULT_CANCELED) {
-            return@registerForActivityResult
-        }
-        book?.let { book ->
-            viewModel.bookSource = appDb.bookSourceDao.getBookSource(book.origin)
-            viewModel.refreshBook(book)
-        }
-    }
     private var chapterChanged = false
     private val waitDialog by lazy { WaitDialog(this) }
     private var editMenuItem: MenuItem? = null
@@ -186,14 +168,6 @@ class BookInfoActivity :
             viewModel.bookData.value?.canUpdate ?: true
         menu.findItem(R.id.menu_split_long_chapter)?.isChecked =
             viewModel.bookData.value?.getSplitLongChapter() ?: true
-        menu.findItem(R.id.menu_login)?.isVisible =
-            !viewModel.bookSource?.loginUrl.isNullOrBlank()
-        menu.findItem(R.id.menu_set_source_variable)?.isVisible =
-            viewModel.bookSource != null
-        menu.findItem(R.id.menu_set_book_variable)?.isVisible =
-            viewModel.bookSource != null
-        menu.findItem(R.id.menu_can_update)?.isVisible =
-            viewModel.bookSource != null
         menu.findItem(R.id.menu_split_long_chapter)?.isVisible =
             viewModel.bookData.value?.isLocalTxt ?: false
         menu.findItem(R.id.menu_upload)?.isVisible =
@@ -225,16 +199,7 @@ class BookInfoActivity :
                 refreshBook()
             }
 
-            R.id.menu_login -> viewModel.bookSource?.let {
-                startActivity<SourceLoginActivity> {
-                    putExtra("type", "bookSource")
-                    putExtra("key", it.bookSourceUrl)
-                }
-            }
-
             R.id.menu_top -> viewModel.topBook()
-            R.id.menu_set_source_variable -> setSourceVariable()
-            R.id.menu_set_book_variable -> setBookVariable()
             R.id.menu_copy_book_url -> viewModel.getBook()?.bookUrl?.let {
                 sendToClip(it)
             }
@@ -473,23 +438,6 @@ class BookInfoActivity :
                 }
             }
         }
-        tvOrigin.setOnClickListener {
-            viewModel.getBook()?.let { book ->
-                if (book.isLocal) return@let
-                if (!appDb.bookSourceDao.has(book.origin)) {
-                    toastOnUi(R.string.error_no_source)
-                    return@let
-                }
-                editSourceResult.launch {
-                    putExtra("sourceUrl", book.origin)
-                }
-            }
-        }
-        tvChangeSource.setOnClickListener {
-            viewModel.getBook()?.let { book ->
-                showDialogFragment(ChangeBookSourceDialog(book.name, book.author))
-            }
-        }
         tvTocView.setOnClickListener {
             if (viewModel.chapterListData.value.isNullOrEmpty()) {
                 toastOnUi(R.string.chapter_list_empty)
@@ -572,62 +520,6 @@ class BookInfoActivity :
             upRatingStars(rating)
             if (viewModel.inBookshelf) {
                 viewModel.saveBook(book)
-            }
-        }
-    }
-
-    private fun setSourceVariable() {
-        lifecycleScope.launch {
-            val source = viewModel.bookSource
-            if (source == null) {
-                toastOnUi("书源不存在")
-                return@launch
-            }
-            val comment =
-                source.getDisplayVariableComment("源变量可在js中通过source.getVariable()获取")
-            val variable = withContext(IO) { source.getVariable() }
-            showDialogFragment(
-                VariableDialog(
-                    getString(R.string.set_source_variable),
-                    source.getKey(),
-                    variable,
-                    comment
-                )
-            )
-        }
-    }
-
-    private fun setBookVariable() {
-        lifecycleScope.launch {
-            val source = viewModel.bookSource
-            if (source == null) {
-                toastOnUi("书源不存在")
-                return@launch
-            }
-            val book = viewModel.getBook() ?: return@launch
-            val variable = withContext(IO) { book.getCustomVariable() }
-            val comment = source.getDisplayVariableComment(
-                """书籍变量可在js中通过book.getVariable("custom")获取"""
-            )
-            showDialogFragment(
-                VariableDialog(
-                    getString(R.string.set_book_variable),
-                    book.bookUrl,
-                    variable,
-                    comment
-                )
-            )
-        }
-    }
-
-    override fun setVariable(key: String, variable: String?) {
-        when (key) {
-            viewModel.bookSource?.getKey() -> viewModel.bookSource?.setVariable(variable)
-            viewModel.bookData.value?.bookUrl -> viewModel.bookData.value?.let {
-                it.putCustomVariable(variable)
-                if (viewModel.inBookshelf) {
-                    viewModel.saveBook(it)
-                }
             }
         }
     }
@@ -782,10 +674,6 @@ class BookInfoActivity :
 
     override val oldBook: Book?
         get() = viewModel.bookData.value
-
-    override fun changeTo(source: BookSource, book: Book, toc: List<BookChapter>) {
-        viewModel.changeTo(source, book, toc)
-    }
 
     override fun coverChangeTo(coverUrl: String) {
         viewModel.bookData.value?.let { book ->

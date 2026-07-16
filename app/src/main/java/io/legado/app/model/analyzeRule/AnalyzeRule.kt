@@ -10,7 +10,6 @@ import io.legado.app.data.entities.BaseBook
 import io.legado.app.data.entities.BaseSource
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
-import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.RssArticle
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.CacheManager
@@ -840,40 +839,19 @@ class AnalyzeRule(
     }
 
     /**
-     * 重新获取book
+     * 重新获取book (已移除 - BookSource 依赖已移除)
      */
+    @Deprecated("BookSource 依赖已移除", ReplaceWith(""))
     fun reGetBook() {
         if (!preUpdateJs) throw NoStackTraceException("只能在 preUpdateJs 中调用")
-        val bookSource = source as? BookSource
-        val book = book as? Book
-        if (bookSource == null || book == null) return
-        runBlocking(coroutineContext) {
-            withTimeout(1800000) {
-                WebBook.preciseSearchAwait(bookSource, book.name, book.author)
-                    .getOrThrow().let {
-                        book.bookUrl = it.bookUrl
-                        it.variableMap.forEach { entry ->
-                            book.putVariable(entry.key, entry.value)
-                        }
-                    }
-                WebBook.getBookInfoAwait(bookSource, book, false)
-            }
-        }
     }
 
     /**
-     * 更新tocUrl,有些书源目录url定期更新,可以在js调用更新
+     * 更新tocUrl (已移除 - BookSource 依赖已移除)
      */
+    @Deprecated("BookSource 依赖已移除", ReplaceWith(""))
     fun refreshTocUrl() {
         if (!preUpdateJs) throw NoStackTraceException("只能在 preUpdateJs 中调用")
-        val bookSource = source as? BookSource
-        val book = book as? Book
-        if (bookSource == null || book == null) return
-        runBlocking(coroutineContext) {
-            withTimeout(1800000) {
-                WebBook.getBookInfoAwait(bookSource, book, false)
-            }
-        }
     }
 
     companion object {

@@ -11,14 +11,14 @@ import io.legado.app.constant.Status
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
-import io.legado.app.data.entities.BookSource
+
 import io.legado.app.help.book.ContentProcessor
-import io.legado.app.help.book.getBookSource
+
 import io.legado.app.help.book.readSimulating
 import io.legado.app.help.book.simulatedTotalChapterNum
 import io.legado.app.help.book.update
 import io.legado.app.help.coroutine.Coroutine
-import io.legado.app.model.webBook.WebBook
+
 import io.legado.app.service.AudioPlayService
 import io.legado.app.utils.postEvent
 import io.legado.app.utils.startService
@@ -65,7 +65,7 @@ object AudioPlay : CoroutineScope by MainScope() {
     var durPlayUrl = ""
     var durAudioSize = 0
     var inBookshelf = false
-    var bookSource: BookSource? = null
+    
     val loadingChapters = arrayListOf<Int>()
 
     fun changePlayMode() {
@@ -100,7 +100,6 @@ object AudioPlay : CoroutineScope by MainScope() {
         } else {
             chapterSize
         }
-        bookSource = book.getBookSource()
         durChapterIndex = book.durChapterIndex
         durChapterPos = book.durChapterPos
         durPlayUrl = ""
@@ -138,8 +137,7 @@ object AudioPlay : CoroutineScope by MainScope() {
         val index = durChapterIndex
         if (addLoading(index)) {
             val book = book
-            val bookSource = bookSource
-            if (book != null && bookSource != null) {
+            if (book != null) {
                 upDurChapter()
                 val chapter = durChapter
                 if (chapter == null) {
@@ -151,22 +149,8 @@ object AudioPlay : CoroutineScope by MainScope() {
                     removeLoading(index)
                     return
                 }
-                upLoading(true)
-                WebBook.getContent(this, bookSource, book, chapter)
-                    .onSuccess { content ->
-                        if (content.isEmpty()) {
-                            appCtx.toastOnUi("未获取到资源链接")
-                        } else {
-                            contentLoadFinish(chapter, content)
-                        }
-                    }.onError {
-                        AppLog.put("获取资源链接出错\n$it", it, true)
-                        upLoading(false)
-                    }.onCancel {
-                        removeLoading(index)
-                    }.onFinally {
-                        removeLoading(index)
-                    }
+                removeLoading(index)
+                appCtx.toastOnUi("book or source is null")
             } else {
                 removeLoading(index)
                 appCtx.toastOnUi("book or source is null")

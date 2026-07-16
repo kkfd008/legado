@@ -9,12 +9,10 @@ import com.script.buildScriptBindings
 import com.script.rhino.RhinoScriptEngine
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.AppPattern
-import io.legado.app.constant.BookSourceType
 import io.legado.app.constant.BookType
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.BaseBook
 import io.legado.app.data.entities.Book
-import io.legado.app.data.entities.BookSource
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.RuleBigDataHelp
 import io.legado.app.help.config.AppConfig
@@ -44,12 +42,7 @@ val Book.isImage: Boolean
     get() = isType(BookType.image)
 
 val Book.isLocal: Boolean
-    get() {
-        if (type == 0) {
-            return origin == BookType.localTag || origin.startsWith(BookType.webDavTag)
-        }
-        return isType(BookType.local)
-    }
+    get() = true
 
 val Book.isLocalTxt: Boolean
     get() = isLocal && originName.endsWith(".txt", true)
@@ -213,7 +206,7 @@ fun Book.removeType(@BookType.Type vararg types: Int) {
 }
 
 fun Book.removeAllBookType() {
-    removeType(BookType.allBookType)
+    removeType(BookType.allBookTypeLocal)
 }
 
 fun Book.clearType() {
@@ -224,15 +217,7 @@ fun Book.isType(@BookType.Type bookType: Int): Boolean = type and bookType > 0
 
 fun Book.upType() {
     if (type < 8) {
-        type = when (type) {
-            BookSourceType.image -> BookType.image
-            BookSourceType.audio -> BookType.audio
-            BookSourceType.file -> BookType.webFile
-            else -> BookType.text
-        }
-        if (origin == BookType.localTag || origin.startsWith(BookType.webDavTag)) {
-            type = type or BookType.local
-        }
+        type = BookType.text
     }
 }
 
@@ -288,10 +273,6 @@ fun Book.getFolderNameNoCache(): String {
     return name.replace(AppPattern.fileNameRegex, "").let {
         it.substring(0, min(9, it.length)) + MD5Utils.md5Encode16(bookUrl)
     }
-}
-
-fun Book.getBookSource(): BookSource? {
-    return appDb.bookSourceDao.getBookSource(origin)
 }
 
 fun Book.isLocalModified(): Boolean {

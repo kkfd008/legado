@@ -18,11 +18,8 @@ import io.legado.app.constant.AppLog
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
-import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.BookTag
 import io.legado.app.databinding.ActivityArrangeBookBinding
-import io.legado.app.databinding.DialogEditTextBinding
-import io.legado.app.help.DirectLinkUpload
 import io.legado.app.help.book.contains
 import io.legado.app.help.book.getFileSize
 import io.legado.app.help.book.isLocal
@@ -36,17 +33,13 @@ import io.legado.app.ui.book.group.GroupSelectDialog
 import io.legado.app.ui.book.tag.TagManageDialog
 import io.legado.app.ui.book.tag.TagSelectDialog
 import io.legado.app.ui.book.info.BookInfoActivity
-import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.widget.SelectActionBar
-import io.legado.app.ui.widget.dialog.WaitDialog
 import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.applyTint
 import io.legado.app.utils.cnCompare
 import io.legado.app.utils.dpToPx
-import io.legado.app.utils.isAbsUrl
-import io.legado.app.utils.sendToClip
 import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.startActivity
@@ -69,7 +62,6 @@ class BookshelfManageActivity :
     PopupMenu.OnMenuItemClickListener,
     SelectActionBar.CallBack,
     BookAdapter.CallBack,
-    SourcePickerDialog.Callback,
     GroupSelectDialog.CallBack,
     TagSelectDialog.CallBack {
 
@@ -95,24 +87,6 @@ class BookshelfManageActivity :
         binding.titleBar.findViewById(R.id.search_view)
     }
     private var books: List<Book>? = null
-    private val waitDialog by lazy { WaitDialog(this) }
-    private val exportDir = registerForActivityResult(HandleFileContract()) {
-        it.uri?.let { uri ->
-            alert(R.string.export_success) {
-                if (uri.toString().isAbsUrl()) {
-                    setMessage(DirectLinkUpload.getSummary())
-                }
-                val alertBinding = DialogEditTextBinding.inflate(layoutInflater).apply {
-                    editView.hint = getString(R.string.path)
-                    editView.setText(uri.toString())
-                }
-                customView { alertBinding.root }
-                okButton {
-                    sendToClip(uri.toString())
-                }
-            }
-        }
-    }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         viewModel.groupId = intent.getLongExtra("groupId", -1)
@@ -132,17 +106,6 @@ class BookshelfManageActivity :
     }
 
     override fun observeLiveBus() {
-        viewModel.batchChangeSourceState.observe(this) {
-            if (it) {
-                waitDialog.setText(R.string.change_source_batch)
-                waitDialog.show()
-            } else {
-                waitDialog.dismiss()
-            }
-        }
-        viewModel.batchChangeSourceProcessLiveData.observe(this) {
-            waitDialog.setText(it)
-        }
     }
 
     override fun onCompatCreateOptionsMenu(menu: Menu): Boolean {
@@ -213,9 +176,6 @@ class BookshelfManageActivity :
         binding.selectActionBar.inflateMenu(R.menu.bookshelf_menage_sel)
         binding.selectActionBar.setOnMenuItemClickListener(this)
         binding.selectActionBar.setCallBack(this)
-        waitDialog.setOnCancelListener {
-            viewModel.batchChangeSourceCoroutine?.cancel()
-        }
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -340,17 +300,6 @@ class BookshelfManageActivity :
                 adapter.notifyItemRangeChanged(0, adapter.itemCount)
             }
 
-            R.id.menu_export_all_use_book_source -> viewModel.saveAllUseBookSourceToFile { file ->
-                exportDir.launch {
-                    mode = HandleFileContract.EXPORT
-                    fileData = HandleFileContract.FileData(
-                        "bookSource.json",
-                        file,
-                        "application/json"
-                    )
-                }
-            }
-
             else -> if (item.groupId == R.id.menu_group) {
                 viewModel.groupName = item.title.toString()
                 currentTagId = -1
@@ -386,7 +335,6 @@ class BookshelfManageActivity :
             R.id.menu_remove_from_group -> selectGroup(removeFromGroupRequestCode, 0L)
             R.id.menu_add_tags -> selectTag(addTagsRequestCode, 0L)
             R.id.menu_remove_tags -> selectTag(removeTagsRequestCode, 0L)
-            R.id.menu_change_source -> showDialogFragment<SourcePickerDialog>()
             R.id.menu_clear_cache -> viewModel.clearCache(adapter.selection)
             R.id.menu_check_selected_interval -> adapter.checkSelectedInterval()
         }
@@ -540,11 +488,6 @@ adapter.tagRequestCode -> {
             putExtra("name", book.name)
             putExtra("author", book.author)
         }
-    }
-
-    override fun sourceOnClick(source: BookSource) {
-        viewModel.changeSource(adapter.selection, source)
-        viewModel.batchChangeSourceState.value = true
     }
 
 }

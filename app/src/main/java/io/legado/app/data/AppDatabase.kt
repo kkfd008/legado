@@ -14,7 +14,6 @@ import io.legado.app.data.dao.BookDao
 import io.legado.app.data.dao.BookGroupDao
 import io.legado.app.data.dao.BookSearchKeywordDao
 import io.legado.app.data.dao.BookTagDao
-import io.legado.app.data.dao.BookSourceDao
 import io.legado.app.data.dao.BookmarkDao
 import io.legado.app.data.dao.CacheDao
 import io.legado.app.data.dao.CookieDao
@@ -27,7 +26,6 @@ import io.legado.app.data.dao.RssArticleDao
 import io.legado.app.data.dao.RssReadRecordDao
 import io.legado.app.data.dao.RssSourceDao
 import io.legado.app.data.dao.RssStarDao
-import io.legado.app.data.dao.RuleSubDao
 import io.legado.app.data.dao.SearchBookDao
 import io.legado.app.data.dao.SearchKeywordDao
 import io.legado.app.data.dao.ServerDao
@@ -37,8 +35,6 @@ import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSearchKeyword
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.data.entities.BookTag
-import io.legado.app.data.entities.BookSource
-import io.legado.app.data.entities.BookSourcePart
 import io.legado.app.data.entities.Bookmark
 import io.legado.app.data.entities.Cache
 import io.legado.app.data.entities.Cookie
@@ -51,7 +47,6 @@ import io.legado.app.data.entities.RssArticle
 import io.legado.app.data.entities.RssReadRecord
 import io.legado.app.data.entities.RssSource
 import io.legado.app.data.entities.RssStar
-import io.legado.app.data.entities.RuleSub
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.data.entities.SearchKeyword
 import io.legado.app.data.entities.Server
@@ -73,13 +68,13 @@ val appDb by lazy {
 @Database(
     version = 79,
     exportSchema = true,
-    entities = [Book::class, BookGroup::class, BookTag::class, BookSource::class, BookChapter::class,
+    entities = [Book::class, BookGroup::class, BookTag::class, BookChapter::class,
         ReplaceRule::class, SearchBook::class, SearchKeyword::class, Cookie::class,
         RssSource::class, Bookmark::class, RssArticle::class, RssReadRecord::class,
         RssStar::class, TxtTocRule::class, ReadRecord::class, HttpTTS::class, Cache::class,
-        RuleSub::class, DictRule::class, KeyboardAssist::class, Server::class,
+        DictRule::class, KeyboardAssist::class, Server::class,
         BookSearchKeyword::class],
-    views = [BookSourcePart::class],
+    views = [],
     autoMigrations = [
         AutoMigration(from = 43, to = 44),
         AutoMigration(from = 44, to = 45),
@@ -124,7 +119,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract val bookDao: BookDao
     abstract val bookGroupDao: BookGroupDao
     abstract val bookTagDao: BookTagDao
-    abstract val bookSourceDao: BookSourceDao
     abstract val bookChapterDao: BookChapterDao
     abstract val replaceRuleDao: ReplaceRuleDao
     abstract val searchBookDao: SearchBookDao
@@ -140,7 +134,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract val readRecordDao: ReadRecordDao
     abstract val httpTTSDao: HttpTTSDao
     abstract val cacheDao: CacheDao
-    abstract val ruleSubDao: RuleSubDao
     abstract val dictRuleDao: DictRuleDao
     abstract val keyboardAssistsDao: KeyboardAssistsDao
     abstract val serverDao: ServerDao
@@ -150,7 +143,6 @@ abstract class AppDatabase : RoomDatabase() {
         const val DATABASE_NAME = "legado.db"
 
         const val BOOK_TABLE_NAME = "books"
-        const val BOOK_SOURCE_TABLE_NAME = "book_sources"
         const val RSS_SOURCE_TABLE_NAME = "rssSources"
 
         val dbCallback = object : Callback() {
@@ -194,13 +186,6 @@ abstract class AppDatabase : RoomDatabase() {
                 """.trimIndent()
                 db.execSQL(insertBookGroupMusicSql)
                 @Language("sql")
-                val insertBookGroupNetNoneGroupSql = """
-                    insert into book_groups(groupId, groupName, 'order', show) 
-                    select ${BookGroup.IdNetNone}, '网络未分组', -7, 1
-                    where not exists (select * from book_groups where groupId = ${BookGroup.IdNetNone})
-                """.trimIndent()
-                db.execSQL(insertBookGroupNetNoneGroupSql)
-                @Language("sql")
                 val insertBookGroupLocalNoneGroupSql = """
                     insert into book_groups(groupId, groupName, 'order', show) 
                     select ${BookGroup.IdLocalNone}, '本地未分组', -6, 0
@@ -214,10 +199,6 @@ abstract class AppDatabase : RoomDatabase() {
                     where not exists (select * from book_groups where groupId = ${BookGroup.IdError})
                 """.trimIndent()
                 db.execSQL(insertBookGroupErrorSql)
-                @Language("sql")
-                val upBookSourceLoginUiSql =
-                    "update book_sources set loginUi = null where loginUi = 'null'"
-                db.execSQL(upBookSourceLoginUiSql)
                 @Language("sql")
                 val upRssSourceLoginUiSql =
                     "update rssSources set loginUi = null where loginUi = 'null'"

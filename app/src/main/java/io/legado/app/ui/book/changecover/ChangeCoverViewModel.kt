@@ -9,7 +9,6 @@ import io.legado.app.constant.AppConst
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.AppPattern
 import io.legado.app.data.appDb
-import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.BookSourcePart
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.help.config.AppConfig
@@ -114,17 +113,9 @@ class ChangeCoverViewModel(application: Application) : BaseViewModel(application
     private fun search() {
         task = viewModelScope.launch(searchPool!!) {
             flow {
-                for (bs in bookSourceParts) {
-                    bs.getBookSource()?.let {
-                        emit(it)
-                    }
-                }
+                // BookSource 依赖已移除，不再遍历书源搜索封面
             }.onStart {
                 searchStateData.postValue(true)
-            }.mapParallelSafe(threadCount) {
-                withTimeout(60000L) {
-                    search(it)
-                }
             }.onCompletion {
                 searchStateData.postValue(false)
             }.catch {
@@ -133,20 +124,7 @@ class ChangeCoverViewModel(application: Application) : BaseViewModel(application
         }
     }
 
-    private suspend fun search(source: BookSource) {
-        if (source.getSearchRule().coverUrl.isNullOrBlank()) {
-            return
-        }
-        val searchBook = WebBook.searchBookAwait(
-            source, name,
-            shouldBreak = { it > 0 }).firstOrNull() ?: return
-        if (searchBook.name == name && searchBook.author == author
-            && !searchBook.coverUrl.isNullOrEmpty()
-        ) {
-            appDb.searchBookDao.insert(searchBook)
-            searchSuccess?.invoke(searchBook)
-        }
-    }
+    // BookSource 依赖已移除，书源搜索封面功能已禁用
 
     fun startOrStopSearch() {
         if (task == null || !task!!.isActive) {
