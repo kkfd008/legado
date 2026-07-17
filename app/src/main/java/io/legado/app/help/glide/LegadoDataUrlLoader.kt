@@ -44,12 +44,12 @@ class LegadoDataUrlLoader : ModelLoader<String, InputStream> {
         ) {
             try {
                 val bytes = AnalyzeUrl(
-                    model, source = ReadManga.bookSource,
+                    model, source = null,
                     coroutineContext = coroutineContext
                 ).getByteArray()
                 val decoded = runScriptWithContext(coroutineContext) {
                     ImageUtils.decode(
-                        model, bytes, isCover = false, ReadManga.bookSource, ReadManga.book
+                        model, bytes, isCover = false, null, ReadManga.book
                     )?.inputStream()
                 }
                 if (decoded == null) {

@@ -75,7 +75,7 @@ class MangaMenu @JvmOverloads constructor(
     private val menuInListener = object : Animation.AnimationListener {
         override fun onAnimationStart(animation: Animation) {
             binding.tvSourceAction.text =
-                ReadManga.bookSource?.bookSourceName ?: context.getString(R.string.book_source)
+                null ?: context.getString(R.string.book_source)
             callBack.upSystemUiVisibility(true)
             binding.tvSourceAction.isGone = false
         }
@@ -177,12 +177,12 @@ class MangaMenu @JvmOverloads constructor(
             } else {
                 context.startActivity<WebViewActivity> {
                     val url = tvChapterUrl.text.toString()
-                    val bookSource = ReadBook.bookSource
+                    val bookSource = null
                     putExtra("title", tvChapterName.text)
                     putExtra("url", url)
-                    putExtra("sourceOrigin", bookSource?.bookSourceUrl)
-                    putExtra("sourceName", bookSource?.bookSourceName)
-                    putExtra("sourceType", bookSource?.getSourceType())
+                    putExtra("sourceOrigin", null)
+                    putExtra("sourceName", null)
+                    putExtra("sourceType", null)
                 }
             }
         }

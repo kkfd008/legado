@@ -224,7 +224,7 @@ class AudioPlayService : BaseService(),
             upPlayProgressJob?.cancel()
             val analyzeUrl = AnalyzeUrl(
                 url,
-                source = AudioPlay.bookSource,
+                source = null,
                 ruleData = AudioPlay.book,
                 chapter = AudioPlay.durChapter,
                 coroutineContext = coroutineContext

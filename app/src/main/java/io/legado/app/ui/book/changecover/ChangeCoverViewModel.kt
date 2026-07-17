@@ -9,10 +9,8 @@ import io.legado.app.constant.AppConst
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.AppPattern
 import io.legado.app.data.appDb
-import io.legado.app.data.entities.BookSourcePart
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.help.config.AppConfig
-import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.mapParallelSafe
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
@@ -37,7 +35,6 @@ class ChangeCoverViewModel(application: Application) : BaseViewModel(application
     private var searchPool: ExecutorCoroutineDispatcher? = null
     private var searchSuccess: ((SearchBook) -> Unit)? = null
     private var upAdapter: (() -> Unit)? = null
-    private var bookSourceParts = arrayListOf<BookSourcePart>()
     private val defaultCover by lazy {
         listOf(
             SearchBook(
@@ -103,8 +100,6 @@ class ChangeCoverViewModel(application: Application) : BaseViewModel(application
             stopSearch()
             searchBooks.clear()
             upAdapter?.invoke()
-            bookSourceParts.clear()
-            bookSourceParts.addAll(appDb.bookSourceDao.allEnabledPart)
             initSearchPool()
             search()
         }

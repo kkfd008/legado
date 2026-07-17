@@ -22,7 +22,6 @@ import io.legado.app.help.config.AppConfig
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.model.ReadManga
 import io.legado.app.model.localBook.LocalBook
-import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.mapParallelSafe
 import io.legado.app.utils.postEvent
 import io.legado.app.utils.toastOnUi
@@ -110,16 +109,15 @@ class ReadMangaViewModel(application: Application) : BaseViewModel(application) 
         }
 
         //自动换源
-        if (!book.isLocal && ReadManga.bookSource == null) {
+        if (!book.isLocal) {
             autoChangeSource(book.name, book.author)
             return
         }
     }
 
     private suspend fun loadChapterListAwait(book: Book): Boolean {
-        val bookSource = ReadManga.bookSource ?: return true
         val oldBook = book.copy()
-        WebBook.getChapterListAwait(bookSource, book, true).onSuccess { cList ->
+        book.chapterList().let { cList ->
             if (oldBook.bookUrl == book.bookUrl) {
                 appDb.bookDao.update(book)
             } else {
@@ -130,11 +128,6 @@ class ReadMangaViewModel(application: Application) : BaseViewModel(application) 
             appDb.bookChapterDao.insert(*cList.toTypedArray())
             ReadManga.onChapterListUpdated(book)
             return true
-        }.onFailure {
-            currentCoroutineContext().ensureActive()
-            //加载章节出错
-            ReadManga.mCallback?.loadFail(appCtx.getString(R.string.error_load_toc))
-            return false
         }
         return true
     }
@@ -143,9 +136,8 @@ class ReadMangaViewModel(application: Application) : BaseViewModel(application) 
      * 加载详情页
      */
     private suspend fun loadBookInfo(book: Book): Boolean {
-        val source = ReadManga.bookSource ?: return true
         try {
-            WebBook.getBookInfoAwait(source, book, canReName = false)
+            book.getBookInfo()
             return true
         } catch (e: Throwable) {
             currentCoroutineContext().ensureActive()
@@ -157,49 +149,10 @@ class ReadMangaViewModel(application: Application) : BaseViewModel(application) 
     /**
      * 自动换源
      */
+    @Deprecated("BookSource 依赖已移除，自动换源功能已禁用")
     private fun autoChangeSource(name: String, author: String) {
         if (!AppConfig.autoChangeSource) return
-        execute {
-            val sources = appDb.bookSourceDao.allTextEnabledPart
-            flow {
-                for (source in sources) {
-                    source.getBookSource()?.let {
-                        emit(it)
-                    }
-                }
-            }.onStart {
-                // 自动换源
-
-            }.mapParallelSafe(AppConfig.threadCount) { source ->
-                val book = WebBook.preciseSearchAwait(source, name, author).getOrThrow()
-                if (book.tocUrl.isEmpty()) {
-                    WebBook.getBookInfoAwait(source, book)
-                }
-                val toc = WebBook.getChapterListAwait(source, book).getOrThrow()
-                val chapter = toc.getOrElse(book.durChapterIndex) {
-                    toc.last()
-                }
-                val nextChapter = toc.getOrElse(chapter.index) {
-                    toc.first()
-                }
-                WebBook.getContentAwait(
-                    bookSource = source,
-                    book = book,
-                    bookChapter = chapter,
-                    nextChapterUrl = nextChapter.url
-                )
-                book to toc
-            }.take(1).onEach { (book, toc) ->
-                changeTo(book, toc)
-            }.onEmpty {
-                throw NoStackTraceException("没有合适书源")
-            }.onCompletion {
-                // 换源完成
-            }.catch {
-                AppLog.put("自动换源失败\n${it.localizedMessage}", it)
-                context.toastOnUi("自动换源失败\n${it.localizedMessage}")
-            }.collect()
-        }
+        context.toastOnUi("自动换源功能已禁用")
     }
 
     /**

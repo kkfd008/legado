@@ -6,8 +6,8 @@ import android.util.Size
 import androidx.collection.LruCache
 import io.legado.app.R
 import io.legado.app.constant.AppLog.putDebug
+import io.legado.app.data.entities.BaseSource
 import io.legado.app.data.entities.Book
-import io.legado.app.data.entities.BookSource
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.isEpub
@@ -124,7 +124,7 @@ object ImageProvider {
     suspend fun cacheImage(
         book: Book,
         src: String,
-        bookSource: BookSource?
+        bookSource: BaseSource?
     ): File {
         return withContext(IO) {
             val vFile = BookHelp.getImage(book, src)
@@ -160,7 +160,7 @@ object ImageProvider {
     suspend fun getImageSize(
         book: Book,
         src: String,
-        bookSource: BookSource?
+        bookSource: BaseSource?
     ): Size {
         val file = cacheImage(book, src, bookSource)
         val cached = imageSizeCache[file.absolutePath]

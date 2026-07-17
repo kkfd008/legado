@@ -100,11 +100,9 @@ class WebViewModel(application: Application) : BaseViewModel(application) {
         if (refetchAfterSuccess) {
             execute {
                 val url = intent!!.getStringExtra("url")!!
-                val source = appDb.bookSourceDao.getBookSource(sourceOrigin)
                 html = AnalyzeUrl(
                     url,
                     headerMapF = headerMap,
-                    source = source,
                     coroutineContext = coroutineContext
                 ).getStrResponseAwait(useWebView = false).body
                 SourceVerificationHelp.setResult(sourceOrigin, html ?: "")

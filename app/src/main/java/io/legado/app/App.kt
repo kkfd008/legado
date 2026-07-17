@@ -23,7 +23,6 @@ import io.legado.app.constant.PreferKey
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
-import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.HttpTTS
 import io.legado.app.data.entities.RssSource
 import io.legado.app.data.entities.rule.BookInfoRule
@@ -226,7 +225,8 @@ class App : Application() {
 
     private fun initRhino() {
         RhinoScriptEngine
-        RhinoWrapFactory.register(BookSource::class.java, NativeBaseSource.factory)
+        @Suppress("DEPRECATION")
+        RhinoWrapFactory.register(BaseSource::class.java, NativeBaseSource.factory)
         RhinoWrapFactory.register(RssSource::class.java, NativeBaseSource.factory)
         RhinoWrapFactory.register(HttpTTS::class.java, NativeBaseSource.factory)
         RhinoWrapFactory.register(ExploreRule::class.java, ReadOnlyJavaObject.factory)

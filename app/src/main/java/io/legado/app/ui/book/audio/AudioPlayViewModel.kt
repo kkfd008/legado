@@ -11,12 +11,11 @@ import io.legado.app.constant.EventBus
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
-import io.legado.app.data.entities.BookSource
+import io.legado.app.data.entities.BaseSource
 import io.legado.app.help.book.getBookSource
 import io.legado.app.help.book.removeType
 import io.legado.app.help.book.simulatedTotalChapterNum
 import io.legado.app.model.AudioPlay
-import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.postEvent
 import io.legado.app.utils.toastOnUi
 
@@ -53,9 +52,8 @@ class AudioPlayViewModel(application: Application) : BaseViewModel(application) 
     }
 
     private suspend fun loadBookInfo(book: Book): Boolean {
-        val bookSource = AudioPlay.bookSource ?: return true
         try {
-            WebBook.getBookInfoAwait(bookSource, book)
+            book.getBookInfo()
             return true
         } catch (e: Exception) {
             AppLog.put("详情页出错: ${e.localizedMessage}", e, true)
@@ -64,10 +62,9 @@ class AudioPlayViewModel(application: Application) : BaseViewModel(application) 
     }
 
     private suspend fun loadChapterList(book: Book): Boolean {
-        val bookSource = AudioPlay.bookSource ?: return true
         try {
             val oldBook = book.copy()
-            val cList = WebBook.getChapterListAwait(bookSource, book).getOrThrow()
+            val cList = book.chapterList()
             if (oldBook.bookUrl == book.bookUrl) {
                 appDb.bookDao.update(book)
             } else {
@@ -88,18 +85,16 @@ class AudioPlayViewModel(application: Application) : BaseViewModel(application) 
     fun upSource() {
         execute {
             val book = AudioPlay.book ?: return@execute
-            AudioPlay.bookSource = book.getBookSource()
         }
     }
 
-    fun changeTo(source: BookSource, book: Book, toc: List<BookChapter>) {
+    fun changeTo(source: BaseSource, book: Book, toc: List<BookChapter>) {
         execute {
             AudioPlay.book?.migrateTo(book, toc)
             book.removeType(BookType.updateError)
             AudioPlay.book?.delete()
             appDb.bookDao.insert(book)
             AudioPlay.book = book
-            AudioPlay.bookSource = source
             appDb.bookChapterDao.insert(*toc.toTypedArray())
             AudioPlay.upDurChapter()
         }.onFinally {

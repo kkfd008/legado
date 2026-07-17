@@ -354,7 +354,7 @@ object ChapterProvider {
     ): Pair<Int, Float> {
         var absStartX = x
         var durY = y
-        val size = ImageProvider.getImageSize(book, src, ReadBook.bookSource)
+        val size = ImageProvider.getImageSize(book, src, null)
         if (size.width > 0 && size.height > 0) {
             if (durY > visibleHeight) {
                 val textPage = textPages.last()
@@ -780,7 +780,7 @@ object ChapterProvider {
         val column = when {
             srcList != null && char == srcReplaceChar -> {
                 val src = srcList.removeFirst()
-                ImageProvider.cacheImage(book, src, ReadBook.bookSource)
+                ImageProvider.cacheImage(book, src, null)
                 ImageColumn(
                     start = absStartX + xStart,
                     end = absStartX + xEnd,

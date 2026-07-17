@@ -33,7 +33,7 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookProgress
-import io.legado.app.data.entities.BookSource
+import io.legado.app.data.entities.BaseSource
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.AppWebDav
 import io.legado.app.help.IntentData
@@ -476,37 +476,15 @@ class ReadBookActivity : BaseReadBookActivity(),
 
             R.id.menu_refresh,
             R.id.menu_refresh_dur -> {
-                if (ReadBook.bookSource == null) {
-                    upContent()
-                } else {
-                    ReadBook.book?.let {
-                        ReadBook.curTextChapter = null
-                        binding.readView.upContent()
-                        viewModel.refreshContentDur(it)
-                    }
-                }
+                upContent()
             }
 
             R.id.menu_refresh_after -> {
-                if (ReadBook.bookSource == null) {
-                    upContent()
-                } else {
-                    ReadBook.book?.let {
-                        ReadBook.clearTextChapter()
-                        binding.readView.upContent()
-                        viewModel.refreshContentAfter(it)
-                    }
-                }
+                upContent()
             }
 
             R.id.menu_refresh_all -> {
-                if (ReadBook.bookSource == null) {
-                    upContent()
-                } else {
-                    ReadBook.book?.let {
-                        refreshContentAll(it)
-                    }
-                }
+                upContent()
             }
 
             R.id.menu_download -> showDownloadDialog()
@@ -868,9 +846,6 @@ class ReadBookActivity : BaseReadBookActivity(),
                 ReadBook.book?.name?.let {
                     scopes.add(it)
                 }
-                ReadBook.bookSource?.bookSourceUrl?.let {
-                    scopes.add(it)
-                }
                 val text = selectedText.lineSequence().joinToString("\n") { it.trim() }
                 replaceActivity.launch(
                     ReplaceEditActivity.startIntent(
@@ -1081,7 +1056,7 @@ class ReadBookActivity : BaseReadBookActivity(),
     override val oldBook: Book?
         get() = ReadBook.book
 
-    override fun changeTo(source: BookSource, book: Book, toc: List<BookChapter>) {
+    override fun changeTo(source: BaseSource, book: Book, toc: List<BookChapter>) {
         if (!book.isAudio) {
             viewModel.changeTo(book, toc)
         } else {
@@ -1145,12 +1120,8 @@ class ReadBookActivity : BaseReadBookActivity(),
         }
     }
 
+    @Deprecated("BookSource 已移除")
     override fun openSourceEditActivity() {
-        ReadBook.bookSource?.let {
-            sourceEditActivity.launch {
-                putExtra("sourceUrl", it.bookSourceUrl)
-            }
-        }
     }
 
     override fun openBookInfoActivity() {
@@ -1262,62 +1233,13 @@ class ReadBookActivity : BaseReadBookActivity(),
         }
     }
 
+    @Deprecated("BookSource 已移除")
     override fun showLogin() {
-        ReadBook.bookSource?.let {
-            startActivity<SourceLoginActivity> {
-                putExtra("type", "bookSource")
-                putExtra("key", it.bookSourceUrl)
-            }
-        }
     }
 
+    @Deprecated("BookSource 已移除")
     override fun payAction() {
-        val book = ReadBook.book ?: return
-        if (book.isLocal) return
-        val chapter = appDb.bookChapterDao.getChapter(book.bookUrl, ReadBook.durChapterIndex)
-        if (chapter == null) {
-            toastOnUi("no chapter")
-            return
-        }
-        alert(R.string.chapter_pay) {
-            setMessage(chapter.title)
-            yesButton {
-                Coroutine.async(lifecycleScope) {
-                    val source =
-                        ReadBook.bookSource ?: throw NoStackTraceException("no book source")
-                    val payAction = source.getContentRule().payAction
-                    if (payAction.isNullOrBlank()) {
-                        throw NoStackTraceException("no pay action")
-                    }
-                    val analyzeRule = AnalyzeRule(book, source)
-                    analyzeRule.setCoroutineContext(coroutineContext)
-                    analyzeRule.setBaseUrl(chapter.url)
-                    analyzeRule.setChapter(chapter)
-                    analyzeRule.evalJS(payAction).toString()
-                }.onSuccess(IO) {
-                    if (it.isAbsUrl()) {
-                        startActivity<WebViewActivity> {
-                            val bookSource = ReadBook.bookSource
-                            putExtra("title", getString(R.string.chapter_pay))
-                            putExtra("url", it)
-                            putExtra("sourceOrigin", bookSource?.bookSourceUrl)
-                            putExtra("sourceName", bookSource?.bookSourceName)
-                            putExtra("sourceType", bookSource?.getSourceType())
-                        }
-                    } else if (it.isTrue()) {
-                        //购买成功后刷新目录
-                        ReadBook.book?.let {
-                            ReadBook.curTextChapter = null
-                            BookHelp.delContent(book, chapter)
-                            loadChapterList(book)
-                        }
-                    }
-                }.onError {
-                    AppLog.put("执行购买操作出错\n${it.localizedMessage}", it, true)
-                }
-            }
-            noButton()
-        }
+        toastOnUi("支付功能已禁用")
     }
 
     /**

@@ -18,7 +18,7 @@ import io.legado.app.constant.Theme
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
-import io.legado.app.data.entities.BookSource
+import io.legado.app.data.entities.BaseSource
 import io.legado.app.databinding.ActivityAudioPlayBinding
 import io.legado.app.help.book.isAudio
 import io.legado.app.help.book.removeType
@@ -102,7 +102,7 @@ class AudioPlayActivity :
     }
 
     override fun onMenuOpened(featureId: Int, menu: Menu): Boolean {
-        menu.findItem(R.id.menu_login)?.isVisible = !AudioPlay.bookSource?.loginUrl.isNullOrBlank()
+        menu.findItem(R.id.menu_login)?.isVisible = false
         menu.findItem(R.id.menu_wake_lock)?.isChecked = AppConfig.audioPlayUseWakeLock
         return super.onMenuOpened(featureId, menu)
     }
@@ -113,19 +113,12 @@ class AudioPlayActivity :
                 showDialogFragment(ChangeBookSourceDialog(it.name, it.author))
             }
 
-            R.id.menu_login -> AudioPlay.bookSource?.let {
-                startActivity<SourceLoginActivity> {
-                    putExtra("type", "bookSource")
-                    putExtra("key", it.bookSourceUrl)
-                }
+            R.id.menu_login -> {
             }
 
             R.id.menu_wake_lock -> AppConfig.audioPlayUseWakeLock = !AppConfig.audioPlayUseWakeLock
             R.id.menu_copy_audio_url -> sendToClip(AudioPlayService.url)
-            R.id.menu_edit_source -> AudioPlay.bookSource?.let {
-                sourceEditResult.launch {
-                    putExtra("sourceUrl", it.bookSourceUrl)
-                }
+            R.id.menu_edit_source -> {
             }
 
             R.id.menu_log -> showDialogFragment<AppLogDialog>()
@@ -195,8 +188,8 @@ class AudioPlayActivity :
     }
 
     private fun upCover(path: String?) {
-        BookCover.load(this, path, sourceOrigin = AudioPlay.bookSource?.bookSourceUrl) {
-            BookCover.loadBlur(this, path, sourceOrigin = AudioPlay.bookSource?.bookSourceUrl)
+        BookCover.load(this, path, sourceOrigin = null) {
+            BookCover.loadBlur(this, path, sourceOrigin = null)
                 .into(binding.ivBg)
         }.into(binding.ivCover)
     }
@@ -212,7 +205,7 @@ class AudioPlayActivity :
     override val oldBook: Book?
         get() = AudioPlay.book
 
-    override fun changeTo(source: BookSource, book: Book, toc: List<BookChapter>) {
+    override fun changeTo(source: BaseSource, book: Book, toc: List<BookChapter>) {
         if (book.isAudio) {
             viewModel.changeTo(source, book, toc)
         } else {

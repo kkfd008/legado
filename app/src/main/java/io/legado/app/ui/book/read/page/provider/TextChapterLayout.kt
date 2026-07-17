@@ -332,7 +332,7 @@ class TextChapterLayout(
         textHeight: Float,
         imageStyle: String?,
     ) {
-        val size = ImageProvider.getImageSize(book, src, ReadBook.bookSource)
+        val size = ImageProvider.getImageSize(book, src, null)
         if (size.width > 0 && size.height > 0) {
             prepareNextPageIfNeed(durY)
             var height = size.height
@@ -710,7 +710,7 @@ class TextChapterLayout(
         val column = when {
             srcList != null && char == ChapterProvider.srcReplaceChar -> {
                 val src = srcList.removeFirst()
-                ImageProvider.cacheImage(book, src, ReadBook.bookSource)
+                ImageProvider.cacheImage(book, src, null)
                 ImageColumn(
                     start = absStartX + xStart,
                     end = absStartX + xEnd,

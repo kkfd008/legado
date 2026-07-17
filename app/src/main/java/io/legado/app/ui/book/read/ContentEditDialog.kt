@@ -22,7 +22,6 @@ import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.model.ReadBook
-import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.applyTint
 import io.legado.app.utils.sendToClip
 import io.legado.app.utils.setLayout
@@ -145,9 +144,6 @@ class ContentEditDialog : BaseDialogFragment(R.layout.dialog_content_edit) {
                 if (reset) {
                     content = null
                     BookHelp.delContent(book, chapter)
-                    if (!book.isLocal) ReadBook.bookSource?.let { bookSource ->
-                        WebBook.getContentAwait(bookSource, book, chapter)
-                    }
                 }
                 return@execute content ?: let {
                     val contentProcessor = ContentProcessor.get(book.name, book.origin)

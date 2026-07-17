@@ -14,11 +14,10 @@ import io.legado.app.base.BaseViewModel
 import io.legado.app.constant.AppLog
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
-import io.legado.app.data.entities.BookSource
+import io.legado.app.data.entities.BaseSource
 import io.legado.app.databinding.DialogAddToBookshelfBinding
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.model.analyzeRule.AnalyzeUrl
-import io.legado.app.model.webBook.WebBook
 import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.utils.GSON
 import io.legado.app.utils.NetworkUtils
@@ -105,38 +104,6 @@ class AddToBookshelfDialog() : BaseDialogFragment(R.layout.dialog_add_to_bookshe
                 appDb.bookDao.getBook(bookUrl)?.let {
                     throw NoStackTraceException("${it.name} 已在书架")
                 }
-                val baseUrl = NetworkUtils.getBaseUrl(bookUrl)
-                    ?: throw NoStackTraceException("书籍地址格式不对")
-                val urlMatcher = AnalyzeUrl.paramPattern.matcher(bookUrl)
-                if (urlMatcher.find()) {
-                    val origin = GSON.fromJsonObject<AnalyzeUrl.UrlOption>(
-                        bookUrl.substring(urlMatcher.end())
-                    ).getOrNull()?.getOrigin()
-                    origin?.let {
-                        val source = appDb.bookSourceDao.getBookSource(it)
-                        source?.let {
-                            getBookInfo(bookUrl, source)?.let { book ->
-                                return@execute book
-                            }
-                        }
-                    }
-                }
-                appDb.bookSourceDao.getBookSourceAddBook(baseUrl)?.let { source ->
-                    getBookInfo(bookUrl, source)?.let { book ->
-                        return@execute book
-                    }
-                }
-                appDb.bookSourceDao.hasBookUrlPattern.forEach { source ->
-                    try {
-                        val bs = source.getBookSource()!!
-                        if (bookUrl.matches(bs.bookUrlPattern!!.toRegex())) {
-                            getBookInfo(bookUrl, bs)?.let { book ->
-                                return@execute book
-                            }
-                        }
-                    } catch (_: Exception) {
-                    }
-                }
                 throw NoStackTraceException("未找到匹配书源")
             }.onError {
                 AppLog.put("添加书籍 $bookUrl 出错", it)
@@ -151,15 +118,9 @@ class AddToBookshelfDialog() : BaseDialogFragment(R.layout.dialog_add_to_bookshe
             }
         }
 
-        private suspend fun getBookInfo(bookUrl: String, source: BookSource): Book? {
-            return kotlin.runCatching {
-                val book = Book(
-                    bookUrl = bookUrl,
-                    origin = source.bookSourceUrl,
-                    originName = source.bookSourceName
-                )
-                WebBook.getBookInfoAwait(source, book)
-            }.getOrNull()
+        @Deprecated("BookSource 已移除，getBookInfo 已禁用")
+        private suspend fun getBookInfo(bookUrl: String, source: BaseSource): Book? {
+            return null
         }
 
         fun saveSearchBook(book: Book, success: () -> Unit) {

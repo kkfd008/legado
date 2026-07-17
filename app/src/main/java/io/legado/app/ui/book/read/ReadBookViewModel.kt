@@ -28,7 +28,6 @@ import io.legado.app.model.ImageProvider
 import io.legado.app.model.ReadAloud
 import io.legado.app.model.ReadBook
 import io.legado.app.model.localBook.LocalBook
-import io.legado.app.model.webBook.WebBook
 import io.legado.app.service.BaseReadAloudService
 import io.legado.app.ui.book.read.page.entities.TextChapter
 import io.legado.app.ui.book.searchContent.SearchResult
@@ -141,7 +140,7 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
                 syncBookProgress(book)
             }
         }
-        if (!book.isLocal && ReadBook.bookSource == null) {
+        if (!book.isLocal) {
             autoChangeSource(book.name, book.author)
             return
         }
@@ -164,9 +163,8 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
      * 加载详情页
      */
     private suspend fun loadBookInfo(book: Book): Boolean {
-        val source = ReadBook.bookSource ?: return true
         try {
-            WebBook.getBookInfoAwait(source, book, canReName = false)
+            book.getBookInfo()
             return true
         } catch (e: Throwable) {
             currentCoroutineContext().ensureActive()
@@ -210,25 +208,18 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
                 return false
             }
         } else {
-            ReadBook.bookSource?.let {
-                val oldBook = book.copy()
-                WebBook.getChapterListAwait(it, book, true)
-                    .onSuccess { cList ->
-                        if (oldBook.bookUrl == book.bookUrl) {
-                            appDb.bookDao.update(book)
-                        } else {
-                            appDb.bookDao.replace(oldBook, book)
-                            BookHelp.updateCacheFolder(oldBook, book)
-                        }
-                        appDb.bookChapterDao.delByBook(oldBook.bookUrl)
-                        appDb.bookChapterDao.insert(*cList.toTypedArray())
-                        ReadBook.onChapterListUpdated(book)
-                        return true
-                    }.onFailure {
-                        currentCoroutineContext().ensureActive()
-                        ReadBook.upMsg(context.getString(R.string.error_load_toc))
-                        return false
-                    }
+            val oldBook = book.copy()
+            book.chapterList().let { cList ->
+                if (oldBook.bookUrl == book.bookUrl) {
+                    appDb.bookDao.update(book)
+                } else {
+                    appDb.bookDao.replace(oldBook, book)
+                    BookHelp.updateCacheFolder(oldBook, book)
+                }
+                appDb.bookChapterDao.delByBook(oldBook.bookUrl)
+                appDb.bookChapterDao.insert(*cList.toTypedArray())
+                ReadBook.onChapterListUpdated(book)
+                return true
             }
         }
         return true
@@ -290,48 +281,10 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
     /**
      * 自动换源
      */
+    @Deprecated("BookSource 依赖已移除，自动换源功能已禁用")
     private fun autoChangeSource(name: String, author: String) {
         if (!AppConfig.autoChangeSource) return
-        execute {
-            val sources = appDb.bookSourceDao.allTextEnabledPart
-            flow {
-                for (source in sources) {
-                    source.getBookSource()?.let {
-                        emit(it)
-                    }
-                }
-            }.onStart {
-                ReadBook.upMsg(context.getString(R.string.source_auto_changing))
-            }.mapParallelSafe(AppConfig.threadCount) { source ->
-                val book = WebBook.preciseSearchAwait(source, name, author).getOrThrow()
-                if (book.tocUrl.isEmpty()) {
-                    WebBook.getBookInfoAwait(source, book)
-                }
-                val toc = WebBook.getChapterListAwait(source, book).getOrThrow()
-                val chapter = toc.getOrElse(book.durChapterIndex) {
-                    toc.last()
-                }
-                val nextChapter = toc.getOrElse(chapter.index) {
-                    toc.first()
-                }
-                WebBook.getContentAwait(
-                    bookSource = source,
-                    book = book,
-                    bookChapter = chapter,
-                    nextChapterUrl = nextChapter.url
-                )
-                book to toc
-            }.take(1).onEach { (book, toc) ->
-                changeTo(book, toc)
-            }.onEmpty {
-                throw NoStackTraceException("没有合适书源")
-            }.onCompletion {
-                ReadBook.upMsg(null)
-            }.catch {
-                AppLog.put("自动换源失败\n${it.localizedMessage}", it)
-                context.toastOnUi("自动换源失败\n${it.localizedMessage}")
-            }.collect()
-        }
+        context.toastOnUi("自动换源功能已禁用")
     }
 
     fun openChapter(index: Int, durChapterPos: Int = 0, success: (() -> Unit)? = null) {
@@ -347,14 +300,9 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
         }
     }
 
+    @Deprecated("BookSource 依赖已移除")
     fun upBookSource(success: (() -> Unit)?) {
-        execute {
-            ReadBook.book?.let { book ->
-                ReadBook.bookSource = appDb.bookSourceDao.getBookSource(book.origin)
-            }
-        }.onSuccess {
-            success?.invoke()
-        }
+        success?.invoke()
     }
 
     fun refreshContentDur(book: Book) {
@@ -550,13 +498,8 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
         }
     }
 
+    @Deprecated("BookSource 依赖已移除")
     fun disableSource() {
-        execute {
-            ReadBook.bookSource?.let {
-                it.enabled = false
-                appDb.bookSourceDao.update(it)
-            }
-        }
     }
 
     override fun onCleared() {

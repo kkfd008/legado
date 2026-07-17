@@ -118,7 +118,7 @@ class ReadMenu @JvmOverloads constructor(
     private val menuInListener = object : Animation.AnimationListener {
         override fun onAnimationStart(animation: Animation) {
             binding.tvSourceAction.text =
-                ReadBook.bookSource?.bookSourceName ?: context.getString(R.string.book_source)
+                null ?: context.getString(R.string.book_source)
             binding.tvSourceAction.isGone = ReadBook.isLocalBook
             callBack.upSystemUiVisibility()
             binding.llBrightness.visible(showBrightnessView)
@@ -336,12 +336,12 @@ class ReadMenu @JvmOverloads constructor(
                 Coroutine.async {
                     context.startActivity<WebViewActivity> {
                         val url = tvChapterUrl.text.toString()
-                        val bookSource = ReadBook.bookSource
+                        val bookSource = null
                         putExtra("title", tvChapterName.text)
                         putExtra("url", url)
-                        putExtra("sourceOrigin", bookSource?.bookSourceUrl)
-                        putExtra("sourceName", bookSource?.bookSourceName)
-                        putExtra("sourceType", bookSource?.getSourceType())
+                        putExtra("sourceOrigin", null)
+                        putExtra("sourceName", null)
+                        putExtra("sourceType", null)
                     }
                 }
             }
@@ -367,12 +367,8 @@ class ReadMenu @JvmOverloads constructor(
         tvChapterUrl.setOnLongClickListener(chapterViewLongClickListener)
         //书源操作
         tvSourceAction.onClick {
-            sourceMenu.menu.findItem(R.id.menu_login).isVisible =
-                !ReadBook.bookSource?.loginUrl.isNullOrEmpty()
-            sourceMenu.menu.findItem(R.id.menu_chapter_pay).isVisible =
-                !ReadBook.bookSource?.loginUrl.isNullOrEmpty()
-                        && ReadBook.curTextChapter?.isVip == true
-                        && ReadBook.curTextChapter?.isPay != true
+            sourceMenu.menu.findItem(R.id.menu_login).isVisible = false
+            sourceMenu.menu.findItem(R.id.menu_chapter_pay).isVisible = false
             sourceMenu.show()
         }
         //亮度跟随
