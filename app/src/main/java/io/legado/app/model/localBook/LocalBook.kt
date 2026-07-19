@@ -424,15 +424,22 @@ object LocalBook {
         inputStream: InputStream,
         fileName: String
     ): Uri {
+        // 安全检查：防止路径遍历攻击
+        val safeFileName = fileName.replace("../", "").replace("..\\", "")
+            .replace("/", "_").replace("\\", "_")
+        if (safeFileName.isBlank() || safeFileName.contains("..")) {
+            throw SecurityException("Invalid file name")
+        }
+        
         inputStream.use {
             val defaultBookTreeUri = AppConfig.defaultBookTreeUri
             if (defaultBookTreeUri.isNullOrBlank()) throw NoBooksDirException()
             val treeUri = Uri.parse(defaultBookTreeUri)
             return if (treeUri.isContentScheme()) {
                 val treeDoc = DocumentFile.fromTreeUri(appCtx, treeUri)
-                var doc = treeDoc!!.findFile(fileName)
+                var doc = treeDoc!!.findFile(safeFileName)
                 if (doc == null) {
-                    doc = treeDoc.createFile(FileUtils.getMimeType(fileName), fileName)
+                    doc = treeDoc.createFile(FileUtils.getMimeType(safeFileName), safeFileName)
                         ?: throw SecurityException("请重新设置书籍保存位置\nPermission Denial")
                 }
                 appCtx.contentResolver.openOutputStream(doc.uri)!!.use { oStream ->
@@ -442,11 +449,17 @@ object LocalBook {
             } else {
                 try {
                     val treeFile = File(treeUri.path!!)
-                    val file = treeFile.getFile(fileName)
-                    FileOutputStream(file).use { oStream ->
+                    // 验证最终文件路径仍在目标目录内
+                    val targetFile = treeFile.getFile(safeFileName)
+                    val canonicalTarget = targetFile.canonicalPath
+                    val canonicalTree = treeFile.canonicalPath
+                    if (!canonicalTarget.startsWith(canonicalTree)) {
+                        throw SecurityException("Path traversal attempt detected")
+                    }
+                    FileOutputStream(targetFile).use { oStream ->
                         it.copyTo(oStream)
                     }
-                    Uri.fromFile(file)
+                    Uri.fromFile(targetFile)
                 } catch (e: FileNotFoundException) {
                     throw SecurityException("请重新设置书籍保存位置\nPermission Denial\n$e").apply {
                         addSuppressed(e)

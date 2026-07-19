@@ -372,10 +372,15 @@ data class Book(
     fun migrateTo(newBook: Book, toc: List<BookChapter>): Book {
         newBook.durChapterIndex = BookHelp
             .getDurChapter(durChapterIndex, durChapterTitle, toc, totalChapterNum)
-        newBook.durChapterTitle = toc[newBook.durChapterIndex].getDisplayTitle(
+        // 边界检查：确保索引在有效范围内
+        val safeIndex = newBook.durChapterIndex.coerceIn(0, toc.lastIndex)
+        if (safeIndex != newBook.durChapterIndex) {
+            newBook.durChapterIndex = safeIndex
+        }
+        newBook.durChapterTitle = toc.getOrNull(newBook.durChapterIndex)?.getDisplayTitle(
             ContentProcessor.get(newBook.name, newBook.origin).getTitleReplaceRules(),
             getUseReplaceRule()
-        )
+        ) ?: ""
         newBook.durChapterPos = durChapterPos
         newBook.durChapterTime = durChapterTime
         newBook.group = group
