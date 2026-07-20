@@ -7,15 +7,18 @@ import io.legado.app.api.controller.BookController
 import io.legado.app.api.controller.BookSourceController
 import io.legado.app.api.controller.ReplaceRuleController
 import io.legado.app.api.controller.RssSourceController
+import io.legado.app.constant.PreferKey
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.service.WebService
 import io.legado.app.utils.GSON
 import io.legado.app.utils.LogUtils
+import io.legado.app.utils.getPrefString
 import io.legado.app.utils.stackTraceStr
 import io.legado.app.web.utils.AssetsWeb
 import kotlinx.coroutines.runBlocking
 import okio.Pipe
 import okio.buffer
+import splitties.init.appCtx
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 
@@ -26,6 +29,18 @@ class HttpServer(port: Int) : NanoHTTPD(port) {
         if (!WebService.isRun) {
             WebService.serve()
         }
+
+        val authToken = appCtx.getPrefString(PreferKey.webServiceAuthToken)
+        if (authToken.isNotBlank()) {
+            val requestToken = session.headers["Authorization"]
+                ?: session.parameters["token"]?.firstOrNull()
+            if (requestToken != "Bearer $authToken" && requestToken != authToken) {
+                val response = newFixedLengthResponse(Response.Status.UNAUTHORIZED, "application/json", "{\"error\":\"Unauthorized\"}")
+                response.addHeader("Access-Control-Allow-Origin", session.headers["origin"])
+                return response
+            }
+        }
+
         var returnData: ReturnData? = null
         val ct = ContentType(session.headers["content-type"]).tryUTF8()
         session.headers["content-type"] = ct.contentTypeHeader

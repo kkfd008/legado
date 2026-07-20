@@ -9,6 +9,8 @@ import io.legado.app.help.source.SourceHelp
 import io.legado.app.utils.GSON
 import io.legado.app.utils.fromJsonArray
 import io.legado.app.utils.fromJsonObject
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.withContext
 
 object RssSourceController {
 
@@ -21,7 +23,7 @@ object RssSourceController {
             } else returnData.setData(source)
         }
 
-    fun saveSource(postData: String?): ReturnData {
+    suspend fun saveSource(postData: String?): ReturnData {
         val returnData = ReturnData()
         postData ?: return returnData.setErrorMsg("数据不能为空")
         GSON.fromJsonObject<RssSource>(postData).onFailure {
@@ -30,26 +32,30 @@ object RssSourceController {
             if (TextUtils.isEmpty(source.sourceName) || TextUtils.isEmpty(source.sourceUrl)) {
                 returnData.setErrorMsg("源名称和URL不能为空")
             } else {
-                appDb.rssSourceDao.insert(source)
+                withContext(IO) {
+                    appDb.rssSourceDao.insert(source)
+                }
                 returnData.setData("")
             }
         }
         return returnData
     }
 
-    fun saveSources(postData: String?): ReturnData {
+    suspend fun saveSources(postData: String?): ReturnData {
         postData ?: return ReturnData().setErrorMsg("数据不能为空")
         val okSources = arrayListOf<RssSource>()
         val source = GSON.fromJsonArray<RssSource>(postData).getOrNull()
         if (source.isNullOrEmpty()) {
             return ReturnData().setErrorMsg("转换源失败")
         }
-        for (rssSource in source) {
-            if (rssSource.sourceName.isBlank() || rssSource.sourceUrl.isBlank()) {
-                continue
+        withContext(IO) {
+            for (rssSource in source) {
+                if (rssSource.sourceName.isBlank() || rssSource.sourceUrl.isBlank()) {
+                    continue
+                }
+                appDb.rssSourceDao.insert(rssSource)
+                okSources.add(rssSource)
             }
-            appDb.rssSourceDao.insert(rssSource)
-            okSources.add(rssSource)
         }
         return ReturnData().setData(okSources)
     }
@@ -65,12 +71,19 @@ object RssSourceController {
         return returnData.setData(source)
     }
 
-    fun deleteSources(postData: String?): ReturnData {
+    suspend fun deleteSources(postData: String?): ReturnData {
         postData ?: return ReturnData().setErrorMsg("没有传递数据")
+        val dataMap = GSON.fromJsonObject<Map<String, *>>(postData).getOrNull()
+        val confirmed = dataMap?.get("confirmed") as? Boolean ?: false
+        if (!confirmed) {
+            return ReturnData().setErrorMsg("请确认删除操作，需传入 confirmed: true")
+        }
         GSON.fromJsonArray<RssSource>(postData).onFailure {
             return ReturnData().setErrorMsg("格式不对")
         }.onSuccess {
-            SourceHelp.deleteRssSources(it)
+            withContext(IO) {
+                SourceHelp.deleteRssSources(it)
+            }
         }
         return ReturnData().setData("已执行"/*okSources*/)
     }

@@ -216,10 +216,11 @@ object DatabaseMigrations {
             db.execSQL("ALTER TABLE readRecord RENAME TO readRecord1")
             db.execSQL(
                 """
-                    CREATE TABLE IF NOT EXISTS `readRecord` (`deviceId` TEXT NOT NULL, `bookName` TEXT NOT NULL, `readTime` INTEGER NOT NULL, PRIMARY KEY(`deviceId`, `bookName`))
+                    CREATE TABLE IF NOT EXISTS `readRecord` (`deviceId` TEXT NOT NULL, `bookName` TEXT NOT NULL, `readTime` INTEGER NOT NULL, `lastRead` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`deviceId`, `bookName`))
                 """
             )
             db.execSQL("insert into readRecord (deviceId, bookName, readTime) select androidId, bookName, readTime from readRecord1")
+            db.execSQL("DROP TABLE readRecord1")
         }
     }
 
@@ -253,6 +254,7 @@ object DatabaseMigrations {
                     left join books b on o.bookUrl = b.bookUrl
                 """
             )
+            db.execSQL("DROP TABLE bookmarks_old")
         }
     }
 

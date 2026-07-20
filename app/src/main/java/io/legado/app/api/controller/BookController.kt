@@ -28,8 +28,10 @@ import kotlin.math.max
 import io.legado.app.utils.fromJsonObject
 import io.legado.app.utils.printOnDebug
 import io.legado.app.utils.stackTraceStr
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import splitties.init.appCtx
 import java.io.File
 import java.util.WeakHashMap
@@ -267,13 +269,21 @@ object BookController {
     /**
      * 删除书籍
      */
-    fun deleteBook(postData: String?): ReturnData {
+    suspend fun deleteBook(postData: String?): ReturnData {
         val returnData = ReturnData()
-        GSON.fromJsonObject<Book>(postData).getOrNull()?.let { book ->
-            book.delete()
-            return returnData.setData("")
+        val book = GSON.fromJsonObject<Book>(postData).getOrNull()
+        if (book == null) {
+            return returnData.setErrorMsg("格式不对")
         }
-        return returnData.setErrorMsg("格式不对")
+        val dataMap = GSON.fromJsonObject<Map<String, *>>(postData).getOrNull()
+        val confirmed = dataMap?.get("confirmed") as? Boolean ?: false
+        if (!confirmed) {
+            return returnData.setErrorMsg("请确认删除操作，需传入 confirmed: true")
+        }
+        withContext(IO) {
+            book.delete()
+        }
+        return returnData.setData("")
     }
 
     /**
@@ -284,24 +294,31 @@ object BookController {
         GSON.fromJsonObject<BookProgress>(postData)
             .onFailure { it.printOnDebug() }
             .getOrNull()?.let { bookProgress ->
-                appDb.bookDao.getBook(bookProgress.name, bookProgress.author)?.let { book ->
-                    book.durChapterIndex = bookProgress.durChapterIndex
-                    book.durChapterPos = bookProgress.durChapterPos
-                    book.durChapterTitle = bookProgress.durChapterTitle
-                    book.durChapterTime = bookProgress.durChapterTime
-                    AppWebDav.uploadBookProgress(bookProgress) {
-                        book.syncTime = System.currentTimeMillis()
+                withContext(IO) {
+                    appDb.bookDao.getBook(bookProgress.name, bookProgress.author)?.let { book ->
+                        book.durChapterIndex = bookProgress.durChapterIndex
+                        book.durChapterPos = bookProgress.durChapterPos
+                        book.durChapterTitle = bookProgress.durChapterTitle
+                        book.durChapterTime = bookProgress.durChapterTime
+                        appDb.bookDao.update(book)
                     }
-                    appDb.bookDao.update(book)
-                    ReadBook.book?.let {
-                        if (it.name == bookProgress.name &&
-                            it.author == bookProgress.author
-                        ) {
-                            ReadBook.webBookProgress = bookProgress
+                }
+                AppWebDav.uploadBookProgress(bookProgress) {
+                    withContext(IO) {
+                        appDb.bookDao.getBook(bookProgress.name, bookProgress.author)?.let { book ->
+                            book.syncTime = System.currentTimeMillis()
+                            appDb.bookDao.update(book)
                         }
                     }
-                    return returnData.setData("")
                 }
+                ReadBook.book?.let {
+                    if (it.name == bookProgress.name &&
+                        it.author == bookProgress.author
+                    ) {
+                        ReadBook.webBookProgress = bookProgress
+                    }
+                }
+                return returnData.setData("")
             }
         return returnData.setErrorMsg("格式不对")
     }

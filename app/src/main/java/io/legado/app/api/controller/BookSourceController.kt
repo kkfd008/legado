@@ -9,6 +9,8 @@ import io.legado.app.help.source.SourceHelp
 import io.legado.app.utils.GSON
 import io.legado.app.utils.fromJsonArray
 import io.legado.app.utils.fromJsonObject
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.withContext
 
 object BookSourceController {
 
@@ -21,7 +23,7 @@ object BookSourceController {
             } else returnData.setData(bookSources)
         }
 
-    fun saveSource(postData: String?): ReturnData {
+    suspend fun saveSource(postData: String?): ReturnData {
         val returnData = ReturnData()
         postData ?: return returnData.setErrorMsg("数据不能为空")
         val bookSource = GSON.fromJsonObject<BookSource>(postData).getOrNull()
@@ -29,7 +31,9 @@ object BookSourceController {
             if (TextUtils.isEmpty(bookSource.bookSourceName) || TextUtils.isEmpty(bookSource.bookSourceUrl)) {
                 returnData.setErrorMsg("源名称和URL不能为空")
             } else {
-                appDb.bookSourceDao.insert(bookSource)
+                withContext(IO) {
+                    appDb.bookSourceDao.insert(bookSource)
+                }
                 returnData.setData("")
             }
         } else {
@@ -38,19 +42,21 @@ object BookSourceController {
         return returnData
     }
 
-    fun saveSources(postData: String?): ReturnData {
+    suspend fun saveSources(postData: String?): ReturnData {
         postData ?: return ReturnData().setErrorMsg("数据为空")
         val okSources = arrayListOf<BookSource>()
         val bookSources = GSON.fromJsonArray<BookSource>(postData).getOrNull()
         if (bookSources.isNullOrEmpty()) {
             return ReturnData().setErrorMsg("转换源失败")
         }
-        bookSources.forEach { bookSource ->
-            if (bookSource.bookSourceName.isNotBlank()
-                && bookSource.bookSourceUrl.isNotBlank()
-            ) {
-                appDb.bookSourceDao.insert(bookSource)
-                okSources.add(bookSource)
+        withContext(IO) {
+            bookSources.forEach { bookSource ->
+                if (bookSource.bookSourceName.isNotBlank()
+                    && bookSource.bookSourceUrl.isNotBlank()
+                ) {
+                    appDb.bookSourceDao.insert(bookSource)
+                    okSources.add(bookSource)
+                }
             }
         }
         return ReturnData().setData(okSources)
@@ -67,10 +73,17 @@ object BookSourceController {
         return returnData.setData(bookSource)
     }
 
-    fun deleteSources(postData: String?): ReturnData {
+    suspend fun deleteSources(postData: String?): ReturnData {
+        val dataMap = GSON.fromJsonObject<Map<String, *>>(postData).getOrNull()
+        val confirmed = dataMap?.get("confirmed") as? Boolean ?: false
+        if (!confirmed) {
+            return ReturnData().setErrorMsg("请确认删除操作，需传入 confirmed: true")
+        }
         kotlin.runCatching {
             GSON.fromJsonArray<BookSource>(postData).getOrThrow().let {
-                SourceHelp.deleteBookSources(it)
+                withContext(IO) {
+                    SourceHelp.deleteBookSources(it)
+                }
             }
         }.onFailure {
             return ReturnData().setErrorMsg(it.localizedMessage ?: "数据格式错误")

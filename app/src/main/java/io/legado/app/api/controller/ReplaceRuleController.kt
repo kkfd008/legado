@@ -7,6 +7,8 @@ import io.legado.app.utils.GSON
 import io.legado.app.utils.fromJsonObject
 import io.legado.app.utils.replace
 import io.legado.app.utils.stackTraceStr
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.withContext
 
 object ReplaceRuleController {
 
@@ -19,30 +21,39 @@ object ReplaceRuleController {
         }
 
 
-    fun saveRule(postData: String?): ReturnData {
+    suspend fun saveRule(postData: String?): ReturnData {
         val returnData = ReturnData()
         postData ?: return returnData.setErrorMsg("数据不能为空")
         val rule = GSON.fromJsonObject<ReplaceRule>(postData).getOrNull()
         if (rule == null) {
             returnData.setErrorMsg("格式不对")
         } else {
-            if (rule.order == Int.MIN_VALUE) {
-                rule.order = appDb.replaceRuleDao.maxOrder + 1
+            withContext(IO) {
+                if (rule.order == Int.MIN_VALUE) {
+                    rule.order = appDb.replaceRuleDao.maxOrder + 1
+                }
+                appDb.replaceRuleDao.insert(rule)
             }
-            appDb.replaceRuleDao.insert(rule)
         }
         return returnData
     }
 
 
-    fun delete(postData: String?): ReturnData {
+    suspend fun delete(postData: String?): ReturnData {
         val returnData = ReturnData()
         postData ?: return returnData.setErrorMsg("数据不能为空")
+        val dataMap = GSON.fromJsonObject<Map<String, *>>(postData).getOrNull()
+        val confirmed = dataMap?.get("confirmed") as? Boolean ?: false
+        if (!confirmed) {
+            return returnData.setErrorMsg("请确认删除操作，需传入 confirmed: true")
+        }
         val rule = GSON.fromJsonObject<ReplaceRule>(postData).getOrNull()
         if (rule == null) {
             returnData.setErrorMsg("格式不对")
         } else {
-            appDb.replaceRuleDao.delete(rule)
+            withContext(IO) {
+                appDb.replaceRuleDao.delete(rule)
+            }
         }
         return returnData
     }
