@@ -120,7 +120,7 @@ class RssSourceEditAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         fun bind(editEntity: EditEntity) = binding.run {
             checkBox.text = editEntity.hint
             checkBox.isChecked = editEntity.value.isTrue()
-            checkBox.setOnUserCheckedChangeListener { isChecked ->
+            checkBox.setOnCheckedChangeListener { _, isChecked ->
                 editEntity.value = isChecked.toString()
             }
         }

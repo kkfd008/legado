@@ -1,0 +1,65 @@
+package io.legado.app.web.socket
+
+import fi.iki.elonen.NanoHTTPD
+import fi.iki.elonen.NanoWSD
+import io.legado.app.model.Debug
+import io.legado.app.utils.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
+import java.io.IOException
+
+class BookSourceDebugWebSocket(handshakeRequest: NanoHTTPD.IHTTPSession) :
+    NanoWSD.WebSocket(handshakeRequest),
+    CoroutineScope by MainScope(),
+    Debug.Callback {
+
+    private val notPrintState = arrayOf(10, 20, 30, 40)
+
+    override fun onOpen() {
+        launch(IO) {
+            kotlin.runCatching {
+                while (isOpen) {
+                    ping("ping".toByteArray())
+                    delay(30000)
+                }
+            }
+        }
+    }
+
+    override fun onClose(
+        code: NanoWSD.WebSocketFrame.CloseCode,
+        reason: String,
+        initiatedByRemote: Boolean
+    ) {
+        cancel()
+        Debug.cancelDebug(true)
+    }
+
+    override fun onMessage(message: NanoWSD.WebSocketFrame) {
+        // stub
+    }
+
+    override fun onPong(pong: NanoWSD.WebSocketFrame) {
+    }
+
+    override fun onException(exception: IOException) {
+        Debug.cancelDebug(true)
+    }
+
+    override fun printLog(state: Int, msg: String) {
+        if (state in notPrintState) {
+            return
+        }
+        runOnIO {
+            runCatching {
+                send(msg)
+                if (state == -1 || state == 1000) {
+                    Debug.cancelDebug(true)
+                    close(NanoWSD.WebSocketFrame.CloseCode.NormalClosure, "debug end", false)
+                }
+            }.onFailure {
+                it.printOnDebug()
+            }
+        }
+    }
+}

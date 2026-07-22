@@ -1053,10 +1053,10 @@ class ReadBookActivity : BaseReadBookActivity(),
         binding.readMenu.runMenuIn()
     }
 
-    override val oldBook: Book?
+    val oldBook: Book?
         get() = ReadBook.book
 
-    override fun changeTo(source: BaseSource, book: Book, toc: List<BookChapter>) {
+    override fun changeTo(book: Book, toc: List<BookChapter>) {
         if (!book.isAudio) {
             viewModel.changeTo(book, toc)
         } else {
@@ -1074,7 +1074,7 @@ class ReadBookActivity : BaseReadBookActivity(),
         }
     }
 
-    override fun replaceContent(content: String) {
+    fun replaceContent(content: String) {
         ReadBook.book?.let {
             viewModel.saveContent(it, content)
         }

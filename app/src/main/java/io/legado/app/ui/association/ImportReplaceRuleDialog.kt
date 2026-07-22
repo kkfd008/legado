@@ -226,7 +226,7 @@ class ImportReplaceRuleDialog() : BaseDialogFragment(R.layout.dialog_recycler_vi
 
         override fun registerListener(holder: ItemViewHolder, binding: ItemSourceImportBinding) {
             binding.run {
-                cbSourceName.setOnUserCheckedChangeListener { isChecked ->
+                cbSourceName.setOnCheckedChangeListener { _, isChecked ->
                     viewModel.selectStatus[holder.layoutPosition] = isChecked
                     upSelectText()
                 }

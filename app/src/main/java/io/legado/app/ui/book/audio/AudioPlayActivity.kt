@@ -202,12 +202,12 @@ class AudioPlayActivity :
         }
     }
 
-    override val oldBook: Book?
+    val oldBook: Book?
         get() = AudioPlay.book
 
-    override fun changeTo(source: BaseSource, book: Book, toc: List<BookChapter>) {
+    override fun changeTo(book: Book, toc: List<BookChapter>) {
         if (book.isAudio) {
-            viewModel.changeTo(source, book, toc)
+            viewModel.changeTo(book, toc)
         } else {
             AudioPlay.stop()
             lifecycleScope.launch {

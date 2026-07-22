@@ -107,7 +107,7 @@ class ChangeCoverViewModel(application: Application) : BaseViewModel(application
 
     private fun search() {
         task = viewModelScope.launch(searchPool!!) {
-            flow {
+            flow<Unit> {
                 // BookSource 依赖已移除，不再遍历书源搜索封面
             }.onStart {
                 searchStateData.postValue(true)

@@ -4,7 +4,6 @@ import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
 import android.os.Build
 import android.util.Log
-import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -26,6 +25,7 @@ import io.legado.app.data.dao.RssArticleDao
 import io.legado.app.data.dao.RssReadRecordDao
 import io.legado.app.data.dao.RssSourceDao
 import io.legado.app.data.dao.RssStarDao
+import io.legado.app.data.dao.RuleSubDao
 import io.legado.app.data.dao.SearchBookDao
 import io.legado.app.data.dao.SearchKeywordDao
 import io.legado.app.data.dao.ServerDao
@@ -35,6 +35,7 @@ import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSearchKeyword
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.data.entities.BookTag
+import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.Bookmark
 import io.legado.app.data.entities.Cache
 import io.legado.app.data.entities.Cookie
@@ -45,6 +46,7 @@ import io.legado.app.data.entities.ReadRecord
 import io.legado.app.data.entities.ReplaceRule
 import io.legado.app.data.entities.RssArticle
 import io.legado.app.data.entities.RssReadRecord
+import io.legado.app.data.entities.RuleSub
 import io.legado.app.data.entities.RssSource
 import io.legado.app.data.entities.RssStar
 import io.legado.app.data.entities.SearchBook
@@ -69,50 +71,14 @@ val appDb by lazy {
     version = 79,
     exportSchema = true,
     entities = [Book::class, BookGroup::class, BookTag::class, BookChapter::class,
+        BookSource::class,
         ReplaceRule::class, SearchBook::class, SearchKeyword::class, Cookie::class,
         RssSource::class, Bookmark::class, RssArticle::class, RssReadRecord::class,
+        RuleSub::class,
         RssStar::class, TxtTocRule::class, ReadRecord::class, HttpTTS::class, Cache::class,
         DictRule::class, KeyboardAssist::class, Server::class,
         BookSearchKeyword::class],
-    views = [],
-    autoMigrations = [
-        AutoMigration(from = 43, to = 44),
-        AutoMigration(from = 44, to = 45),
-        AutoMigration(from = 45, to = 46),
-        AutoMigration(from = 46, to = 47),
-        AutoMigration(from = 47, to = 48),
-        AutoMigration(from = 48, to = 49),
-        AutoMigration(from = 49, to = 50),
-        AutoMigration(from = 50, to = 51),
-        AutoMigration(from = 51, to = 52),
-        AutoMigration(from = 52, to = 53),
-        AutoMigration(from = 53, to = 54),
-        AutoMigration(from = 54, to = 55, spec = DatabaseMigrations.Migration_54_55::class),
-        AutoMigration(from = 55, to = 56),
-        AutoMigration(from = 56, to = 57),
-        AutoMigration(from = 57, to = 58),
-        AutoMigration(from = 58, to = 59),
-        AutoMigration(from = 59, to = 60),
-        AutoMigration(from = 60, to = 61),
-        AutoMigration(from = 61, to = 62),
-        AutoMigration(from = 62, to = 63),
-        AutoMigration(from = 63, to = 64),
-        AutoMigration(from = 64, to = 65, spec = DatabaseMigrations.Migration_64_65::class),
-        AutoMigration(from = 65, to = 66),
-        AutoMigration(from = 66, to = 67),
-        AutoMigration(from = 67, to = 68),
-        AutoMigration(from = 68, to = 69),
-        AutoMigration(from = 69, to = 70),
-        AutoMigration(from = 70, to = 71),
-        AutoMigration(from = 71, to = 72),
-        AutoMigration(from = 72, to = 73),
-        AutoMigration(from = 73, to = 74),
-        AutoMigration(from = 74, to = 75),
-        AutoMigration(from = 75, to = 76),
-        AutoMigration(from = 76, to = 77),
-        AutoMigration(from = 77, to = 78, spec = DatabaseMigrations.Migration_77_78::class),
-        AutoMigration(from = 78, to = 79),
-    ]
+    views = []
 )
 abstract class AppDatabase : RoomDatabase() {
 
@@ -128,6 +94,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract val bookmarkDao: BookmarkDao
     abstract val rssArticleDao: RssArticleDao
     abstract val rssStarDao: RssStarDao
+    abstract val ruleSubDao: RuleSubDao
     abstract val rssReadRecordDao: RssReadRecordDao
     abstract val cookieDao: CookieDao
     abstract val txtTocRuleDao: TxtTocRuleDao

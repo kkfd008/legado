@@ -14,9 +14,8 @@ import io.legado.app.data.entities.RuleSub
 import io.legado.app.databinding.ActivityRuleSubBinding
 import io.legado.app.databinding.DialogRuleSubEditBinding
 import io.legado.app.lib.dialogs.alert
-import io.legado.app.ui.association.ImportBookSourceDialog
-import io.legado.app.ui.association.ImportReplaceRuleDialog
 import io.legado.app.ui.association.ImportRssSourceDialog
+import io.legado.app.ui.association.ImportReplaceRuleDialog
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.utils.applyNavigationBarPadding
 import io.legado.app.utils.showDialogFragment
@@ -51,7 +50,7 @@ class RuleSubActivity : BaseActivity<ActivityRuleSubBinding>(),
     override fun onCompatOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_add -> {
-                val order = appDb.ruleSubDao.maxOrder + 1
+                val order = appDb.ruleSubDao.getMaxOrder() + 1
                 editSubscription(RuleSub(customOrder = order))
             }
         }
@@ -80,7 +79,7 @@ class RuleSubActivity : BaseActivity<ActivityRuleSubBinding>(),
     override fun openSubscription(ruleSub: RuleSub) {
         when (ruleSub.type) {
             0 -> showDialogFragment(
-                ImportBookSourceDialog(ruleSub.url)
+                ImportRssSourceDialog(ruleSub.url)
             )
             1 -> showDialogFragment(
                 ImportRssSourceDialog(ruleSub.url)
@@ -137,7 +136,7 @@ class RuleSubActivity : BaseActivity<ActivityRuleSubBinding>(),
 
     override fun upOrder() {
         lifecycleScope.launch(IO) {
-            val sourceSubs = appDb.ruleSubDao.all
+            val sourceSubs = appDb.ruleSubDao.getAll()
             for ((index: Int, ruleSub: RuleSub) in sourceSubs.withIndex()) {
                 ruleSub.customOrder = index + 1
             }

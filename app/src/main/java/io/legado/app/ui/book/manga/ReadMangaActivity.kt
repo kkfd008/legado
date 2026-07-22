@@ -439,10 +439,10 @@ class ReadMangaActivity : VMBaseActivity<ActivityMangaBinding, ReadMangaViewMode
         scrollToNext()
     }
 
-    override val oldBook: Book?
+    val oldBook: Book?
         get() = ReadManga.book
 
-    override fun changeTo(source: BaseSource, book: Book, toc: List<BookChapter>) {
+    override fun changeTo(book: Book, toc: List<BookChapter>) {
         if (book.isImage) {
             binding.flLoading.isVisible = true
             viewModel.changeTo(book, toc)

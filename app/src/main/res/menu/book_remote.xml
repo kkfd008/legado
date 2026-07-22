@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="AlwaysShowAction">
+
+    <item
+        android:id="@+id/menu_refresh"
+        android:title="@string/refresh"
+        android:icon="@drawable/ic_refresh"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/menu_server_config"
+        android:title="@string/server_config"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_sort"
+        android:title="@string/sort"
+        app:showAsAction="never">
+        <menu>
+            <group
+                android:id="@+id/menu_group_sort"
+                android:checkableBehavior="single">
+                <item
+                    android:id="@+id/menu_sort_name"
+                    android:title="@string/sort_by_name"
+                    app:showAsAction="never" />
+                <item
+                    android:id="@+id/menu_sort_time"
+                    android:title="@string/sort_by_time"
+                    app:showAsAction="never" />
+            </group>
+        </menu>
+    </item>
+
+    <item
+        android:id="@+id/menu_log"
+        android:title="@string/log"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_help"
+        android:title="@string/help"
+        app:showAsAction="never" />
+
+</menu>

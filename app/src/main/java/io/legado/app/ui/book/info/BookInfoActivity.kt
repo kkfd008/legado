@@ -672,7 +672,7 @@ class BookInfoActivity :
         }
     }
 
-    override val oldBook: Book?
+    val oldBook: Book?
         get() = viewModel.bookData.value
 
     override fun coverChangeTo(coverUrl: String) {

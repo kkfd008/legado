@@ -785,6 +785,8 @@
     <string name="body_title">Title</string>
     <string name="show_hide">Show/Hide</string>
     <string name="header_footer">Footer <![CDATA[&]]> Header</string>
+    <string name="more">More</string>
+    <string name="url">URL</string>
     <string name="rule_subscription">Rule Subscription</string>
     <string name="rule_sub_empty_msg">Add the rule import address provided by the bosses\nClick to import rules after adding</string>
     <string name="get_book_progress">Pull the cloud  progress</string>
@@ -848,6 +850,7 @@
     <string name="export_no_chapter_name">No export chapter names</string>
     <string name="autobackup_fail">Autobackup failed\n%s</string>
     <string name="end">end</string>
+    <string name="source_edit">Source Edit</string>
     <string name="custom_group_summary">Turn off Replace Group / Turn on Add Group</string>
     <string name="pref_media_button_per_next">Media Buttons • Previous | Next</string>
     <string name="pref_media_button_per_next_summary">Previous Paragraph|Next Paragraph/Previous Chapter|Next Chapter</string>
@@ -1193,4 +1196,157 @@
     <string name="auto_check_new_backup_t">自动检查新备份</string>
     <string name="auto_check_new_backup_s">打开软件时检查是否有新备份，有新备份时提示是否更新</string>
     <string name="sys_image_picker">系统图片选择器</string>
+
+    <!-- source management strings -->
+    <string name="book_source">Book Source</string>
+    <string name="book_source_manage">Book Source Manager</string>
+    <string name="book_source_manage_desc">Create, import, edit or manage book sources</string>
+    <string name="change_origin">Change Origin</string>
+    <string name="edit_book_source">Edit Book Source</string>
+    <string name="disable_book_source">Disable Book Source</string>
+    <string name="add_book_source">Add Book Source</string>
+    <string name="scan_book_source">Scan</string>
+    <string name="import_book_source">Import Book Source</string>
+    <string name="book_source_not_supported">Book Source feature is no longer supported.</string>
+    <string name="book_source_share_url">Book Source Share</string>
+    <string name="search_book_source">Search Book Source</string>
+    <string name="search_book_source_num">Search (%d book sources)</string>
+    <string name="check_book_source">Verify Book Source</string>
+    <string name="login">Login</string>
+    <string name="login_source">Login %s</string>
+    <string name="source_no_login">Current source has no login URL configured</string>
+    <string name="r_search_url">Search URL (url)</string>
+    <string name="rule_cover_url">Cover Rule (coverUrl)</string>
+    <string name="all_source">All Sources</string>
+    <string name="change_cover_source">Change Cover Source</string>
+    <string name="download_url_rule">Download URL Rule (downloadUrls)</string>
+    <string name="direct_link_upload_config">Direct Link Upload Config</string>
+    <string name="input_book_source_url">Input Book Source URL</string>
+    <string name="share_book_source">Share Book Source</string>
+    <string name="edit_source">Edit Source</string>
+    <string name="need_login">Need Login</string>
+    <string name="web_edit_source">Web Edit Source</string>
+    <string name="debug_source">Debug Source</string>
+    <string name="share_selected_source">Share Selected Source</string>
+    <string name="source_rule_s">Source Rule Description</string>
+    <string name="error_no_source">No Source</string>
+    <string name="source_auto_changing">Auto Changing Source</string>
+    <string name="auto_change_source">Auto Change Source</string>
+    <string name="on_change_source">Changing source, please wait…</string>
+    <string name="source_tab_base">Basic</string>
+    <string name="source_tab_search">Search</string>
+    <string name="source_tab_find">Find</string>
+    <string name="source_tab_info">Info</string>
+    <string name="source_tab_toc">TOC</string>
+    <string name="source_tab_content">Content</string>
+    <string name="source_tab_list">List</string>
+    <string name="r_find_url">Find URL Rule (url)</string>
+    <string name="r_book_list">Book List Rule (bookList)</string>
+    <string name="r_book_name">Book Name Rule (name)</string>
+    <string name="r_book_url">Book URL Rule (bookUrl)</string>
+    <string name="r_author">Author Rule (author)</string>
+    <string name="rule_book_kind">Category Rule (kind)</string>
+    <string name="rule_book_intro">Intro Rule (intro)</string>
+    <string name="rule_last_chapter">Last Chapter Rule (lastChapter)</string>
+    <string name="rule_word_count">Word Count Rule (wordCount)</string>
+    <string name="book_url_pattern">Book URL Pattern (bookUrlPattern)</string>
+    <string name="rule_book_info_init">Preprocess Rule (bookInfoInit)</string>
+    <string name="rule_toc_url">TOC URL Rule (tocUrl)</string>
+    <string name="rule_can_re_name">Can Rename (canReName)</string>
+    <string name="rule_next_toc_url">Next TOC URL Rule (nextTocUrl)</string>
+    <string name="rule_chapter_list">Chapter List Rule (chapterList)</string>
+    <string name="rule_chapter_name">Chapter Name Rule (chapterName)</string>
+    <string name="rule_chapter_url">Chapter URL Rule (chapterUrl)</string>
+    <string name="rule_is_volume">Is Volume (isVolume)</string>
+    <string name="rule_is_vip">Is VIP (isVip)</string>
+    <string name="rule_update_time">Update Time (chapterInfo)</string>
+    <string name="pre_update_js">Pre Update JS (preUpdateJs)</string>
+    <string name="rule_book_content">Content Rule (content)</string>
+    <string name="rule_next_content">Next Content URL Rule (nextContentUrl)</string>
+    <string name="rule_web_js">WebView JS (webJs)</string>
+    <string name="rule_image_style">Image Style (imageStyle)</string>
+    <string name="rule_replace_regex">Replace Rule (replaceRegex)</string>
+    <string name="rule_source_regex">Source Regex (sourceRegex)</string>
+    <string name="rule_pay_action">Pay Action (payAction)</string>
+    <string name="code_view">Code View</string>
+
+    <!-- find / discovery -->
+    <string name="find_on_www">Discovery</string>
+    <string name="find_source_manage">Discovery Manager</string>
+    <string name="find_empty">No content yet, customize in book sources!</string>
+    <string name="no_find">No discovery, add in book sources.</string>
+    <string name="edit_find">Edit Discovery</string>
+    <string name="screen_find">Filter Discovery Sources</string>
+    <string name="discovery">Discovery</string>
+    <string name="clear_find_cache">Clear Discovery Cache</string>
+    <string name="enable_explore">Enable Discovery</string>
+    <string name="disable_explore">Disable Discovery</string>
+    <string name="enabled_explore">Discovery Enabled</string>
+    <string name="disabled_explore">Discovery Disabled</string>
+    <string name="explore_empty">No discovery sources!</string>
+    <string name="show_discovery">Show Discovery</string>
+    <string name="tag_explore_enabled">Tag: Discovery Enabled</string>
+    <string name="tag_explore_disabled">Tag: Discovery Disabled</string>
+    <string name="refresh_explore">Refresh Discovery</string>
+    <string name="auto_expand_find">Auto Expand Discovery</string>
+    <string name="default_expand_first">Default Expand First Group</string>
+    <string name="refresh_default">Sync Book Sources</string>
+
+    <!-- check source -->
+    <string name="check_select_source">Verify Selected</string>
+    <string name="check_source_config">Verify Config</string>
+    <string name="check_source_item">Verify Items</string>
+    <string name="check_source_timeout">Verify Timeout per Source (seconds)</string>
+    <string name="check_source_config_summary">Verify Timeout: %1$s seconds\nVerify Items: %2$s</string>
+    <string name="check_source_show_debug_message">Show Debug Info</string>
+    <string name="check_source_show_debug_message_summary">Show network request steps and time during verification</string>
+    <string name="record_debug_log">Record Debug Log</string>
+    <string name="timeout">Timeout</string>
+    <string name="seconds">seconds</string>
+    <string name="less_than">less than</string>
+
+    <!-- background verification -->
+    <string name="pt_background_verification">Background Verification</string>
+    <string name="ps_background_verification">Enable background verification to operate freely</string>
+    <string name="pt_show_all_find">Show All Discovery</string>
+    <string name="ps_show_all_find">Only show discovery from selected sources when disabled</string>
+
+    <!-- change source batch -->
+    <string name="change_source_batch">Batch Change Source</string>
+    <string name="book_type_different">Book type is different</string>
+    <string name="soure_change_source">Confirm change source?</string>
+    <string name="change_source_delay">Change Source Interval</string>
+    <string name="change_source_progress">Result %1$d, Progress %2$d / %3$d: %4$s</string>
+    <string name="chapter_change_source">Single Chapter Change Source</string>
+    <string name="book_change_source">Whole Book Change Source</string>
+    <string name="select_new_source">Select New Source</string>
+    <string name="select_update_source">Select Update Source</string>
+    <string name="scroll_to_dur_source">Scroll to Current Source</string>
+    <string name="up_change_source_last_chapter_t">Background Update Latest Chapter Source</string>
+    <string name="up_change_source_last_chapter_s">Start updating 1 minute after app opens</string>
+
+    <!-- search source -->
+    <string name="search_src">Search Source</string>
+    <string name="boo_src">Book Source</string>
+    <string name="toc_src">TOC Source</string>
+    <string name="content_src">Content Source</string>
+    <string name="list_src">List Source</string>
+    <string name="groups_or_source">Multiple Groups/Sources</string>
+
+    <!-- direct link -->
+    <string name="direct_link_upload_rule">Direct Link Upload Rule</string>
+    <string name="direct_link_upload_rule_summary">Generate direct link URL when exporting book sources/lists</string>
+
+    <!-- set variable -->
+    <string name="set_source_variable">Set Source Variable</string>
+    <string name="set_book_variable">Set Book Variable</string>
+
+    <!-- webdav -->
+    <string name="webdav_after_local_restore_confirm">WebDav source is newer than local, restore?</string>
+
+    <!-- clear bookshelf -->
+    <string name="clear_bookshelf_s">This will delete all books, proceed with caution.</string>
+    <string name="export_all_use_book_source">Export All Book Sources</string>
+    <string name="source">Source</string>
+    <string name="book_remote">Remote Book</string>
 </resources>

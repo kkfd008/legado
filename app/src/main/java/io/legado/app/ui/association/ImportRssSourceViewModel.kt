@@ -61,7 +61,7 @@ class ImportRssSourceViewModel(app: Application) : BaseViewModel(app) {
         }
 
     fun importSelect(finally: () -> Unit) {
-        execute {
+        execute<Unit> {
             val group = groupName?.trim()
             val keepName = AppConfig.importKeepName
             val keepGroup = AppConfig.importKeepGroup

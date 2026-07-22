@@ -10,6 +10,7 @@ import androidx.room.Update
 import io.legado.app.constant.BookType
 import io.legado.app.data.entities.BaseSource
 import io.legado.app.data.entities.Book
+import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.help.book.isNotShelf
 import kotlinx.coroutines.flow.Flow
@@ -109,7 +110,7 @@ interface BookDao {
     @Query("""select distinct bs.* from books, book_sources bs 
         where origin == bookSourceUrl and origin not like '${BookType.localTag}%' 
         and origin not like '${BookType.webDavTag}%'""")
-    fun getAllUseBookSource(): List<BaseSource>
+    fun getAllUseBookSource(): List<BookSource>
 
     @Query("SELECT * FROM books WHERE name = :name and origin = :origin")
     fun getBookByOrigin(name: String, origin: String): Book?

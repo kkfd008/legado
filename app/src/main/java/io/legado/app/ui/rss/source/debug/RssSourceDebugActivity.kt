@@ -3,6 +3,7 @@ package io.legado.app.ui.rss.source.debug
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.widget.SearchView
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -65,7 +66,7 @@ class RssSourceDebugActivity : VMBaseActivity<ActivitySourceDebugBinding, RssSou
     }
 
     private fun initSearchView() {
-        binding.titleBar.findViewById<SearchView>(R.id.search_view).gone()
+        binding.titleBar.root.findViewById<SearchView>(R.id.search_view)?.gone()
     }
 
     private fun startDebug() {

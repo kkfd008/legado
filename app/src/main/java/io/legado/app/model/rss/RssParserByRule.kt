@@ -104,26 +104,26 @@ object RssParserByRule {
         val rssArticle = RssArticle(variable = variable)
         analyzeRule.setRuleData(rssArticle)
         analyzeRule.setContent(item)
-        Debug.log(sourceUrl, "┌获取标题", log)
+        if (log) Debug.log(sourceUrl, "┌获取标题")
         rssArticle.title = analyzeRule.getString(ruleTitle)
-        Debug.log(sourceUrl, "└${rssArticle.title}", log)
-        Debug.log(sourceUrl, "┌获取时间", log)
+        if (log) Debug.log(sourceUrl, "└${rssArticle.title}")
+        if (log) Debug.log(sourceUrl, "┌获取时间")
         rssArticle.pubDate = analyzeRule.getString(rulePubDate)
-        Debug.log(sourceUrl, "└${rssArticle.pubDate}", log)
-        Debug.log(sourceUrl, "┌获取描述", log)
+        if (log) Debug.log(sourceUrl, "└${rssArticle.pubDate}")
+        if (log) Debug.log(sourceUrl, "┌获取描述")
         if (ruleDescription.isEmpty()) {
             rssArticle.description = null
-            Debug.log(sourceUrl, "└描述规则为空，将会解析内容页", log)
+            if (log) Debug.log(sourceUrl, "└描述规则为空，将会解析内容页")
         } else {
             rssArticle.description = analyzeRule.getString(ruleDescription)
-            Debug.log(sourceUrl, "└${rssArticle.description}", log)
+            if (log) Debug.log(sourceUrl, "└${rssArticle.description}")
         }
-        Debug.log(sourceUrl, "┌获取图片url", log)
+        if (log) Debug.log(sourceUrl, "┌获取图片url")
         rssArticle.image = analyzeRule.getString(ruleImage, isUrl = true)
-        Debug.log(sourceUrl, "└${rssArticle.image}", log)
-        Debug.log(sourceUrl, "┌获取文章链接", log)
+        if (log) Debug.log(sourceUrl, "└${rssArticle.image}")
+        if (log) Debug.log(sourceUrl, "┌获取文章链接")
         rssArticle.link = NetworkUtils.getAbsoluteURL(sourceUrl, analyzeRule.getString(ruleLink))
-        Debug.log(sourceUrl, "└${rssArticle.link}", log)
+        if (log) Debug.log(sourceUrl, "└${rssArticle.link}")
         if (rssArticle.title.isBlank()) {
             return null
         }

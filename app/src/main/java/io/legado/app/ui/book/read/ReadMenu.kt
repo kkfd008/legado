@@ -339,9 +339,9 @@ class ReadMenu @JvmOverloads constructor(
                         val bookSource = null
                         putExtra("title", tvChapterName.text)
                         putExtra("url", url)
-                        putExtra("sourceOrigin", null)
-                        putExtra("sourceName", null)
-                        putExtra("sourceType", null)
+                        putExtra("sourceOrigin", null as String?)
+                        putExtra("sourceName", null as String?)
+                        putExtra("sourceType", null as String?)
                     }
                 }
             }

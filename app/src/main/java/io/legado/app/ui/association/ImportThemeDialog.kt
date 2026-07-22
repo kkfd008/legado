@@ -151,7 +151,7 @@ class ImportThemeDialog() : BaseDialogFragment(R.layout.dialog_recycler_view) {
 
         override fun registerListener(holder: ItemViewHolder, binding: ItemSourceImportBinding) {
             binding.apply {
-                cbSourceName.setOnUserCheckedChangeListener { isChecked ->
+                cbSourceName.setOnCheckedChangeListener { _, isChecked ->
                     viewModel.selectStatus[holder.layoutPosition] = isChecked
                     upSelectText()
                 }

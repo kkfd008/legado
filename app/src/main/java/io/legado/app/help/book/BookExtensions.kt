@@ -12,7 +12,9 @@ import io.legado.app.constant.AppPattern
 import io.legado.app.constant.BookType
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.BaseBook
+import io.legado.app.data.entities.BaseSource
 import io.legado.app.data.entities.Book
+import io.legado.app.data.entities.BookChapter
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.RuleBigDataHelp
 import io.legado.app.help.config.AppConfig
@@ -367,6 +369,18 @@ fun Book.simulatedTotalChapterNum(): Int {
 
 fun Book.readSimulating(): Boolean {
     return config.readSimulating
+}
+
+fun Book.getBookSource(): BaseSource? {
+    return null
+}
+
+fun Book.getBookInfo() {
+    // stub
+}
+
+fun Book.chapterList(): List<BookChapter> {
+    return emptyList()
 }
 
 fun tryParesExportFileName(jsStr: String): Boolean {

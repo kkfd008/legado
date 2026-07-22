@@ -22,7 +22,20 @@ static def releaseTime() {
 
 def name = "legado"
 def version = "3." + releaseTime()
-def gitCommits = Integer.parseInt('git rev-list HEAD --count'.execute().text.trim())
+def gitCommits = {
+    try {
+        def stdout = new ByteArrayOutputStream()
+        def stderr = new ByteArrayOutputStream()
+        def proc = ['git', 'rev-list', 'HEAD', '--count'].execute([], project.rootDir)
+        proc.consumeProcessOutput(stdout, stderr)
+        proc.waitFor()
+        if (proc.exitValue() == 0) {
+            return Integer.parseInt(stdout.toString().trim())
+        }
+    } catch (Exception ignored) {
+    }
+    return 0
+}()
 
 android {
     compileSdk = compile_sdk_version
