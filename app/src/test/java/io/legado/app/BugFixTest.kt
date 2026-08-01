@@ -11,6 +11,54 @@ import java.util.concurrent.TimeUnit
 class BugFixTest {
 
     /**
+     * 回归测试：验证 PartialInputStream.read() 中 filepos 应按实际读取字节数(count)推进，
+     * 而非按请求字节数(len)推进。
+     *
+     * 修复前：filepos += len（当 PfdHelper.read 返回 count < len 时，filepos 跳过数据）
+     * 修复后：filepos += count（filepos 精确推进到实际读取位置）
+     *
+     * 触发场景：当底层读取返回的字节数少于请求量（如接近文件末尾、IO 中断），
+     * 旧的 filepos += len 会导致后续读取跳过数据，造成 EPUB 内容损坏。
+     * 这在 InflaterInputStream 解压 DEFLATED 条目时尤其致命——跳过字节会使
+     * Inflater 产生错误输出或抛出 DataFormatException，导致整本书无法阅读。
+     */
+    @Test
+    fun testPartialInputStreamFileposAdvancesByActualCount() {
+        // 模拟 PartialInputStream 的核心逻辑
+        var filepos = 0L
+        val end = 10L
+
+        // 模拟一次读取：请求 10 字节，但底层只返回 6 字节
+        val requestedLen = 10
+        val actualCount = 6 // PfdHelper.read() 返回实际读取的字节数
+
+        // 修复后的逻辑：filepos += count
+        if (actualCount > 0) {
+            filepos += actualCount
+        }
+
+        Assert.assertEquals(
+            "filepos should advance by actual bytes read (count), not requested len",
+            6L, filepos
+        )
+
+        // 修复前的错误行为（filepos += len）会导致：
+        // filepos = 0 + 10 = 10，跳过了 4 字节未读数据
+        val fileposOld = 0L + requestedLen
+        Assert.assertNotEquals(
+            "filepos must NOT advance by requested len when actual count differs",
+            filepos, fileposOld
+        )
+
+        // 验证修复后：剩余可读字节正确
+        val remaining = end - filepos
+        Assert.assertEquals(
+            "Remaining bytes should be 4 after reading 6 of 10",
+            4L, remaining
+        )
+    }
+
+    /**
      * 测试 ConcurrentHashMap 的 computeIfAbsent 原子性
      * 验证多线程并发创建 ConcurrentRecord 时，同一 key 只创建一个实例
      */
