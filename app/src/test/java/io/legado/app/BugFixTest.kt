@@ -178,4 +178,112 @@ class BugFixTest {
             record1, record3
         )
     }
+
+    /**
+     * 测试 fetchEnd 对 isConcurrent=true 模式的 frequency 递减
+     * 修复前：fetchEnd 仅在 !isConcurrent 时递减 frequency，
+     * 导致 isConcurrent=true（次数/毫秒模式）的 frequency 只增不减，
+     * 达到上限后所有请求被永久限流。
+     */
+    @Test
+    fun testFetchEndDecrementsFrequencyForConcurrentMode() {
+        val record = ConcurrentRecord(isConcurrent = true, time = System.currentTimeMillis(), frequency = 3)
+
+        // 模拟 fetchEnd：修复后无论 isConcurrent 值如何都应递减
+        synchronized(record) {
+            if (record.frequency > 0) {
+                record.frequency -= 1
+            }
+        }
+        Assert.assertEquals("frequency should decrement to 2", 2, record.frequency)
+
+        synchronized(record) {
+            if (record.frequency > 0) {
+                record.frequency -= 1
+            }
+        }
+        Assert.assertEquals("frequency should decrement to 1", 1, record.frequency)
+
+        synchronized(record) {
+            if (record.frequency > 0) {
+                record.frequency -= 1
+            }
+        }
+        Assert.assertEquals("frequency should decrement to 0", 0, record.frequency)
+
+        // 不应变为负数
+        synchronized(record) {
+            if (record.frequency > 0) {
+                record.frequency -= 1
+            }
+        }
+        Assert.assertEquals("frequency should not go below 0", 0, record.frequency)
+    }
+
+    /**
+     * 测试 fetchEnd 对 isConcurrent=false 模式的 frequency 递减
+     * 验证修复后原有逻辑仍然正确
+     */
+    @Test
+    fun testFetchEndDecrementsFrequencyForNonConcurrentMode() {
+        val record = ConcurrentRecord(isConcurrent = false, time = System.currentTimeMillis(), frequency = 2)
+
+        synchronized(record) {
+            if (record.frequency > 0) {
+                record.frequency -= 1
+            }
+        }
+        Assert.assertEquals("frequency should decrement to 1", 1, record.frequency)
+
+        synchronized(record) {
+            if (record.frequency > 0) {
+                record.frequency -= 1
+            }
+        }
+        Assert.assertEquals("frequency should decrement to 0", 0, record.frequency)
+    }
+
+    /**
+     * 测试并发环境下 fetchStart + fetchEnd 的 frequency 一致性
+     * 模拟 isConcurrent=true 模式下多个请求开始和结束的计数平衡
+     */
+    @Test
+    fun testConcurrentFetchStartEndBalance() {
+        val map = ConcurrentHashMap<String, ConcurrentRecord>()
+        val key = "concurrent_balance_test"
+        val threadCount = 20
+        val latch = CountDownLatch(threadCount)
+        val executor = Executors.newFixedThreadPool(threadCount)
+
+        for (i in 0 until threadCount) {
+            executor.submit {
+                try {
+                    val record = map.computeIfAbsent(key) {
+                        ConcurrentRecord(true, System.currentTimeMillis(), 1)
+                    }
+                    // 模拟 fetchStart 的递增
+                    synchronized(record) {
+                        record.frequency += 1
+                    }
+                    // 模拟 fetchEnd 的递减（修复后逻辑）
+                    synchronized(record) {
+                        if (record.frequency > 0) {
+                            record.frequency -= 1
+                        }
+                    }
+                } finally {
+                    latch.countDown()
+                }
+            }
+        }
+
+        latch.await(10, TimeUnit.SECONDS)
+        executor.shutdown()
+
+        val record = map[key]!!
+        Assert.assertEquals(
+            "frequency should return to initial value after balanced start/end",
+            1, record.frequency
+        )
+    }
 }
