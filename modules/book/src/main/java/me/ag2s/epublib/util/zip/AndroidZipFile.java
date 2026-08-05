@@ -249,7 +249,7 @@ public class AndroidZipFile implements ZipConstants {
             entry.setCrc(crc & 0xffffffffL);
             entry.setSize(size & 0xffffffffL);
             entry.setCompressedSize(csize & 0xffffffffL);
-            entry.setTime(dostime);
+            entry.setDOSTime(dostime);
             if (extraLen > 0) {
                 byte[] extra = new byte[extraLen];
                 PfdHelper.readFully(pfd, extra);
@@ -473,7 +473,7 @@ public class AndroidZipFile implements ZipConstants {
                 seek(pfd, filepos);
                 int count = PfdHelper.read(pfd, b, off, len);
                 if (count > 0)
-                    filepos += len;
+                    filepos += count;
                 return count;
             }
         }
