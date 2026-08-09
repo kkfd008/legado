@@ -48,6 +48,10 @@ val cookieJar by lazy {
 }
 
 val okHttpClient: OkHttpClient by lazy {
+    createOkHttpClient()
+}
+
+private fun createOkHttpClient(): OkHttpClient {
     val specs = arrayListOf(
         ConnectionSpec.MODERN_TLS,
         ConnectionSpec.COMPATIBLE_TLS,
@@ -59,26 +63,23 @@ val okHttpClient: OkHttpClient by lazy {
         .writeTimeout(15, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .callTimeout(60, TimeUnit.SECONDS)
-        //.cookieJar(cookieJar = cookieJar)
-        .sslSocketFactory(SSLHelper.unsafeSSLSocketFactory, SSLHelper.unsafeTrustManager)
         .retryOnConnectionFailure(true)
-        .hostnameVerifier(SSLHelper.unsafeHostnameVerifier)
         .connectionSpecs(specs)
         .followRedirects(true)
         .followSslRedirects(true)
         .addInterceptor(OkHttpExceptionInterceptor)
         .addInterceptor { chain ->
             val request = chain.request()
-            val builder = request.newBuilder()
+            val requestBuilder = request.newBuilder()
             if (request.header(AppConst.UA_NAME) == null) {
-                builder.addHeader(AppConst.UA_NAME, AppConfig.userAgent)
+                requestBuilder.addHeader(AppConst.UA_NAME, AppConfig.userAgent)
             } else if (request.header(AppConst.UA_NAME) == "null") {
-                builder.removeHeader(AppConst.UA_NAME)
+                requestBuilder.removeHeader(AppConst.UA_NAME)
             }
-            builder.addHeader("Keep-Alive", "300")
-            builder.addHeader("Connection", "Keep-Alive")
-            builder.addHeader("Cache-Control", "no-cache")
-            chain.proceed(builder.build())
+            requestBuilder.addHeader("Keep-Alive", "300")
+            requestBuilder.addHeader("Connection", "Keep-Alive")
+            requestBuilder.addHeader("Cache-Control", "no-cache")
+            chain.proceed(requestBuilder.build())
         }
         .addNetworkInterceptor { chain ->
             var request = chain.request()
@@ -97,6 +98,13 @@ val okHttpClient: OkHttpClient by lazy {
             }
             networkResponse
         }
+
+    // 根据配置决定是否使用不安全的 SSL 验证
+    if (!AppConfig.sslValidation) {
+        builder.sslSocketFactory(SSLHelper.unsafeSSLSocketFactory, SSLHelper.unsafeTrustManager)
+        builder.hostnameVerifier(SSLHelper.unsafeHostnameVerifier)
+    }
+
     if (AppConfig.isCronet) {
         if (Cronet.loader?.install() == true) {
             Cronet.interceptor?.let {

@@ -342,6 +342,13 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
             appCtx.putPrefBoolean(PreferKey.enableCustomExport, value)
         }
 
+    // SSL 证书验证：true 为严格验证（默认），false 为跳过验证
+    var sslValidation: Boolean
+        get() = appCtx.getPrefBoolean(PreferKey.sslValidation, true)
+        set(value) {
+            appCtx.putPrefBoolean(PreferKey.sslValidation, value)
+        }
+
     var exportType: Int
         get() = appCtx.getPrefInt(PreferKey.exportType)
         set(value) {

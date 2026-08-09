@@ -171,6 +171,7 @@ object PreferKey {
     const val disableMangaPageAnim = "disableMangaPageAnim"
     const val paddingDisplayCutouts = "paddingDisplayCutouts"
     const val autoCheckNewBackup = "autoCheckNewBackup"
+    const val sslValidation = "sslValidation"
 
     const val cPrimary = "colorPrimary"
     const val cAccent = "colorAccent"

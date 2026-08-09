@@ -216,7 +216,9 @@ object Backup {
         if (ZipUtils.zipFiles(paths, zipFilePath)) {
             when {
                 path.isNullOrBlank() -> {
-                    copyBackup(context.getExternalFilesDir(null)!!, backupFileName)
+                    context.getExternalFilesDir(null)?.let {
+                        copyBackup(it, backupFileName)
+                    } ?: throw NoStackTraceException("无法获取外部存储目录")
                 }
 
                 path.isContentScheme() -> {
@@ -266,7 +268,8 @@ object Backup {
     @Throws(Exception::class)
     @Suppress("SameParameterValue")
     private fun copyBackup(context: Context, uri: Uri, fileName: String) {
-        val treeDoc = DocumentFile.fromTreeUri(context, uri)!!
+        val treeDoc = DocumentFile.fromTreeUri(context, uri) 
+            ?: throw NoStackTraceException("无法获取文档目录")
         treeDoc.findFile(fileName)?.delete()
         val fileDoc = treeDoc.createFile("", fileName)
             ?: throw NoStackTraceException("创建文件失败")

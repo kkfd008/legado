@@ -80,7 +80,9 @@ object ZipUtils {
         if (srcFilePaths == null || zipFilePath == null) return@withContext false
         ZipOutputStream(FileOutputStream(zipFilePath)).use {
             for (srcFile in srcFilePaths) {
-                if (!zipFile(getFileByPath(srcFile)!!, "", it, comment))
+                val file = getFileByPath(srcFile)
+                if (file == null) return@withContext false
+                if (!zipFile(file, "", it, comment))
                     return@withContext false
             }
             return@withContext true
@@ -247,12 +249,13 @@ object ZipUtils {
         val files = arrayListOf<File>()
         var entry: ZipEntry?
         while (zipInputStream.nextEntry.also { entry = it } != null) {
-            val entryName = entry!!.name
+            val entryName = entry?.name ?: continue
             val entryFile = File(dir, entryName)
             if (!entryFile.canonicalPath.startsWith(dir.canonicalPath)) {
                 throw SecurityException("压缩文件只能解压到指定路径")
             }
-            if (entry.isDirectory) {
+            val isDirectory = entry?.isDirectory ?: false
+            if (isDirectory) {
                 if (!entryFile.exists()) {
                     entryFile.mkdirs()
                 }
@@ -294,10 +297,10 @@ object ZipUtils {
         val fileNames = mutableListOf<String>()
         var entry: ZipEntry?
         while (zipInputStream.nextEntry.also { entry = it } != null) {
-            if (entry!!.isDirectory) {
+            if (entry?.isDirectory == true) {
                 continue
             }
-            val fileName = entry.name
+            val fileName = entry?.name ?: continue
             if (filter != null && filter.invoke(fileName))
                 fileNames.add(fileName)
         }

@@ -72,11 +72,14 @@ object Restore {
         kotlin.runCatching {
             FileUtils.delete(Backup.backupPath)
             if (uri.isContentScheme()) {
-                DocumentFile.fromSingleUri(context, uri)!!.openInputStream()!!.use {
+                val docFile = DocumentFile.fromSingleUri(context, uri) 
+                    ?: throw NoStackTraceException("无法获取文档文件")
+                docFile.openInputStream()?.use {
                     ZipUtils.unZipToPath(it, Backup.backupPath)
-                }
+                } ?: throw NoStackTraceException("无法打开文件流")
             } else {
-                ZipUtils.unZipToPath(File(uri.path!!), Backup.backupPath)
+                val path = uri.path ?: throw NoStackTraceException("文件路径为空")
+                ZipUtils.unZipToPath(File(path), Backup.backupPath)
             }
         }.onFailure {
             AppLog.put("复制解压文件出错\n${it.localizedMessage}", it)
