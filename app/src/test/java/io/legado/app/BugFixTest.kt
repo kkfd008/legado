@@ -1,5 +1,6 @@
 package io.legado.app
 
+import io.legado.app.help.http.CookieManager.mergeCookiesToMap
 import io.legado.app.model.analyzeRule.AnalyzeUrl.ConcurrentRecord
 import org.junit.Assert
 import org.junit.Test
@@ -27,7 +28,7 @@ class BugFixTest {
             executor.submit {
                 try {
                     val record = map.computeIfAbsent(key) {
-                        ConcurrentRecord(false, System.currentTimeMillis(), 1)
+                        ConcurrentRecord(false, 0L, 0)
                     }
                     records.getOrPut(key) { mutableListOf() }.add(record)
                 } finally {
@@ -69,7 +70,7 @@ class BugFixTest {
             executor.submit {
                 try {
                     map.computeIfAbsent(key) {
-                        ConcurrentRecord(false, System.currentTimeMillis(), 1)
+                        ConcurrentRecord(false, 0L, 0)
                     }
                 } finally {
                     latch.countDown()
@@ -78,7 +79,7 @@ class BugFixTest {
             executor.submit {
                 try {
                     map.computeIfAbsent(key) {
-                        ConcurrentRecord(false, System.currentTimeMillis(), 1)
+                        ConcurrentRecord(false, 0L, 0)
                     }
                 } finally {
                     latch.countDown()
@@ -142,7 +143,7 @@ class BugFixTest {
         val sourceKey: String? = null
         val result = if (sourceKey != null) {
             map.computeIfAbsent(sourceKey) {
-                ConcurrentRecord(false, System.currentTimeMillis(), 1)
+                ConcurrentRecord(false, 0L, 0)
             }
         } else {
             null
@@ -162,10 +163,10 @@ class BugFixTest {
         val key = "identity_test_key"
 
         val record1 = map.computeIfAbsent(key) {
-            ConcurrentRecord(true, System.currentTimeMillis(), 1)
+            ConcurrentRecord(true, 0L, 0)
         }
         val record2 = map.computeIfAbsent(key) {
-            ConcurrentRecord(true, System.currentTimeMillis(), 1)
+            ConcurrentRecord(true, 0L, 0)
         }
         val record3 = map[key]
 
@@ -177,5 +178,39 @@ class BugFixTest {
             "get should return the same instance as computeIfAbsent",
             record1, record3
         )
+    }
+
+    /**
+     * 测试 mergeCookiesToMap 在所有 cookie 为 null 时不会抛出异常
+     * 修复了 NoSuchElementException 崩溃问题
+     */
+    @Test
+    fun testMergeCookiesToMapWithAllNull() {
+        // 当所有 cookie 都为 null 时，应该返回空 map 而不是抛出 NoSuchElementException
+        val result = mergeCookiesToMap(null, null)
+        Assert.assertTrue("All null cookies should return empty map", result.isEmpty())
+
+        // 单个 null cookie 也应该返回空 map
+        val result2 = mergeCookiesToMap(null)
+        Assert.assertTrue("Single null cookie should return empty map", result2.isEmpty())
+
+        // 空字符串 cookie 也应该返回空 map
+        val result3 = mergeCookiesToMap("", "")
+        Assert.assertTrue("Empty string cookies should return empty map", result3.isEmpty())
+    }
+
+    /**
+     * 测试 mergeCookiesToMap 在有效 cookie 存在时正常工作
+     */
+    @Test
+    fun testMergeCookiesToMapValidCookies() {
+        val result = mergeCookiesToMap("key1=value1", "key2=value2")
+        Assert.assertEquals("key1=value1", result["key1"])
+        Assert.assertEquals("key2=value2", result["key2"])
+
+        // 测试 null 和有效 cookie 混合
+        val result2 = mergeCookiesToMap("key1=value1", null)
+        Assert.assertEquals("key1=value1", result2["key1"])
+        Assert.assertEquals(1, result2.size)
     }
 }

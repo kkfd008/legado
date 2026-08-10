@@ -30,16 +30,18 @@ suspend fun OkHttpClient.newCallResponse(
     retry: Int = 0,
     builder: Request.Builder.() -> Unit
 ): Response {
+    require(retry >= 0) { "retry must be non-negative" }
     val requestBuilder = Request.Builder()
     requestBuilder.apply(builder)
-    var response: Response? = null
+    var lastResponse: Response? = null
     for (i in 0..retry) {
-        response = newCall(requestBuilder.build()).await()
+        val response = newCall(requestBuilder.build()).await()
+        lastResponse = response
         if (response.isSuccessful) {
             return response
         }
     }
-    return response!!
+    return lastResponse ?: throw IOException("请求失败，无可用响应")
 }
 
 suspend fun OkHttpClient.newCallResponseBody(
@@ -47,6 +49,7 @@ suspend fun OkHttpClient.newCallResponseBody(
     builder: Request.Builder.() -> Unit
 ): ResponseBody {
     return newCallResponse(retry, builder).body
+        ?: throw IOException("响应体为空")
 }
 
 suspend fun OkHttpClient.newCallStrResponse(
@@ -54,7 +57,7 @@ suspend fun OkHttpClient.newCallStrResponse(
     builder: Request.Builder.() -> Unit
 ): StrResponse {
     return newCallResponse(retry, builder).let {
-        StrResponse(it, it.body.text())
+        StrResponse(it, it.body?.text())
     }
 }
 

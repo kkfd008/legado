@@ -24,7 +24,7 @@ class ConcurrentRateLimiter(val source: BaseSource?) {
         }
         val rateIndex = concurrentRate.indexOf("/")
         val fetchRecord = concurrentRecordMap.computeIfAbsent(source.getKey()) {
-            ConcurrentRecord(rateIndex > 0, System.currentTimeMillis(), 1)
+            ConcurrentRecord(rateIndex > 0, 0L, 0)
         }
         val waitTime: Int = synchronized(fetchRecord) {
             try {
@@ -53,7 +53,7 @@ class ConcurrentRateLimiter(val source: BaseSource?) {
                         return@synchronized 0
                     }
                     val cs = concurrentRate.substring(0, rateIndex)
-                    if (fetchRecord.frequency > cs.toInt()) {
+                    if (fetchRecord.frequency >= cs.toInt()) {
                         return@synchronized (nextTime - System.currentTimeMillis()).toInt()
                     } else {
                         fetchRecord.frequency += 1
@@ -77,9 +77,11 @@ class ConcurrentRateLimiter(val source: BaseSource?) {
      * 访问结束
      */
     fun fetchEnd(concurrentRecord: ConcurrentRecord?) {
-        if (concurrentRecord != null && !concurrentRecord.isConcurrent) {
+        if (concurrentRecord != null) {
             synchronized(concurrentRecord) {
-                concurrentRecord.frequency -= 1
+                if (concurrentRecord.frequency > 0) {
+                    concurrentRecord.frequency -= 1
+                }
             }
         }
     }

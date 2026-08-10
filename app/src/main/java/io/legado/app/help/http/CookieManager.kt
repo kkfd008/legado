@@ -99,7 +99,11 @@ object CookieManager {
     }
 
     fun mergeCookiesToMap(vararg cookies: String?): MutableMap<String, String> {
-        return cookies.filterNotNull().map {
+        val validCookies = cookies.filterNotNull()
+        if (validCookies.isEmpty()) {
+            return mutableMapOf()
+        }
+        return validCookies.map {
             CookieStore.cookieToMap(it)
         }.reduce { acc, cookieMap ->
             acc.apply { putAll(cookieMap) }
