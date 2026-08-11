@@ -110,17 +110,20 @@ public class EpubReader {
         return readEpub(resources);
     }
 
-    public EpubBook readEpub(Resources resources) {
+    public EpubBook readEpub(Resources resources) throws IOException {
         return readEpub(resources, new EpubBook());
     }
 
-    public EpubBook readEpub(Resources resources, EpubBook result) {
+    public EpubBook readEpub(Resources resources, EpubBook result) throws IOException {
         if (result == null) {
             result = new EpubBook();
         }
         handleMimeType(result, resources);
         String packageResourceHref = getPackageResourceHref(resources);
         Resource packageResource = processPackageResource(packageResourceHref, result, resources);
+        if (packageResource == null) {
+            throw new IOException("Cannot read epub package resource: " + packageResourceHref);
+        }
         result.setOpfResource(packageResource);
         Resource ncxResource = processNcxResource(packageResource, result);
         result.setNcxResource(ncxResource);
@@ -136,7 +139,9 @@ public class EpubReader {
     }
 
     private Resource processNcxResource(Resource packageResource, EpubBook book) {
-        Log.d(TAG, "OPF:getHref()" + packageResource.getHref());
+        if (packageResource != null) {
+            Log.d(TAG, "OPF:getHref()" + packageResource.getHref());
+        }
         if (book.isEpub3()) {
             return NCXDocumentV3.read(book, this);
         } else {
@@ -146,13 +151,14 @@ public class EpubReader {
     }
 
     private Resource processPackageResource(String packageResourceHref, EpubBook book,
-                                            Resources resources) {
+                                            Resources resources) throws IOException {
         Resource packageResource = resources.remove(packageResourceHref);
         if (packageResource != null) {
             try {
                 PackageDocumentReader.read(packageResource, this, book, resources);
             } catch (Exception e) {
-                Log.e(TAG, e.getMessage(), e);
+                Log.e(TAG, "Error reading package resource: " + packageResourceHref, e);
+                throw new IOException("Failed to read epub package: " + e.getMessage(), e);
             }
         }
         return packageResource;
