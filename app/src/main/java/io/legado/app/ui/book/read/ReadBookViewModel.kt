@@ -523,10 +523,12 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
             FileInputStream(image).use { input ->
                 if (uri.isContentScheme()) {
                     DocumentFile.fromTreeUri(context, uri)?.let { doc ->
-                        val imageDoc = DocumentUtils.createFileIfNotExist(doc, image.name)!!
-                        context.contentResolver.openOutputStream(imageDoc.uri)!!.use { output ->
-                            input.copyTo(output)
-                        }
+                        val imageDoc = DocumentUtils.createFileIfNotExist(doc, image.name)
+                            ?: return@let
+                        context.contentResolver.openOutputStream(imageDoc.uri)
+                            ?.use { output ->
+                                input.copyTo(output)
+                            }
                     }
                 } else {
                     val dir = File(uri.path ?: uri.toString())

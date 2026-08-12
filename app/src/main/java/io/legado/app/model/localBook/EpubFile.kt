@@ -71,6 +71,7 @@ class EpubFile(var book: Book) {
         }
 
         fun clear() {
+            eFile?.close()
             eFile = null
         }
     }
@@ -81,6 +82,7 @@ class EpubFile(var book: Book) {
      *持有引用，避免被回收
      */
     private var fileDescriptor: ParcelFileDescriptor? = null
+    private var zipFile: AndroidZipFile? = null
     private var epubBook: EpubBook? = null
         get() {
             if (field == null || fileDescriptor == null) {
@@ -108,9 +110,11 @@ class EpubFile(var book: Book) {
             //ContentScheme拷贝到私有文件夹采用懒加载防止OOM
             //val zipFile = BookHelp.getEpubFile(book)
             BookHelp.getBookPFD(book)?.let {
+                zipFile?.close()
                 fileDescriptor = it
-                val zipFile = AndroidZipFile(it, book.originName)
-                EpubReader().readEpubLazy(zipFile, "utf-8")
+                val newZipFile = AndroidZipFile(it, book.originName)
+                zipFile = newZipFile
+                EpubReader().readEpubLazy(newZipFile, "utf-8")
             }
 
 
@@ -118,6 +122,17 @@ class EpubFile(var book: Book) {
             AppLog.put("读取Epub文件失败\n${it.localizedMessage}", it)
             it.printOnDebug()
         }.getOrThrow()
+    }
+
+    fun close() {
+        try {
+            zipFile?.close()
+        } catch (_: IOException) {
+        }
+        zipFile = null
+        fileDescriptor = null
+        epubBook = null
+        epubBookContents = null
     }
 
     private fun getContent(chapter: BookChapter): String? {
