@@ -333,10 +333,9 @@ object ZipUtils {
             val entryName = (entries.nextElement() as ZipEntry).name
             if (entryName.contains("../")) {
                 DebugLog.e(javaClass.name, "entryName: $entryName is dangerous!")
-                paths.add(entryName)
-            } else {
-                paths.add(entryName)
+                continue
             }
+            paths.add(entryName)
         }
         zip.close()
         return paths

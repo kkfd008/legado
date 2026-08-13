@@ -323,7 +323,7 @@ class ACache private constructor(cacheDir: File, max_size: Long, max_count: Int)
             var ois: ObjectInputStream? = null
             try {
                 bis = ByteArrayInputStream(data)
-                ois = ObjectInputStream(bis)
+                ois = SafeObjectInputStream(bis)
                 return ois.readObject()
             } catch (e: Exception) {
                 e.printOnDebug()
@@ -784,6 +784,44 @@ class ACache private constructor(cacheDir: File, max_size: Long, max_count: Int)
 
         private fun calculateSize(file: File): Long {
             return file.length()
+        }
+    }
+
+    private class SafeObjectInputStream(
+        inputStream: ByteArrayInputStream
+    ) : ObjectInputStream(inputStream) {
+        private val allowedClasses = setOf(
+            "java.lang.String",
+            "java.lang.Integer",
+            "java.lang.Long",
+            "java.lang.Boolean",
+            "java.lang.Float",
+            "java.lang.Double",
+            "java.lang.Short",
+            "java.lang.Byte",
+            "java.lang.Character",
+            "java.util.ArrayList",
+            "java.util.HashMap",
+            "java.util.LinkedHashMap",
+            "java.util.HashSet",
+            "java.util.LinkedHashSet",
+            "kotlin.collections.EmptyList",
+            "kotlin.collections.EmptyMap",
+            "kotlin.collections.EmptySet",
+        )
+
+        @Throws(ClassNotFoundException::class)
+        override fun resolveClass(desc: java.io.ObjectStreamClass): Class<*> {
+            val className = desc.name
+            if (allowedClasses.contains(className) ||
+                className.startsWith("kotlin.") ||
+                className.startsWith("android.") ||
+                className.startsWith("io.legado.app.data.entities.") ||
+                className.startsWith("io.legado.app.data.")
+            ) {
+                return super.resolveClass(desc)
+            }
+            throw ClassNotFoundException("Deserialization of class $className is not allowed")
         }
     }
 

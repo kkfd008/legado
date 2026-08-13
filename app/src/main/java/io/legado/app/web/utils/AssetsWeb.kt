@@ -20,6 +20,7 @@ class AssetsWeb(rootPath: String) {
 
     @Throws(IOException::class)
     fun getResponse(path: String): NanoHTTPD.Response {
+        require(!path.contains("..")) { "Invalid path: path traversal detected" }
         var path1 = path
         path1 = (rootPath + path1).replace("/+".toRegex(), File.separator)
         val inputStream = assetManager.open(path1)

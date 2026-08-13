@@ -43,8 +43,8 @@ class HttpServer(port: Int) : NanoHTTPD(port) {
                     val response = newFixedLengthResponse("")
                     response.addHeader("Access-Control-Allow-Methods", "POST")
                     response.addHeader("Access-Control-Allow-Headers", "content-type")
-                    response.addHeader("Access-Control-Allow-Origin", session.headers["origin"])
-                    //response.addHeader("Access-Control-Max-Age", "3600");
+                    response.addHeader("Access-Control-Allow-Origin", "*")
+                    response.addHeader("Access-Control-Max-Age", "3600")
                     return response
                 }
 
@@ -137,7 +137,7 @@ class HttpServer(port: Int) : NanoHTTPD(port) {
                 }
             }
             response.addHeader("Access-Control-Allow-Methods", "GET, POST")
-            response.addHeader("Access-Control-Allow-Origin", session.headers["origin"])
+            response.addHeader("Access-Control-Allow-Origin", "*")
             LogUtils.d(TAG) {
                 "${session.method.name} - $uri - ${session.queryParameterString} - End($startAt)"
             }

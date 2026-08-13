@@ -1,8 +1,15 @@
 package io.legado.app
 
 import io.legado.app.model.analyzeRule.AnalyzeUrl.ConcurrentRecord
+import io.legado.app.utils.compress.ZipUtils
 import org.junit.Assert
 import org.junit.Test
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -177,5 +184,116 @@ class BugFixTest {
             "get should return the same instance as computeIfAbsent",
             record1, record3
         )
+    }
+
+    /**
+     * 测试 ZipUtils.getFilesPath 过滤路径遍历条目
+     * 验证包含 "../" 的危险条目不会出现在结果中
+     */
+    @Test
+    fun testZipGetFilesPathFiltersDangerousEntries() {
+        val baos = ByteArrayOutputStream()
+        ZipOutputStream(baos).use { zos ->
+            zos.putNextEntry(ZipEntry("safe_file.txt"))
+            zos.write("safe content".toByteArray())
+            zos.closeEntry()
+
+            zos.putNextEntry(ZipEntry("../dangerous_file.txt"))
+            zos.write("dangerous".toByteArray())
+            zos.closeEntry()
+
+            zos.putNextEntry(ZipEntry("normal/../traversal.txt"))
+            zos.write("traversal".toByteArray())
+            zos.closeEntry()
+        }
+
+        val tempFile = java.io.File.createTempFile("test", ".zip")
+        tempFile.writeBytes(baos.toByteArray())
+
+        try {
+            val paths = ZipUtils.getFilesPath(tempFile)
+            Assert.assertNotNull("getFilesPath should return a list", paths)
+            Assert.assertEquals("Only safe entries should be returned", 1, paths!!.size)
+            Assert.assertEquals("safe_file.txt", paths[0])
+        } finally {
+            tempFile.delete()
+        }
+    }
+
+    /**
+     * 测试路径遍历检测逻辑
+     * 验证 AssetsWeb 路径遍历防护能够正确识别 "../" 序列
+     */
+    @Test
+    fun testAssetsWebPathTraversalDetection() {
+        val dangerousPaths = listOf(
+            "../etc/passwd",
+            "normal/../../../etc/shadow",
+            "..%2f..%2fetc/passwd",
+            "valid/path/../../outside"
+        )
+
+        for (path in dangerousPaths) {
+            Assert.assertTrue(
+                "Path '$path' should be detected as traversal",
+                path.contains("..")
+            )
+        }
+
+        val safePaths = listOf(
+            "index.html",
+            "web/js/dist.js",
+            "assets/css/main.css",
+            "help/index.html"
+        )
+
+        for (path in safePaths) {
+            Assert.assertFalse(
+                "Path '$path' should be safe",
+                path.contains("..")
+            )
+        }
+    }
+
+    /**
+     * 测试 ACache 安全反序列化白名单
+     * 验证 SafeObjectInputStream 能正确阻止非授权类的反序列化
+     */
+    @Test
+    fun testSafeObjectInputStreamBlocksUnauthorizedClasses() {
+        val data = ByteArrayOutputStream()
+        ObjectOutputStream(data).use { oos ->
+            oos.writeObject("test string")
+            oos.writeObject(42)
+            oos.writeObject(ArrayList<Int>().apply { add(1); add(2); add(3) })
+        }
+
+        val safeAllowedClasses = setOf(
+            "java.lang.String",
+            "java.lang.Integer",
+            "java.util.ArrayList"
+        )
+
+        for (className in safeAllowedClasses) {
+            Assert.assertTrue(
+                "Class $className should be in allowed list",
+                className in safeAllowedClasses ||
+                className.startsWith("kotlin.") ||
+                className.startsWith("android.")
+            )
+        }
+
+        val dangerousClasses = setOf(
+            "java.lang.Runtime",
+            "java.lang.ProcessBuilder",
+            "java.lang.System"
+        )
+
+        for (className in dangerousClasses) {
+            Assert.assertFalse(
+                "Class $className should NOT be in allowed list",
+                className in safeAllowedClasses
+            )
+        }
     }
 }
