@@ -134,7 +134,7 @@ def get_best_pattern(content: str, sample_size: int = 100000):
     rules = [r for r in TXT_TOC_RULES if r["enable"]]
     rules.reverse()
 
-    max_num = 1
+    max_num = 3
     best_pattern = None
 
     for toc_rule in rules:
@@ -353,15 +353,27 @@ def main():
         return
 
     if args.rule is not None or args.rule_name is not None:
+        selected_rule = None
         for rule in TXT_TOC_RULES:
             if args.rule is not None and rule["id"] == args.rule:
-                rule["enable"] = True
+                selected_rule = rule
+                break
             elif args.rule_name is not None and rule["name"] == args.rule_name:
-                rule["enable"] = True
-            else:
-                rule["enable"] = False
-
-    split_txt_novel(args.file, args.output)
+                selected_rule = rule
+                break
+        if selected_rule is None:
+            print("错误：未找到指定的规则")
+            return
+        saved_rules = [r.copy() for r in TXT_TOC_RULES]
+        for rule in TXT_TOC_RULES:
+            rule["enable"] = (rule["id"] == selected_rule["id"])
+        try:
+            split_txt_novel(args.file, args.output)
+        finally:
+            for i, rule in enumerate(TXT_TOC_RULES):
+                rule["enable"] = saved_rules[i]["enable"]
+    else:
+        split_txt_novel(args.file, args.output)
 
 
 if __name__ == "__main__":
