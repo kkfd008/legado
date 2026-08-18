@@ -286,8 +286,10 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
             ReadBook.book?.migrateTo(book, toc)
             book.removeType(BookType.updateError)
             ReadBook.book?.delete()
-            appDb.bookDao.insert(book)
-            appDb.bookChapterDao.insert(*toc.toTypedArray())
+            appDb.runInTransaction {
+                appDb.bookDao.insert(book)
+                appDb.bookChapterDao.insert(*toc.toTypedArray())
+            }
             ReadBook.resetData(book)
             ReadBook.upMsg(null)
             ReadBook.loadContent(resetPageOffset = true)

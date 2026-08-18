@@ -244,8 +244,10 @@ class ReadMangaViewModel(application: Application) : BaseViewModel(application) 
             ReadManga.book?.migrateTo(book, toc)
             book.removeType(BookType.updateError)
             ReadManga.book?.delete()
-            appDb.bookDao.insert(book)
-            appDb.bookChapterDao.insert(*toc.toTypedArray())
+            appDb.runInTransaction {
+                appDb.bookDao.insert(book)
+                appDb.bookChapterDao.insert(*toc.toTypedArray())
+            }
             ReadManga.resetData(book)
             ReadManga.loadContent()
         }.onError {

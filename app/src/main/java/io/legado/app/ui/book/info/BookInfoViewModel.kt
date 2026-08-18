@@ -374,8 +374,10 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
             if (inBookshelf) {
                 book.removeType(BookType.updateError)
                 bookData.value?.delete()
-                appDb.bookDao.insert(book)
-                appDb.bookChapterDao.insert(*toc.toTypedArray())
+                appDb.runInTransaction {
+                    appDb.bookDao.insert(book)
+                    appDb.bookChapterDao.insert(*toc.toTypedArray())
+                }
             }
             bookData.postValue(book)
             chapterListData.postValue(toc)
