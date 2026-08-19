@@ -79,7 +79,9 @@ class ConcurrentRateLimiter(val source: BaseSource?) {
     fun fetchEnd(concurrentRecord: ConcurrentRecord?) {
         if (concurrentRecord != null && !concurrentRecord.isConcurrent) {
             synchronized(concurrentRecord) {
-                concurrentRecord.frequency -= 1
+                if (concurrentRecord.frequency > 0) {
+                    concurrentRecord.frequency -= 1
+                }
             }
         }
     }
@@ -102,7 +104,12 @@ class ConcurrentRateLimiter(val source: BaseSource?) {
             try {
                 return fetchStart()
             } catch (e: ConcurrentException) {
-                Thread.sleep(e.waitTime.toLong())
+                try {
+                    Thread.sleep(e.waitTime.toLong())
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    return null
+                }
             }
         }
     }

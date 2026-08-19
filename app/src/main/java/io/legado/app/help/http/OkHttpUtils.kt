@@ -99,14 +99,20 @@ fun ResponseBody.decompressed(): ResponseBody {
     if (contentType != "application/zip") {
         return this
     }
-    val source = ZipInputStream(byteStream()).apply {
-        try {
-            nextEntry
-        } catch (e: Exception) {
-            close()
-            throw e
-        }
-    }.source().buffer()
+    val byteStream = byteStream()
+    val source = try {
+        ZipInputStream(byteStream).apply {
+            try {
+                nextEntry
+            } catch (e: Exception) {
+                close()
+                throw e
+            }
+        }.source().buffer()
+    } catch (e: Exception) {
+        try { byteStream.close() } catch (_: java.io.IOException) {}
+        throw e
+    }
     return RealResponseBody(null, -1, source)
 }
 

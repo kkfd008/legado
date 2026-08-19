@@ -61,9 +61,10 @@ object CookieStore : CookieManagerInterface {
 
         var ck = mapToCookie(cookieMap) ?: ""
         while (ck.length > 4096) {
-            val removeKey = cookieMap.keys.random()
-            CookieManager.removeCookie(url, removeKey)
-            cookieMap.remove(removeKey)
+            val largestKey = cookieMap.entries.maxByOrNull { it.value.length }?.key
+                ?: break
+            CookieManager.removeCookie(url, largestKey)
+            cookieMap.remove(largestKey)
             ck = mapToCookie(cookieMap) ?: ""
         }
         return ck

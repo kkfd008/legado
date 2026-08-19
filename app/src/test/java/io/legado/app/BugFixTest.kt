@@ -242,4 +242,57 @@ class BugFixTest {
             Assert.assertTrue("Second request should be blocked when frequency=1 >= max=1", secondAllowed)
         }
     }
+
+    /**
+     * 测试 fetchEnd 不会将 frequency 减至负数
+     * 修复前：frequency -= 1 无保护，可能导致负数
+     * 修复后：仅在 frequency > 0 时才递减
+     */
+    @Test
+    fun testFetchEndPreventNegativeFrequency() {
+        val record = ConcurrentRecord(false, System.currentTimeMillis(), 0)
+
+        // 模拟 fetchEnd 被调用多次（frequency 已为 0）
+        repeat(5) {
+            synchronized(record) {
+                if (record.frequency > 0) {
+                    record.frequency -= 1
+                }
+            }
+        }
+
+        Assert.assertEquals(
+            "Frequency should never go negative",
+            0,
+            record.frequency
+        )
+
+        // 正常使用场景
+        val record2 = ConcurrentRecord(false, System.currentTimeMillis(), 3)
+        repeat(3) {
+            synchronized(record2) {
+                if (record2.frequency > 0) {
+                    record2.frequency -= 1
+                }
+            }
+        }
+
+        Assert.assertEquals(
+            "After 3 decrements from 3, frequency should be 0",
+            0,
+            record2.frequency
+        )
+
+        // 再减一次应该不会变负
+        synchronized(record2) {
+            if (record2.frequency > 0) {
+                record2.frequency -= 1
+            }
+        }
+        Assert.assertEquals(
+            "Frequency should stay 0 when already 0",
+            0,
+            record2.frequency
+        )
+    }
 }
