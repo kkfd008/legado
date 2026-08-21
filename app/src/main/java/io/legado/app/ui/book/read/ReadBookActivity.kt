@@ -1090,8 +1090,10 @@ class ReadBookActivity : BaseReadBookActivity(),
                 withContext(IO) {
                     ReadBook.book?.migrateTo(book, toc)
                     book.removeType(BookType.updateError)
-                    ReadBook.book?.delete()
-                    appDb.bookDao.insert(book)
+                    appDb.runInTransaction {
+                        ReadBook.book?.delete()
+                        appDb.bookDao.insert(book)
+                    }
                 }
                 startActivityForBook(book)
                 finish()

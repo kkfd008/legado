@@ -373,9 +373,11 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
             bookData.value?.migrateTo(book, toc)
             if (inBookshelf) {
                 book.removeType(BookType.updateError)
-                bookData.value?.delete()
-                appDb.bookDao.insert(book)
-                appDb.bookChapterDao.insert(*toc.toTypedArray())
+                appDb.runInTransaction {
+                    bookData.value?.delete()
+                    appDb.bookDao.insert(book)
+                    appDb.bookChapterDao.insert(*toc.toTypedArray())
+                }
             }
             bookData.postValue(book)
             chapterListData.postValue(toc)

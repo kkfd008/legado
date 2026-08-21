@@ -107,8 +107,11 @@ class BookshelfManageViewModel(application: Application) : BaseViewModel(applica
                     }.getOrNull()?.let { toc ->
                         book.migrateTo(newBook, toc)
                         book.removeType(BookType.updateError)
-                        appDb.bookDao.insert(newBook)
-                        appDb.bookChapterDao.insert(*toc.toTypedArray())
+                        appDb.runInTransaction {
+                            appDb.bookDao.delete(book)
+                            appDb.bookDao.insert(newBook)
+                            appDb.bookChapterDao.insert(*toc.toTypedArray())
+                        }
                     }
                 delay(changeSourceDelay)
             }

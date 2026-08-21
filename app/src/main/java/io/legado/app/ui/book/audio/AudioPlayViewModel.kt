@@ -98,11 +98,13 @@ class AudioPlayViewModel(application: Application) : BaseViewModel(application) 
         execute {
             AudioPlay.book?.migrateTo(book, toc)
             book.removeType(BookType.updateError)
-            AudioPlay.book?.delete()
-            appDb.bookDao.insert(book)
+            appDb.runInTransaction {
+                AudioPlay.book?.delete()
+                appDb.bookDao.insert(book)
+                appDb.bookChapterDao.insert(*toc.toTypedArray())
+            }
             AudioPlay.book = book
             AudioPlay.bookSource = source
-            appDb.bookChapterDao.insert(*toc.toTypedArray())
             AudioPlay.upDurChapter()
         }.onFinally {
             postEvent(EventBus.SOURCE_CHANGED, book.bookUrl)

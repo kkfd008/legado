@@ -221,8 +221,10 @@ class AudioPlayActivity :
                 withContext(IO) {
                     AudioPlay.book?.migrateTo(book, toc)
                     book.removeType(BookType.updateError)
-                    AudioPlay.book?.delete()
-                    appDb.bookDao.insert(book)
+                    appDb.runInTransaction {
+                        AudioPlay.book?.delete()
+                        appDb.bookDao.insert(book)
+                    }
                 }
                 startActivityForBook(book)
                 finish()
