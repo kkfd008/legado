@@ -201,8 +201,8 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
                     appDb.runInTransaction {
                         appDb.bookChapterDao.delByBook(book.bookUrl)
                         appDb.bookChapterDao.insert(*it.toTypedArray())
+                        appDb.bookDao.update(book)
                     }
-                    appDb.bookDao.update(book)
                     ReadBook.onChapterListUpdated(book)
                 }
                 return true
@@ -224,15 +224,17 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
                 val oldBook = book.copy()
                 WebBook.getChapterListAwait(it, book, true)
                     .onSuccess { cList ->
-                        if (oldBook.bookUrl == book.bookUrl) {
-                            appDb.bookDao.update(book)
-                        } else {
-                            appDb.bookDao.replace(oldBook, book)
-                            BookHelp.updateCacheFolder(oldBook, book)
-                        }
                         appDb.runInTransaction {
+                            if (oldBook.bookUrl == book.bookUrl) {
+                                appDb.bookDao.update(book)
+                            } else {
+                                appDb.bookDao.replace(oldBook, book)
+                            }
                             appDb.bookChapterDao.delByBook(oldBook.bookUrl)
                             appDb.bookChapterDao.insert(*cList.toTypedArray())
+                        }
+                        if (oldBook.bookUrl != book.bookUrl) {
+                            BookHelp.updateCacheFolder(oldBook, book)
                         }
                         ReadBook.onChapterListUpdated(book)
                         return true

@@ -162,8 +162,8 @@ object BookController {
                 appDb.runInTransaction {
                     appDb.bookChapterDao.delByBook(book.bookUrl)
                     appDb.bookChapterDao.insert(*toc.toTypedArray())
+                    appDb.bookDao.update(book)
                 }
-                appDb.bookDao.update(book)
                 return returnData.setData(toc)
             } else {
                 val bookSource = appDb.bookSourceDao.getBookSource(book.origin)
@@ -177,8 +177,8 @@ object BookController {
                 appDb.runInTransaction {
                     appDb.bookChapterDao.delByBook(book.bookUrl)
                     appDb.bookChapterDao.insert(*toc.toTypedArray())
+                    appDb.bookDao.update(book)
                 }
-                appDb.bookDao.update(book)
                 return returnData.setData(toc)
             }
         } catch (e: Exception) {

@@ -166,15 +166,17 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
             val toc = WebBook.getChapterListAwait(source, book).getOrThrow()
             book.sync(oldBook)
             book.removeType(BookType.updateError)
-            if (book.bookUrl == bookUrl) {
-                appDb.bookDao.update(book)
-            } else {
-                appDb.bookDao.replace(oldBook, book)
-                BookHelp.updateCacheFolder(oldBook, book)
-            }
             appDb.runInTransaction {
+                if (book.bookUrl == bookUrl) {
+                    appDb.bookDao.update(book)
+                } else {
+                    appDb.bookDao.replace(oldBook, book)
+                }
                 appDb.bookChapterDao.delByBook(bookUrl)
                 appDb.bookChapterDao.insert(*toc.toTypedArray())
+            }
+            if (book.bookUrl != bookUrl) {
+                BookHelp.updateCacheFolder(oldBook, book)
             }
             ReadBook.onChapterListUpdated(book)
             addDownload(source, book)

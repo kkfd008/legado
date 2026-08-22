@@ -68,12 +68,12 @@ class AudioPlayViewModel(application: Application) : BaseViewModel(application) 
         try {
             val oldBook = book.copy()
             val cList = WebBook.getChapterListAwait(bookSource, book).getOrThrow()
-            if (oldBook.bookUrl == book.bookUrl) {
-                appDb.bookDao.update(book)
-            } else {
-                appDb.bookDao.replace(oldBook, book)
-            }
             appDb.runInTransaction {
+                if (oldBook.bookUrl == book.bookUrl) {
+                    appDb.bookDao.update(book)
+                } else {
+                    appDb.bookDao.replace(oldBook, book)
+                }
                 appDb.bookChapterDao.delByBook(book.bookUrl)
                 appDb.bookChapterDao.insert(*cList.toTypedArray())
             }

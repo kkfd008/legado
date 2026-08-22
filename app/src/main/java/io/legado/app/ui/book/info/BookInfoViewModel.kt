@@ -220,8 +220,8 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
         if (book.isLocal) {
             execute(scope) {
                 LocalBook.getChapterList(book).let {
-                    appDb.bookDao.update(book)
                     appDb.runInTransaction {
+                        appDb.bookDao.update(book)
                         appDb.bookChapterDao.delByBook(book.bookUrl)
                         appDb.bookChapterDao.insert(*it.toTypedArray())
                     }
@@ -242,16 +242,16 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
             WebBook.getChapterList(scope, bookSource, book, runPreUpdateJs)
                 .onSuccess(IO) {
                     if (inBookshelf) {
-                        appDb.bookDao.replace(oldBook, book)
+                        appDb.runInTransaction {
+                            appDb.bookDao.replace(oldBook, book)
+                            appDb.bookChapterDao.delByBook(oldBook.bookUrl)
+                            appDb.bookChapterDao.insert(*it.toTypedArray())
+                        }
                         /**
                          * runPreUpdateJs 有可能会修改 book 的 bookUrl
                          */
                         if (oldBook.bookUrl != book.bookUrl) {
                             BookHelp.updateCacheFolder(oldBook, book)
-                        }
-                        appDb.runInTransaction {
-                            appDb.bookChapterDao.delByBook(oldBook.bookUrl)
-                            appDb.bookChapterDao.insert(*it.toTypedArray())
                         }
                         ReadBook.onChapterListUpdated(book)
                     }

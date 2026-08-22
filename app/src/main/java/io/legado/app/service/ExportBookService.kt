@@ -222,8 +222,8 @@ class ExportBookService : BaseService() {
             appDb.runInTransaction {
                 appDb.bookChapterDao.delByBook(book.bookUrl)
                 appDb.bookChapterDao.insert(*it.toTypedArray())
+                appDb.bookDao.update(book)
             }
-            appDb.bookDao.update(book)
             ReadBook.onChapterListUpdated(book)
         }
     }

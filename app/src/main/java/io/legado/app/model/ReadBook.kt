@@ -872,15 +872,17 @@ object ReadBook : CoroutineScope by MainScope() {
         WebBook.getChapterList(this, bookSource, book).onSuccess(IO) { cList ->
             ensureActive()
             if (cList.size > chapterSize) {
-                if (oldBook.bookUrl == book.bookUrl) {
-                    appDb.bookDao.update(book)
-                } else {
-                    appDb.bookDao.replace(oldBook, book)
-                    BookHelp.updateCacheFolder(oldBook, book)
-                }
                 appDb.runInTransaction {
+                    if (oldBook.bookUrl == book.bookUrl) {
+                        appDb.bookDao.update(book)
+                    } else {
+                        appDb.bookDao.replace(oldBook, book)
+                    }
                     appDb.bookChapterDao.delByBook(oldBook.bookUrl)
                     appDb.bookChapterDao.insert(*cList.toTypedArray())
+                }
+                if (oldBook.bookUrl != book.bookUrl) {
+                    BookHelp.updateCacheFolder(oldBook, book)
                 }
                 onChapterListUpdated(book, false)
                 nextTextChapter ?: loadContent(durChapterIndex + 1)

@@ -120,15 +120,17 @@ class ReadMangaViewModel(application: Application) : BaseViewModel(application) 
         val bookSource = ReadManga.bookSource ?: return true
         val oldBook = book.copy()
         WebBook.getChapterListAwait(bookSource, book, true).onSuccess { cList ->
-            if (oldBook.bookUrl == book.bookUrl) {
-                appDb.bookDao.update(book)
-            } else {
-                appDb.bookDao.replace(oldBook, book)
-                BookHelp.updateCacheFolder(oldBook, book)
-            }
             appDb.runInTransaction {
+                if (oldBook.bookUrl == book.bookUrl) {
+                    appDb.bookDao.update(book)
+                } else {
+                    appDb.bookDao.replace(oldBook, book)
+                }
                 appDb.bookChapterDao.delByBook(oldBook.bookUrl)
                 appDb.bookChapterDao.insert(*cList.toTypedArray())
+            }
+            if (oldBook.bookUrl != book.bookUrl) {
+                BookHelp.updateCacheFolder(oldBook, book)
             }
             ReadManga.onChapterListUpdated(book)
             return true
