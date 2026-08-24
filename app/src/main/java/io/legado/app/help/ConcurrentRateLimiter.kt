@@ -30,16 +30,14 @@ class ConcurrentRateLimiter(val source: BaseSource?) {
             try {
                 if (!fetchRecord.isConcurrent) {
                     //并发控制非 次数/毫秒
-                    if (fetchRecord.frequency > 0) {
-                        //已经有访问线程,直接等待
-                        return@synchronized concurrentRate.toInt()
-                    }
-                    //没有线程访问,判断还剩多少时间可以访问
                     val nextTime = fetchRecord.time + concurrentRate.toInt()
                     if (System.currentTimeMillis() >= nextTime) {
                         fetchRecord.time = System.currentTimeMillis()
                         fetchRecord.frequency = 1
                         return@synchronized 0
+                    }
+                    if (fetchRecord.frequency > 0) {
+                        return@synchronized concurrentRate.toInt()
                     }
                     return@synchronized (nextTime - System.currentTimeMillis()).toInt()
                 } else {

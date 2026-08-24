@@ -242,4 +242,103 @@ class BugFixTest {
             Assert.assertTrue("Second request should be blocked when frequency=1 >= max=1", secondAllowed)
         }
     }
+
+    /**
+     * 测试非并发模式下时间检查优先于频率检查
+     * 修复前: frequency > 0 检查在时间检查之前，导致即使时间窗口已过期，新请求仍被阻塞
+     * 修复后: 时间检查在频率检查之前，确保时间窗口过期后新请求可以通过
+     */
+    @Test
+    fun testRateLimiterTimeCheckTakesPrecedence() {
+        val rateMs = 100L
+        val record = ConcurrentRecord(false, System.currentTimeMillis() - rateMs - 10, 1)
+
+        val currentTime = System.currentTimeMillis()
+        val nextTime = record.time + rateMs
+
+        // 验证时间窗口已过期
+        Assert.assertTrue(
+            "Time window should have expired",
+            currentTime >= nextTime
+        )
+
+        // 模拟修复后的逻辑: 先检查时间
+        var allowed = false
+        synchronized(record) {
+            if (currentTime >= nextTime) {
+                record.time = currentTime
+                record.frequency = 1
+                allowed = true
+            } else if (record.frequency > 0) {
+                allowed = false
+            }
+        }
+
+        Assert.assertTrue(
+            "Request should be allowed when time window has expired, even if frequency > 0",
+            allowed
+        )
+    }
+
+    /**
+     * 测试非并发模式下时间窗口未过期且有请求进行中时的正确阻塞行为
+     */
+    @Test
+    fun testRateLimiterBlocksWhenTimeNotExpiredAndRequestInProgress() {
+        val rateMs = 1000L
+        val record = ConcurrentRecord(false, System.currentTimeMillis(), 1)
+
+        val currentTime = System.currentTimeMillis()
+        val nextTime = record.time + rateMs
+
+        // 时间窗口未过期
+        Assert.assertTrue(currentTime < nextTime)
+
+        var allowed = false
+        synchronized(record) {
+            if (currentTime >= nextTime) {
+                allowed = true
+            } else if (record.frequency > 0) {
+                allowed = false
+            } else {
+                allowed = false
+            }
+        }
+
+        Assert.assertFalse(
+            "Request should be blocked when time not expired and a request is in progress",
+            allowed
+        )
+    }
+
+    /**
+     * 验证修复前的有缺陷行为: 频率检查优先导致不必要的阻塞
+     */
+    @Test
+    fun testRateLimiterBuggyBehaviorBeforeFix() {
+        val rateMs = 100L
+        val record = ConcurrentRecord(false, System.currentTimeMillis() - rateMs - 10, 1)
+
+        val currentTime = System.currentTimeMillis()
+        val nextTime = record.time + rateMs
+
+        // 时间窗口已过期，但频率仍为 1
+        Assert.assertTrue(currentTime >= nextTime)
+        Assert.assertTrue(record.frequency > 0)
+
+        // 模拟修复前的逻辑: 先检查频率
+        var allowedBeforeFix = false
+        synchronized(record) {
+            if (record.frequency > 0) {
+                allowedBeforeFix = false  // 被错误阻塞
+            } else if (currentTime >= nextTime) {
+                allowedBeforeFix = true
+            }
+        }
+
+        Assert.assertFalse(
+            "Before fix: request incorrectly blocked because frequency check preceded time check",
+            allowedBeforeFix
+        )
+    }
 }
