@@ -377,6 +377,24 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
             appCtx.putPrefInt(PreferKey.webPort, value)
         }
 
+    var webPassword: String
+        get() {
+            val raw = appCtx.getPrefString(PreferKey.webPassword, "") ?: ""
+            if (raw.isBlank()) {
+                // 首次使用时自动生成随机 token，避免服务完全开放
+                val generated = java.security.SecureRandom().let { random ->
+                    val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+                    (1..24).map { chars[random.nextInt(chars.length)] }.joinToString("")
+                }
+                appCtx.putPrefString(PreferKey.webPassword, generated)
+                return generated
+            }
+            return raw
+        }
+        set(value) {
+            appCtx.putPrefString(PreferKey.webPassword, value)
+        }
+
     var tocUiUseReplace: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.tocUiUseReplace)
         set(value) {

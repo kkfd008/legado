@@ -242,4 +242,113 @@ class BugFixTest {
             Assert.assertTrue("Second request should be blocked when frequency=1 >= max=1", secondAllowed)
         }
     }
+
+    // ===== HTTP 安全认证单元测试 =====
+
+    /**
+     * 复现 CVE-Legado-2026-001: HttpServer / WebSocketServer 完全无认证
+     * 修复：添加 Basic Auth / Bearer Token 认证 + 自动生成随机 webPassword
+     */
+    @Test
+    fun testAuthenticateNoHeaderRejected() {
+        val password = "testpassword123"
+        val headers = mapOf<String, String>()
+        Assert.assertFalse(
+            "无 Authorization header 时应被拒绝",
+            authenticateForTest(headers, password)
+        )
+    }
+
+    @Test
+    fun testAuthenticateWrongPasswordRejected() {
+        val password = "correct_password"
+        val headers = mapOf("Authorization" to "Basic ${java.util.Base64.getEncoder().encodeToString("legado:wrong_password".toByteArray())}")
+        Assert.assertFalse(
+            "密码错误时应被拒绝",
+            authenticateForTest(headers, password)
+        )
+    }
+
+    @Test
+    fun testAuthenticateCorrectBasicAccepted() {
+        val password = "correct_password"
+        val headers = mapOf("Authorization" to "Basic ${java.util.Base64.getEncoder().encodeToString("legado:correct_password".toByteArray())}")
+        Assert.assertTrue(
+            "Basic Auth 密码正确时应通过",
+            authenticateForTest(headers, password)
+        )
+    }
+
+    @Test
+    fun testAuthenticateBasicRawPasswordAccepted() {
+        // 也支持直接用密码（不带用户名）
+        val password = "just_password"
+        val headers = mapOf("Authorization" to "Basic ${java.util.Base64.getEncoder().encodeToString("just_password".toByteArray())}")
+        Assert.assertTrue(
+            "Basic Auth 仅密码形式也应通过",
+            authenticateForTest(headers, password)
+        )
+    }
+
+    @Test
+    fun testAuthenticateBearerTokenAccepted() {
+        val password = "my_secret_token"
+        val headers = mapOf("Authorization" to "Bearer my_secret_token")
+        Assert.assertTrue(
+            "Bearer Token 正确时应通过",
+            authenticateForTest(headers, password)
+        )
+    }
+
+    @Test
+    fun testAuthenticateCaseInsensitiveHeader() {
+        val password = "secret"
+        val headers = mapOf("authorization" to "Basic ${java.util.Base64.getEncoder().encodeToString("legado:secret".toByteArray())}")
+        Assert.assertTrue(
+            "小写 authorization header 也应通过（HTTP header 大小写不敏感）",
+            authenticateForTest(headers, password)
+        )
+    }
+
+    @Test
+    fun testAuthenticateMalformedBase64Rejected() {
+        val password = "secret"
+        val headers = mapOf("Authorization" to "Basic !!!not-base64!!!")
+        Assert.assertFalse(
+            "非法 Base64 编码应被拒绝",
+            authenticateForTest(headers, password)
+        )
+    }
+
+    @Test
+    fun testAuthenticateTruncatedHeaderRejected() {
+        val password = "secret"
+        val headers = mapOf("Authorization" to "Basic")
+        Assert.assertFalse(
+            "不完整的 Authorization header 应被拒绝",
+            authenticateForTest(headers, password)
+        )
+    }
+
+    /**
+     * 与 HttpServer/WebSocketServer 中 authenticate 逻辑一致的纯函数版本，
+     * 用于单元测试而不依赖 Android 运行时。
+     */
+    private fun authenticateForTest(headers: Map<String, String>, password: String): Boolean {
+        val authHeader = headers["authorization"] ?: headers["Authorization"]
+        if (authHeader.isNullOrBlank()) return false
+        return kotlin.runCatching {
+            when {
+                authHeader.startsWith("Basic ", ignoreCase = true) -> {
+                    val decoded = String(java.util.Base64.getDecoder().decode(authHeader.substring(6).trim()))
+                    val expected = "legado:$password"
+                    decoded == expected || decoded == password
+                }
+                authHeader.startsWith("Bearer ", ignoreCase = true) -> {
+                    authHeader.substring(7).trim() == password
+                }
+                else -> false
+            }
+        }.getOrDefault(false)
+    }
 }

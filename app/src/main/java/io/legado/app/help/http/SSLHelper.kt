@@ -189,6 +189,6 @@ object SSLHelper {
                 return trustManager
             }
         }
-        throw NullPointerException()
+        throw IllegalStateException("未找到有效的 X509TrustManager")
     }
 }

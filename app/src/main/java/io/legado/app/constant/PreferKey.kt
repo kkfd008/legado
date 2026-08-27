@@ -51,6 +51,7 @@ object PreferKey {
     const val restoreIgnore = "restoreIgnore"
     const val threadCount = "threadCount"
     const val webPort = "webPort"
+    const val webPassword = "webPassword"
     const val keepLight = "keep_light"
     const val webService = "webService"
     const val webDavUrl = "web_dav_url"
