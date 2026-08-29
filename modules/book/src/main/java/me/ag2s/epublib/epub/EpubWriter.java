@@ -120,7 +120,13 @@ public class EpubWriter {
             return;
         }
         try {
-            resultStream.putNextEntry(new ZipEntry("OEBPS/" + resource.getHref()));
+            // Zip Slip 防御：消毒 href 防止路径穿越污染 zip 内部结构
+            String safeHref = sanitizeZipEntryName(resource.getHref());
+            if (safeHref == null) {
+                Log.e(TAG, "Skip resource with invalid href: " + resource.getHref());
+                return;
+            }
+            resultStream.putNextEntry(new ZipEntry("OEBPS/" + safeHref));
             InputStream inputStream = resource.getInputStream();
 
             IOUtil.copy(inputStream, resultStream);
@@ -128,6 +134,30 @@ public class EpubWriter {
         } catch (Exception e) {
             Log.e(TAG, e.getMessage(), e);
         }
+    }
+
+    /**
+     * 消毒 zip entry name，防御 Zip Slip 攻击。
+     * 拒绝包含路径穿越序列 ("..", 绝对路径, 反斜杠) 的名称。
+     * 返回 null 表示名称无效。
+     */
+    static String sanitizeZipEntryName(String name) {
+        if (name == null || name.isEmpty()) return null;
+        // 拒绝绝对路径
+        if (name.startsWith("/") || name.startsWith("\\")) return null;
+        // 统一斜杠
+        String normalized = name.replace('\\', '/');
+        // 拒绝包含 ".." 的条目
+        for (String part : normalized.split("/")) {
+            if (part.equals("..") || part.equals(".")) {
+                return null;
+            }
+        }
+        // 拒绝以路径分隔符开头的标准化后名称
+        if (normalized.startsWith("/")) return null;
+        // 拒绝包含反斜杠（Windows 路径分隔符）
+        if (name.contains("\\")) return null;
+        return normalized;
     }
 
 

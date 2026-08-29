@@ -66,15 +66,20 @@ public class ResourcesLoader {
                 continue;
             }
 
-            String href = zipEntry.getName();
+            // Zip Slip 防御：消毒 zip entry name
+            String safeName = sanitizeZipEntryName(zipEntry.getName());
+            if (safeName == null) {
+                Log.w(TAG, "Skip zip entry with suspicious name: " + zipEntry.getName());
+                continue;
+            }
 
             Resource resource;
 
-            if (shouldLoadLazy(href, lazyLoadedTypes)) {
-                resource = new LazyResource(resourceProvider, zipEntry.getSize(), href);
+            if (shouldLoadLazy(safeName, lazyLoadedTypes)) {
+                resource = new LazyResource(resourceProvider, zipEntry.getSize(), safeName);
             } else {
                 resource = ResourceUtil
-                        .createResource(zipEntry.getName(), zipFileWrapper.getInputStream(zipEntry));
+                        .createResource(safeName, zipFileWrapper.getInputStream(zipEntry));
             }
 
             if (resource.getMediaType() == MediaTypes.XHTML) {
@@ -126,10 +131,16 @@ public class ResourcesLoader {
             if ((zipEntry == null) || zipEntry.isDirectory()) {
                 continue;
             }
-            //String href = zipEntry.getName();
+            // Zip Slip 防御：消毒 zip entry name
+            String safeName = sanitizeZipEntryName(zipEntry.getName());
+            if (safeName == null) {
+                Log.w(TAG, "Skip zip entry with suspicious name: " + zipEntry.getName());
+                zipInputStream.closeEntry();
+                continue;
+            }
 
             // store resource
-            Resource resource = ResourceUtil.createResource(zipEntry.getName(), zipInputStream);
+            Resource resource = ResourceUtil.createResource(safeName, zipInputStream);
             if (resource.getMediaType() == MediaTypes.XHTML) {
                 resource.setInputEncoding(defaultHtmlEncoding);
             }
@@ -173,5 +184,29 @@ public class ResourcesLoader {
     public static Resources loadResources(ZipFileWrapper zipFile, String defaultHtmlEncoding) throws IOException {
         List<MediaType> ls = new ArrayList<>();
         return loadResources(zipFile, defaultHtmlEncoding, ls);
+    }
+
+    /**
+     * 消毒 zip entry name，防御 Zip Slip 攻击。
+     * 拒绝包含路径穿越序列 ("..", "."), 绝对路径, 反斜杠 的名称。
+     * 返回 null 表示名称无效。
+     */
+    static String sanitizeZipEntryName(String name) {
+        if (name == null || name.isEmpty()) return null;
+        // 拒绝绝对路径
+        if (name.startsWith("/") || name.startsWith("\\")) return null;
+        // 拒绝反斜杠（Windows 路径分隔符）
+        if (name.contains("\\")) return null;
+        // 统一斜杠
+        String normalized = name.replace('\\', '/');
+        // 拒绝包含 ".." 或 "." 段的条目
+        for (String part : normalized.split("/")) {
+            if (part.equals("..") || part.equals(".")) {
+                return null;
+            }
+        }
+        // 拒绝标准化后以 "/" 开头
+        if (normalized.startsWith("/")) return null;
+        return normalized;
     }
 }
