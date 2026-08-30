@@ -73,8 +73,13 @@ public class ResourcesLoader {
             if (shouldLoadLazy(href, lazyLoadedTypes)) {
                 resource = new LazyResource(resourceProvider, zipEntry.getSize(), href);
             } else {
-                resource = ResourceUtil
-                        .createResource(zipEntry.getName(), zipFileWrapper.getInputStream(zipEntry));
+                try (InputStream inputStream = zipFileWrapper.getInputStream(zipEntry)) {
+                    if (inputStream == null) {
+                        Log.e(TAG, "Could not open InputStream for entry: " + href);
+                        continue;
+                    }
+                    resource = ResourceUtil.createResource(zipEntry.getName(), inputStream);
+                }
             }
 
             if (resource.getMediaType() == MediaTypes.XHTML) {

@@ -136,6 +136,10 @@ public class EpubReader {
     }
 
     private Resource processNcxResource(Resource packageResource, EpubBook book) {
+        if (packageResource == null) {
+            Log.e(TAG, "OPF package resource is null, cannot process NCX");
+            return null;
+        }
         Log.d(TAG, "OPF:getHref()" + packageResource.getHref());
         if (book.isEpub3()) {
             return NCXDocumentV3.read(book, this);
