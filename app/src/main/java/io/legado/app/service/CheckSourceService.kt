@@ -215,7 +215,10 @@ class CheckSourceService : BaseService() {
                 .filter { !(it.isVolume && it.url.startsWith(it.title)) }
                 .take(2)
                 .toList()
-            val nextChapterUrl = toc.getOrNull(1)?.url ?: toc.first().url
+            if (toc.isEmpty()) {
+                throw TocEmptyException("目录为空")
+            }
+            val nextChapterUrl = toc.getOrNull(1)?.url ?: toc[0].url
             if (!CheckSource.checkContent) {
                 return
             }

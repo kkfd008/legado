@@ -658,16 +658,16 @@ class ACache private constructor(cacheDir: File, max_size: Long, max_count: Int)
             Thread {
 
                 try {
-                    var size = 0
+                    var size = 0L
                     var count = 0
                     val cachedFiles = cacheDir.listFiles()
                     if (cachedFiles != null) {
                         for (cachedFile in cachedFiles) {
-                            size += calculateSize(cachedFile).toInt()
+                            size += calculateSize(cachedFile)
                             count += 1
                             lastUsageDates[cachedFile] = cachedFile.lastModified()
                         }
-                        cacheSize.set(size.toLong())
+                        cacheSize.set(size)
                         cacheCount.set(count)
                     }
                 } catch (e: Exception) {

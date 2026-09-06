@@ -2,6 +2,7 @@ package io.legado.app.constant
 
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.os.Build
 import android.provider.Settings
 import androidx.annotation.Keep
 import cn.hutool.crypto.digest.DigestUtil
@@ -64,7 +65,7 @@ object AppConst {
         @Suppress("DEPRECATION")
         appCtx.packageManager.getPackageInfo(appCtx.packageName, PackageManager.GET_ACTIVITIES)
             ?.let {
-                appInfo.versionName = it.versionName!!
+                appInfo.versionName = it.versionName ?: ""
                 appInfo.appVariant = when {
                     it.packageName.contains("releaseA") -> AppVariant.BETA_RELEASEA
                     isBeta -> AppVariant.BETA_RELEASE
@@ -72,7 +73,7 @@ object AppConst {
                     else -> AppVariant.UNKNOWN
                 }
 
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     appInfo.versionCode = it.longVersionCode
                 } else {
                     @Suppress("DEPRECATION")
@@ -82,11 +83,21 @@ object AppConst {
         appInfo
     }
 
-    @Suppress("DEPRECATION")
     private val sha256Signature: String by lazy {
-        val packageInfo =
-            appCtx.packageManager.getPackageInfo(appCtx.packageName, PackageManager.GET_SIGNATURES)
-        DigestUtil.sha256Hex(packageInfo.signatures!![0].toByteArray()).uppercase()
+        runCatching {
+            val packageInfo = appCtx.packageManager.getPackageInfo(
+                appCtx.packageName,
+                PackageManager.GET_SIGNING_CERTIFICATES
+            )
+            val signatureBytes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                // API 28+ 使用 signingInfo
+                packageInfo.signingInfo?.apkContentsSigners?.firstOrNull()?.toByteArray()
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo.signatures?.firstOrNull()?.toByteArray()
+            }
+            signatureBytes?.let { DigestUtil.sha256Hex(it).uppercase() }
+        }.getOrDefault("")
     }
 
     private val isOfficial = sha256Signature == OFFICIAL_SIGNATURE
