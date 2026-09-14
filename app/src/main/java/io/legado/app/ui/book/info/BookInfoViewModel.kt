@@ -220,8 +220,8 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
         if (book.isLocal) {
             execute(scope) {
                 LocalBook.getChapterList(book).let {
-                    appDb.bookDao.update(book)
                     appDb.runInTransaction {
+                        appDb.bookDao.update(book)
                         appDb.bookChapterDao.delByBook(book.bookUrl)
                         appDb.bookChapterDao.insert(*it.toTypedArray())
                     }
@@ -242,16 +242,18 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
             WebBook.getChapterList(scope, bookSource, book, runPreUpdateJs)
                 .onSuccess(IO) {
                     if (inBookshelf) {
-                        appDb.bookDao.replace(oldBook, book)
-                        /**
-                         * runPreUpdateJs 有可能会修改 book 的 bookUrl
-                         */
-                        if (oldBook.bookUrl != book.bookUrl) {
-                            BookHelp.updateCacheFolder(oldBook, book)
-                        }
                         appDb.runInTransaction {
+                            if (oldBook.bookUrl == book.bookUrl) {
+                                appDb.bookDao.update(book)
+                            } else {
+                                appDb.bookDao.delete(oldBook)
+                                appDb.bookDao.insert(book)
+                            }
                             appDb.bookChapterDao.delByBook(oldBook.bookUrl)
                             appDb.bookChapterDao.insert(*it.toTypedArray())
+                        }
+                        if (oldBook.bookUrl != book.bookUrl) {
+                            BookHelp.updateCacheFolder(oldBook, book)
                         }
                         ReadBook.onChapterListUpdated(book)
                     }
@@ -373,9 +375,12 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
             bookData.value?.migrateTo(book, toc)
             if (inBookshelf) {
                 book.removeType(BookType.updateError)
-                bookData.value?.delete()
-                appDb.bookDao.insert(book)
-                appDb.bookChapterDao.insert(*toc.toTypedArray())
+                val oldBook = bookData.value
+                appDb.runInTransaction {
+                    oldBook?.let { appDb.bookDao.delete(it) }
+                    appDb.bookDao.insert(book)
+                    appDb.bookChapterDao.insert(*toc.toTypedArray())
+                }
             }
             bookData.postValue(book)
             chapterListData.postValue(toc)

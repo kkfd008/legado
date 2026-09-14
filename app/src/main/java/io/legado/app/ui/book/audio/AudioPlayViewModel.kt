@@ -68,13 +68,14 @@ class AudioPlayViewModel(application: Application) : BaseViewModel(application) 
         try {
             val oldBook = book.copy()
             val cList = WebBook.getChapterListAwait(bookSource, book).getOrThrow()
-            if (oldBook.bookUrl == book.bookUrl) {
-                appDb.bookDao.update(book)
-            } else {
-                appDb.bookDao.replace(oldBook, book)
-            }
             appDb.runInTransaction {
-                appDb.bookChapterDao.delByBook(book.bookUrl)
+                if (oldBook.bookUrl == book.bookUrl) {
+                    appDb.bookDao.update(book)
+                } else {
+                    appDb.bookDao.delete(oldBook)
+                    appDb.bookDao.insert(book)
+                }
+                appDb.bookChapterDao.delByBook(oldBook.bookUrl)
                 appDb.bookChapterDao.insert(*cList.toTypedArray())
             }
             AudioPlay.chapterSize = cList.size
@@ -96,13 +97,16 @@ class AudioPlayViewModel(application: Application) : BaseViewModel(application) 
 
     fun changeTo(source: BookSource, book: Book, toc: List<BookChapter>) {
         execute {
-            AudioPlay.book?.migrateTo(book, toc)
+            val oldBook = AudioPlay.book
+            oldBook?.migrateTo(book, toc)
             book.removeType(BookType.updateError)
-            AudioPlay.book?.delete()
-            appDb.bookDao.insert(book)
+            appDb.runInTransaction {
+                oldBook?.let { appDb.bookDao.delete(it) }
+                appDb.bookDao.insert(book)
+                appDb.bookChapterDao.insert(*toc.toTypedArray())
+            }
             AudioPlay.book = book
             AudioPlay.bookSource = source
-            appDb.bookChapterDao.insert(*toc.toTypedArray())
             AudioPlay.upDurChapter()
         }.onFinally {
             postEvent(EventBus.SOURCE_CHANGED, book.bookUrl)

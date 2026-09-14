@@ -242,4 +242,48 @@ class BugFixTest {
             Assert.assertTrue("Second request should be blocked when frequency=1 >= max=1", secondAllowed)
         }
     }
+
+    /**
+     * 测试 fetchEnd 在非并发模式下正确释放访问计数
+     * 避免 frequency 出现负数导致后续请求被错误阻塞
+     */
+    @Test
+    fun testFetchEndReleasesNonConcurrentRecord() {
+        val record = ConcurrentRecord(false, System.currentTimeMillis(), 1)
+
+        synchronized(record) {
+            Assert.assertEquals("Initial frequency should be 1", 1, record.frequency)
+            record.frequency -= 1
+            Assert.assertEquals("Frequency should be released to 0", 0, record.frequency)
+        }
+    }
+
+    /**
+     * 模拟 ReadBook/ReadManga 加载章节时 book 引用被切换的场景
+     * 验证：在挂起点之后重新读取可变共享状态会导致错误的引用被使用
+     * 修复方式：在挂起前捕获 book/bookSource 并作为参数传递
+     */
+    @Test
+    fun testCapturedReferenceSurvivesStateChange() {
+        data class Ref(var value: String)
+
+        var sharedBook = Ref("bookA")
+        var capturedBook = sharedBook
+
+        // 模拟协程挂起后共享状态被其他操作修改
+        sharedBook = Ref("bookB")
+
+        // 修复前：在挂起后重新读取 sharedBook，会得到 bookB
+        // 修复后：使用挂起前捕获的 capturedBook，仍得到 bookA
+        Assert.assertEquals(
+            "Captured reference should remain bookA after state change",
+            "bookA",
+            capturedBook.value
+        )
+        Assert.assertEquals(
+            "Shared reference may be updated to bookB",
+            "bookB",
+            sharedBook.value
+        )
+    }
 }

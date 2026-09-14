@@ -199,10 +199,10 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
             kotlin.runCatching {
                 LocalBook.getChapterList(book).let {
                     appDb.runInTransaction {
+                        appDb.bookDao.update(book)
                         appDb.bookChapterDao.delByBook(book.bookUrl)
                         appDb.bookChapterDao.insert(*it.toTypedArray())
                     }
-                    appDb.bookDao.update(book)
                     ReadBook.onChapterListUpdated(book)
                 }
                 return true
@@ -224,15 +224,18 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
                 val oldBook = book.copy()
                 WebBook.getChapterListAwait(it, book, true)
                     .onSuccess { cList ->
-                        if (oldBook.bookUrl == book.bookUrl) {
-                            appDb.bookDao.update(book)
-                        } else {
-                            appDb.bookDao.replace(oldBook, book)
-                            BookHelp.updateCacheFolder(oldBook, book)
-                        }
                         appDb.runInTransaction {
+                            if (oldBook.bookUrl == book.bookUrl) {
+                                appDb.bookDao.update(book)
+                            } else {
+                                appDb.bookDao.delete(oldBook)
+                                appDb.bookDao.insert(book)
+                            }
                             appDb.bookChapterDao.delByBook(oldBook.bookUrl)
                             appDb.bookChapterDao.insert(*cList.toTypedArray())
+                        }
+                        if (oldBook.bookUrl != book.bookUrl) {
+                            BookHelp.updateCacheFolder(oldBook, book)
                         }
                         ReadBook.onChapterListUpdated(book)
                         return true
@@ -283,11 +286,14 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
         changeSourceCoroutine?.cancel()
         changeSourceCoroutine = execute {
             ReadBook.upMsg(context.getString(R.string.loading))
-            ReadBook.book?.migrateTo(book, toc)
+            val oldBook = ReadBook.book
+            oldBook?.migrateTo(book, toc)
             book.removeType(BookType.updateError)
-            ReadBook.book?.delete()
-            appDb.bookDao.insert(book)
-            appDb.bookChapterDao.insert(*toc.toTypedArray())
+            appDb.runInTransaction {
+                oldBook?.let { appDb.bookDao.delete(it) }
+                appDb.bookDao.insert(book)
+                appDb.bookChapterDao.insert(*toc.toTypedArray())
+            }
             ReadBook.resetData(book)
             ReadBook.upMsg(null)
             ReadBook.loadContent(resetPageOffset = true)

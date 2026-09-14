@@ -220,10 +220,10 @@ class ExportBookService : BaseService() {
             LocalBook.getChapterList(book)
         }.onSuccess {
             appDb.runInTransaction {
+                appDb.bookDao.update(book)
                 appDb.bookChapterDao.delByBook(book.bookUrl)
                 appDb.bookChapterDao.insert(*it.toTypedArray())
             }
-            appDb.bookDao.update(book)
             ReadBook.onChapterListUpdated(book)
         }
     }

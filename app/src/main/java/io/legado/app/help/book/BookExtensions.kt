@@ -237,7 +237,11 @@ fun Book.upType() {
 }
 
 fun Book.sync(oldBook: Book) {
-    val curBook = appDb.bookDao.getBook(oldBook.bookUrl)!!
+    val curBook = appDb.bookDao.getBook(oldBook.bookUrl)
+    if (curBook == null) {
+        AppLog.put("同步书籍信息失败：找不到 ${oldBook.bookUrl}")
+        return
+    }
     durChapterTime = curBook.durChapterTime
     durChapterPos = curBook.durChapterPos
     if (durChapterIndex != curBook.durChapterIndex) {

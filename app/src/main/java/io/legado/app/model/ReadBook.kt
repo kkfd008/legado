@@ -572,6 +572,7 @@ object ReadBook : CoroutineScope by MainScope() {
         Coroutine.async {
             val book = ReadBook.book ?: return@async
             val chapter = appDb.bookChapterDao.getChapter(book.bookUrl, index) ?: return@async
+            val bookSource = bookSource
             if (addLoading(index)) {
                 BookHelp.getContent(book, chapter)?.let {
                     contentLoadFinish(
@@ -584,6 +585,8 @@ object ReadBook : CoroutineScope by MainScope() {
                     )
                 } ?: download(
                     downloadScope,
+                    book,
+                    bookSource,
                     chapter,
                     resetPageOffset
                 )
@@ -624,13 +627,14 @@ object ReadBook : CoroutineScope by MainScope() {
             return
         }
         val book = book ?: return
+        val bookSource = bookSource
         val chapter = appDb.bookChapterDao.getChapter(book.bookUrl, index) ?: return
         if (BookHelp.hasContent(book, chapter)) {
             downloadedChapters.add(chapter.index)
         } else {
             delay(1000)
             if (addLoading(index)) {
-                download(downloadScope, chapter, false, preDownloadSemaphore)
+                download(downloadScope, book, bookSource, chapter, false, preDownloadSemaphore)
             }
         }
     }
@@ -640,13 +644,13 @@ object ReadBook : CoroutineScope by MainScope() {
      */
     private fun download(
         scope: CoroutineScope,
+        book: Book,
+        bookSource: BookSource?,
         chapter: BookChapter,
         resetPageOffset: Boolean,
         semaphore: Semaphore? = null,
         success: (() -> Unit)? = null
     ) {
-        val book = book ?: return removeLoading(chapter.index)
-        val bookSource = bookSource
         if (bookSource != null) {
             CacheBook.getOrCreate(bookSource, book).download(scope, chapter, semaphore)
         } else {
@@ -872,15 +876,18 @@ object ReadBook : CoroutineScope by MainScope() {
         WebBook.getChapterList(this, bookSource, book).onSuccess(IO) { cList ->
             ensureActive()
             if (cList.size > chapterSize) {
-                if (oldBook.bookUrl == book.bookUrl) {
-                    appDb.bookDao.update(book)
-                } else {
-                    appDb.bookDao.replace(oldBook, book)
-                    BookHelp.updateCacheFolder(oldBook, book)
-                }
                 appDb.runInTransaction {
+                    if (oldBook.bookUrl == book.bookUrl) {
+                        appDb.bookDao.update(book)
+                    } else {
+                        appDb.bookDao.delete(oldBook)
+                        appDb.bookDao.insert(book)
+                    }
                     appDb.bookChapterDao.delByBook(oldBook.bookUrl)
                     appDb.bookChapterDao.insert(*cList.toTypedArray())
+                }
+                if (oldBook.bookUrl != book.bookUrl) {
+                    BookHelp.updateCacheFolder(oldBook, book)
                 }
                 onChapterListUpdated(book, false)
                 nextTextChapter ?: loadContent(durChapterIndex + 1)

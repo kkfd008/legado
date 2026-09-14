@@ -129,9 +129,11 @@ class CacheBookService : BaseService() {
                         AppLog.put(msg, it, true)
                         return@execute
                     }.getOrNull()?.let { toc ->
-                        appDb.bookChapterDao.insert(*toc.toTypedArray())
-                    }
-                    book.update()
+                        appDb.runInTransaction {
+                            appDb.bookChapterDao.insert(*toc.toTypedArray())
+                            appDb.bookDao.update(book)
+                        }
+                    } ?: book.update()
                 }
             }
             val end2 = if (end < 0) {

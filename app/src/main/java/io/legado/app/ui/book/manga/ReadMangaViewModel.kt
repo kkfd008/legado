@@ -120,15 +120,18 @@ class ReadMangaViewModel(application: Application) : BaseViewModel(application) 
         val bookSource = ReadManga.bookSource ?: return true
         val oldBook = book.copy()
         WebBook.getChapterListAwait(bookSource, book, true).onSuccess { cList ->
-            if (oldBook.bookUrl == book.bookUrl) {
-                appDb.bookDao.update(book)
-            } else {
-                appDb.bookDao.replace(oldBook, book)
-                BookHelp.updateCacheFolder(oldBook, book)
-            }
             appDb.runInTransaction {
+                if (oldBook.bookUrl == book.bookUrl) {
+                    appDb.bookDao.update(book)
+                } else {
+                    appDb.bookDao.delete(oldBook)
+                    appDb.bookDao.insert(book)
+                }
                 appDb.bookChapterDao.delByBook(oldBook.bookUrl)
                 appDb.bookChapterDao.insert(*cList.toTypedArray())
+            }
+            if (oldBook.bookUrl != book.bookUrl) {
+                BookHelp.updateCacheFolder(oldBook, book)
             }
             ReadManga.onChapterListUpdated(book)
             return true
@@ -241,11 +244,14 @@ class ReadMangaViewModel(application: Application) : BaseViewModel(application) 
         changeSourceCoroutine?.cancel()
         changeSourceCoroutine = execute {
             //换源中
-            ReadManga.book?.migrateTo(book, toc)
+            val oldBook = ReadManga.book
+            oldBook?.migrateTo(book, toc)
             book.removeType(BookType.updateError)
-            ReadManga.book?.delete()
-            appDb.bookDao.insert(book)
-            appDb.bookChapterDao.insert(*toc.toTypedArray())
+            appDb.runInTransaction {
+                oldBook?.let { appDb.bookDao.delete(it) }
+                appDb.bookDao.insert(book)
+                appDb.bookChapterDao.insert(*toc.toTypedArray())
+            }
             ReadManga.resetData(book)
             ReadManga.loadContent()
         }.onError {

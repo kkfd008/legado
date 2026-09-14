@@ -37,13 +37,12 @@ class TocViewModel(application: Application) : BaseViewModel(application) {
 
     fun upBookTocRule(book: Book, complete: (Throwable?) -> Unit) {
         execute {
-            appDb.bookDao.update(book)
             LocalBook.getChapterList(book).let {
                 appDb.runInTransaction {
+                    appDb.bookDao.update(book)
                     appDb.bookChapterDao.delByBook(book.bookUrl)
                     appDb.bookChapterDao.insert(*it.toTypedArray())
                 }
-                appDb.bookDao.update(book)
                 ReadBook.onChapterListUpdated(book)
                 bookData.postValue(book)
             }

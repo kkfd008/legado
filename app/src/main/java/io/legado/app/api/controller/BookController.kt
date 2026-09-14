@@ -160,10 +160,10 @@ object BookController {
             if (book.isLocal) {
                 val toc = LocalBook.getChapterList(book)
                 appDb.runInTransaction {
+                    appDb.bookDao.update(book)
                     appDb.bookChapterDao.delByBook(book.bookUrl)
                     appDb.bookChapterDao.insert(*toc.toTypedArray())
                 }
-                appDb.bookDao.update(book)
                 return returnData.setData(toc)
             } else {
                 val bookSource = appDb.bookSourceDao.getBookSource(book.origin)
@@ -175,10 +175,10 @@ object BookController {
                     WebBook.getChapterListAwait(bookSource, book).getOrThrow()
                 }
                 appDb.runInTransaction {
+                    appDb.bookDao.update(book)
                     appDb.bookChapterDao.delByBook(book.bookUrl)
                     appDb.bookChapterDao.insert(*toc.toTypedArray())
                 }
-                appDb.bookDao.update(book)
                 return returnData.setData(toc)
             }
         } catch (e: Exception) {
