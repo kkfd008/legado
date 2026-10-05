@@ -17,6 +17,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/menu_update_local_book"
+        android:icon="@drawable/ic_refresh_black_24dp"
+        android:title="@string/update_local_book"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/menu_add_local"
         android:icon="@drawable/ic_add"
         android:title="@string/book_local"

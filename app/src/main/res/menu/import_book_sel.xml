@@ -5,4 +5,16 @@
         android:id="@+id/menu_del_selection"
         android:title="@string/delete" />
 
+    <item
+        android:id="@+id/menu_add_to_bookshelf"
+        android:title="@string/add_to_bookshelf" />
+
+    <item
+        android:id="@+id/menu_add_to_tag"
+        android:title="@string/put_to_tag" />
+
+    <item
+        android:id="@+id/menu_add_to_group"
+        android:title="@string/put_to_group" />
+
 </menu>

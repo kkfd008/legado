@@ -353,6 +353,7 @@
     <string name="pt_show_all_find">显示所有发现</string>
     <string name="ps_show_all_find">关闭则只显示勾选源的发现</string>
     <string name="update_toc">更新目录</string>
+    <string name="update_local_book">更新本地书籍</string>
     <string name="txt_toc_rule">TXT 目录规则</string>
     <string name="select_section_export">选择待导出章节</string>
     <string name="set_charset">设置编码</string>
@@ -377,6 +378,10 @@
     <string name="imm_navigation_bar">沉浸式导航栏</string>
     <string name="imm_navigation_bar_s">导航栏颜色透明</string>
     <string name="add_to_bookshelf">放入书架</string>
+    <string name="put_to_group">放入分组</string>
+    <string name="put_to_tag">放入标签</string>
+    <string name="abandon">放弃</string>
+    <string name="confirm_delete_book_source_file">确认删除书籍源文件</string>
     <string name="continue_read">继续阅读</string>
     <string name="cover_path">封面地址</string>
     <string name="page_anim_cover">覆盖</string>

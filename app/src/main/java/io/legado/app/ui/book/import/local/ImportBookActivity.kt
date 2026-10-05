@@ -22,6 +22,8 @@ import io.legado.app.lib.permission.Permissions
 import io.legado.app.lib.permission.PermissionsCompat
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.ui.book.import.BaseImportBookActivity
+import io.legado.app.ui.book.group.GroupSelectDialog
+import io.legado.app.ui.book.tag.TagSelectDialog
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.widget.SelectActionBar
 import io.legado.app.utils.ArchiveUtils
@@ -31,6 +33,7 @@ import io.legado.app.utils.isContentScheme
 import io.legado.app.utils.isUri
 import io.legado.app.utils.launch
 import io.legado.app.utils.putPrefInt
+import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.visible
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
@@ -46,11 +49,15 @@ import java.io.File
 class ImportBookActivity : BaseImportBookActivity<ImportBookViewModel>(),
     PopupMenu.OnMenuItemClickListener,
     ImportBookAdapter.CallBack,
-    SelectActionBar.CallBack {
+    SelectActionBar.CallBack,
+    GroupSelectDialog.CallBack,
+    TagSelectDialog.CallBack {
 
     override val viewModel by viewModels<ImportBookViewModel>()
     private val adapter by lazy { ImportBookAdapter(this, this) }
     private var scanDocJob: Job? = null
+    private val addToGroupRequestCode = 1
+    private val addTagsRequestCode = 2
 
     private val selectFolder = registerForActivityResult(HandleFileContract()) {
         it.uri?.let { uri ->
@@ -102,9 +109,10 @@ class ImportBookActivity : BaseImportBookActivity<ImportBookViewModel>(),
 
     override fun onMenuItemClick(item: MenuItem?): Boolean {
         when (item?.itemId) {
-            R.id.menu_del_selection -> viewModel.deleteDoc(adapter.selected) {
-                adapter.removeSelection()
-            }
+            R.id.menu_del_selection -> alertDelSelection()
+            R.id.menu_add_to_bookshelf -> addToBookshelf()
+            R.id.menu_add_to_tag -> selectTag()
+            R.id.menu_add_to_group -> selectGroup()
         }
         return false
     }
@@ -118,13 +126,48 @@ class ImportBookActivity : BaseImportBookActivity<ImportBookViewModel>(),
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    override fun onClickSelectBarMainAction() {
-        viewModel.addToBookshelf(adapter.selected) {
+    private fun addToBookshelf(group: Long = 0L, tags: Long = 0L) {
+        viewModel.addToBookshelf(adapter.selected, group, tags) {
             adapter.selected.forEach {
                 it.isOnBookShelf = true
             }
             adapter.selected.clear()
             adapter.notifyDataSetChanged()
+        }
+    }
+
+    private fun selectGroup() {
+        showDialogFragment(
+            GroupSelectDialog(0L, addToGroupRequestCode)
+        )
+    }
+
+    private fun selectTag() {
+        showDialogFragment(
+            TagSelectDialog(0L, addTagsRequestCode)
+        )
+    }
+
+    override fun upGroup(requestCode: Int, groupId: Long) {
+        if (requestCode == addToGroupRequestCode) {
+            addToBookshelf(group = groupId)
+        }
+    }
+
+    override fun upTags(requestCode: Int, tags: Long) {
+        if (requestCode == addTagsRequestCode) {
+            addToBookshelf(tags = tags)
+        }
+    }
+
+    private fun alertDelSelection() {
+        alert(R.string.delete, R.string.confirm_delete_book_source_file) {
+            positiveButton(R.string.sure) {
+                viewModel.deleteDoc(adapter.selected) {
+                    adapter.removeSelection()
+                }
+            }
+            negativeButton(R.string.abandon)
         }
     }
 
@@ -134,7 +177,6 @@ class ImportBookActivity : BaseImportBookActivity<ImportBookViewModel>(),
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
         binding.recyclerView.recycledViewPool.setMaxRecycledViews(0, 15)
-        binding.selectActionBar.setMainActionText(R.string.add_to_bookshelf)
         binding.selectActionBar.inflateMenu(R.menu.import_book_sel)
         binding.selectActionBar.setOnMenuItemClickListener(this)
         binding.selectActionBar.setCallBack(this)

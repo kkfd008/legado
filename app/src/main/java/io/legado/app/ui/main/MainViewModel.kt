@@ -23,6 +23,7 @@ import io.legado.app.help.book.sync
 import io.legado.app.help.config.AppConfig
 import io.legado.app.model.CacheBook
 import io.legado.app.model.ReadBook
+import io.legado.app.model.localBook.LocalBook
 import io.legado.app.model.webBook.WebBook
 import io.legado.app.service.CacheBookService
 import io.legado.app.utils.onEachParallel
@@ -99,6 +100,24 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
                 !it.isLocal && it.canUpdate
             }.let {
                 addToWaitUp(it)
+            }
+        }
+    }
+
+    /**
+     * 更新本地书籍：校验书架上的本地书籍源文件是否仍存在，
+     * 若源文件被移动或删除，则从书架移除该书籍，但不删除源文件。
+     */
+    fun upLocalBook(books: List<Book>) {
+        execute {
+            val removed = books.filter { book ->
+                book.isLocal && LocalBook.getLastModified(book).isFailure
+            }
+            removed.forEach { book ->
+                book.delete()
+            }
+            if (removed.isNotEmpty()) {
+                postEvent(EventBus.BOOKSHELF_REFRESH, "")
             }
         }
     }

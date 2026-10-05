@@ -90,12 +90,28 @@ class ImportBookViewModel(application: Application) : BaseViewModel(application)
         }.sortedWith(comparator).toList()
     }.flowOn(IO)
 
-    fun addToBookshelf(bookList: HashSet<ImportBook>, finally: () -> Unit) {
+    fun addToBookshelf(
+        bookList: HashSet<ImportBook>,
+        group: Long = 0L,
+        tags: Long = 0L,
+        finally: () -> Unit
+    ) {
         execute {
             val fileUris = bookList.map {
                 it.file.uri
             }
-            LocalBook.importFiles(fileUris)
+            val books = LocalBook.importFiles(fileUris)
+            if (group != 0L || tags != 0L) {
+                books.forEach { book ->
+                    if (group != 0L) {
+                        book.group = book.group or group
+                    }
+                    if (tags != 0L) {
+                        book.tags = book.tags or tags
+                    }
+                    book.save()
+                }
+            }
         }.onError {
             context.toastOnUi("添加书架失败，请尝试重新选择文件夹")
             AppLog.put("添加书架失败\n${it.localizedMessage}", it)

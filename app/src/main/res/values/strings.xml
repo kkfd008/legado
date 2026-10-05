@@ -355,6 +355,7 @@
     <string name="pt_show_all_find">Display all Discovery</string>
     <string name="ps_show_all_find">Display the selected origin\'s Discovery if closed</string>
     <string name="update_toc">Update chapters</string>
+    <string name="update_local_book">Update local books</string>
     <string name="txt_toc_rule">Txt Catalog Rule</string>
     <string name="select_section_export">Choose some chapters to be exported</string>
     <string name="set_charset">Text encoding</string>
@@ -379,6 +380,10 @@
     <string name="imm_navigation_bar">immersion navigation bar</string>
     <string name="imm_navigation_bar_s">The navigation bar becomes transparent</string>
     <string name="add_to_bookshelf">Add to Bookshelf</string>
+    <string name="put_to_group">Add to group</string>
+    <string name="put_to_tag">Add to tag</string>
+    <string name="abandon">Abandon</string>
+    <string name="confirm_delete_book_source_file">Confirm to delete book source files?</string>
     <string name="continue_read">Continue reading</string>
     <string name="cover_path">Cover path</string>
     <string name="page_anim_cover">Cover</string>
