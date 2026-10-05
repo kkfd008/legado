@@ -105,7 +105,12 @@ object LocalBook {
         return kotlin.runCatching {
             val uri = Uri.parse(book.bookUrl)
             if (uri.isContentScheme()) {
-                return@runCatching DocumentFile.fromSingleUri(appCtx, uri)!!.lastModified()
+                val doc = DocumentFile.fromSingleUri(appCtx, uri)
+                    ?: throw FileNotFoundException("$uri 文件不存在")
+                if (!doc.exists()) {
+                    throw FileNotFoundException("$uri 文件不存在")
+                }
+                return@runCatching doc.lastModified()
             }
             val file = File(uri.path!!)
             if (file.exists()) {

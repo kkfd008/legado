@@ -105,12 +105,12 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
     }
 
     /**
-     * 更新本地书籍：校验书架上的本地书籍源文件是否仍存在，
+     * 更新本地书籍：校验书架上所有本地书籍的源文件是否仍存在，
      * 若源文件被移动或删除，则从书架移除该书籍，但不删除源文件。
      */
-    fun upLocalBook(books: List<Book>) {
+    fun upLocalBook() {
         execute {
-            val removed = books.filter { book ->
+            val removed = appDb.bookDao.all.filter { book ->
                 book.isLocal && LocalBook.getLastModified(book).isFailure
             }
             removed.forEach { book ->
