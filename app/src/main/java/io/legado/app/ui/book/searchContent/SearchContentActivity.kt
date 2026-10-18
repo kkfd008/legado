@@ -150,7 +150,8 @@ class SearchContentActivity :
                 visibleInputHelp(false)
             }
         }
-        visibleInputHelp(true)
+        // 有缓存结果时直接展示结果列表，不展示搜索历史输入帮助
+        visibleInputHelp(requestFocus)
     }
 
     private fun initRecyclerView() {
