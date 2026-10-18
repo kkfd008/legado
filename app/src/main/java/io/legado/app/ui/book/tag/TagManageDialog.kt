@@ -78,7 +78,8 @@ class TagManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
             viewModel.tagList.catch {
                 AppLog.put("标签管理界面获取标签数据失败\n${it.localizedMessage}", it)
             }.flowOn(IO).conflate().collect {
-                adapter.setItems(it)
+                // 按排序值从大到小展示
+                adapter.setItems(it.sortedByDescending { tag -> tag.order })
             }
         }
     }
@@ -121,6 +122,7 @@ class TagManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
             binding.run {
                 root.setBackgroundColor(context.backgroundColor)
                 tvTag.text = item.name
+                tvOrder.text = "${context.getString(R.string.sort)}: ${item.order}"
             }
         }
 
@@ -147,8 +149,9 @@ class TagManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
 
         override fun onClearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
             if (isMoved) {
+                val size = getItems().size
                 for ((index, item) in getItems().withIndex()) {
-                    item.order = index + 1
+                    item.order = size - index
                 }
                 viewModel.upTag(*getItems().toTypedArray())
             }

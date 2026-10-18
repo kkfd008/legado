@@ -7,6 +7,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View.GONE
 import android.view.View.VISIBLE
+import android.view.ViewGroup
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.widget.SearchView
@@ -20,13 +21,17 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayoutManager
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
+import io.legado.app.base.adapter.ItemViewHolder
+import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.PreferKey
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
+import io.legado.app.data.entities.BookTag
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.data.entities.SearchKeyword
 import io.legado.app.databinding.ActivityBookSearchBinding
+import io.legado.app.databinding.ItemFilletTextBinding
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.Selector
 import io.legado.app.lib.theme.accentColor
@@ -79,6 +84,29 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
     private val historyKeyAdapter by lazy {
         HistoryKeyAdapter(this, this).apply {
             setHasStableIds(true)
+        }
+    }
+    private val tagSuggestAdapter by lazy {
+        object : RecyclerAdapter<BookTag, ItemFilletTextBinding>(this) {
+            override fun getViewBinding(parent: ViewGroup): ItemFilletTextBinding =
+                ItemFilletTextBinding.inflate(inflater, parent, false)
+
+            override fun convert(
+                holder: ItemViewHolder,
+                binding: ItemFilletTextBinding,
+                item: BookTag,
+                payloads: MutableList<Any>
+            ) {
+                binding.textView.text = item.name
+            }
+
+            override fun registerListener(holder: ItemViewHolder, binding: ItemFilletTextBinding) {
+                binding.textView.setOnClickListener {
+                    getItem(holder.layoutPosition)?.let {
+                        searchView.setQuery("#${it.name}", false)
+                    }
+                }
+            }
         }
     }
     private val searchView: SearchView by lazy {
@@ -225,6 +253,9 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
         binding.rvHistoryKey.layoutManager = FlexboxLayoutManager(this)
         binding.rvHistoryKey.adapter = historyKeyAdapter
         binding.rvHistoryKey.applyNavigationBarMargin()
+        binding.rvTagSuggest.setEdgeEffectColor(primaryColor)
+        binding.rvTagSuggest.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        binding.rvTagSuggest.adapter = tagSuggestAdapter
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
         binding.recyclerView.itemAnimator = null
@@ -309,6 +340,12 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
             appDb.bookSourceDao.flowEnabledGroups().collect {
                 groups = it
             }
+        }
+        lifecycleScope.launch {
+            val tags = withContext(IO) {
+                appDb.bookTagDao.all().sortedByDescending { it.order }.take(10)
+            }
+            tagSuggestAdapter.setItems(tags)
         }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {

@@ -25,6 +25,7 @@ import io.legado.app.ui.book.import.local.ImportBookActivity
 import io.legado.app.ui.book.import.remote.RemoteBookActivity
 import io.legado.app.ui.book.manage.BookshelfManageActivity
 import io.legado.app.ui.book.search.SearchActivity
+import io.legado.app.ui.book.tag.TagManageDialog
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.main.MainFragmentInterface
 import io.legado.app.ui.main.MainViewModel
@@ -105,6 +106,7 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
             R.id.menu_update_local_book -> activityViewModel.upLocalBook()
             R.id.menu_bookshelf_layout -> configBookshelf()
             R.id.menu_group_manage -> showDialogFragment<GroupManageDialog>()
+            R.id.menu_tag_manage -> showDialogFragment<TagManageDialog>()
             R.id.menu_add_local -> startActivity<ImportBookActivity>()
             R.id.menu_add_url -> showAddBookByUrlAlert()
             R.id.menu_bookshelf_manage -> startActivity<BookshelfManageActivity> {

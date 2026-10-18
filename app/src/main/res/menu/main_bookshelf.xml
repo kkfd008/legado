@@ -59,6 +59,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/menu_tag_manage"
+        android:icon="@drawable/ic_label_outline"
+        android:title="@string/tag_manage"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/menu_bookshelf_layout"
         android:icon="@drawable/ic_view_quilt"
         android:title="@string/bookshelf_layout"
