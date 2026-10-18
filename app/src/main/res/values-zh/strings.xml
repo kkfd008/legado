@@ -651,6 +651,7 @@
     <string name="tone_colour">在线朗读音色</string>
     <string name="select_count">（%1$d/%2$d）</string>
     <string name="show_rss">显示订阅</string>
+    <string name="show_book_source">显示书源</string>
     <string name="service_stop">服务已停止</string>
     <string name="service_start">正在启动服务\n具体信息请查看通知栏</string>
     <string name="default_path">默认路径</string>

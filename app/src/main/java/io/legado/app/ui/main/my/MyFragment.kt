@@ -11,6 +11,7 @@ import io.legado.app.base.BaseFragment
 import io.legado.app.constant.EventBus
 import io.legado.app.constant.PreferKey
 import io.legado.app.databinding.FragmentMyConfigBinding
+import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.ThemeConfig
 import io.legado.app.lib.dialogs.selector
 import io.legado.app.lib.prefs.NameListPreference
@@ -108,6 +109,7 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
                     true
                 }
             }
+            findPreference<Preference>("bookSourceManage")?.isVisible = AppConfig.showBookSource
         }
 
         override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -118,6 +120,7 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
         override fun onResume() {
             super.onResume()
             preferenceManager.sharedPreferences?.registerOnSharedPreferenceChangeListener(this)
+            findPreference<Preference>("bookSourceManage")?.isVisible = AppConfig.showBookSource
         }
 
         override fun onPause() {

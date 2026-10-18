@@ -184,6 +184,7 @@ class ReadBookActivity : BaseReadBookActivity(),
             val searchResultList = IntentData.get<List<SearchResult>>("searchResultList$key")
             if (searchResult != null && searchResultList != null) {
                 viewModel.searchContentQuery = searchResult.query
+                viewModel.searchResultList = searchResultList
                 binding.searchMenu.upSearchResultList(searchResultList)
                 isShowingSearchResult = true
                 viewModel.searchResultIndex = index

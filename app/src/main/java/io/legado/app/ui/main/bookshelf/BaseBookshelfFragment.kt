@@ -86,8 +86,14 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
 
     abstract fun gotoTop()
 
+    override fun onResume() {
+        super.onResume()
+        supportToolbar?.menu?.findItem(R.id.menu_add_url)?.isVisible = AppConfig.showBookSource
+    }
+
     override fun onCompatCreateOptionsMenu(menu: Menu) {
         menuInflater.inflate(R.menu.main_bookshelf, menu)
+        menu.findItem(R.id.menu_add_url)?.isVisible = AppConfig.showBookSource
     }
 
     override fun onCompatOptionsItemSelected(item: MenuItem) {
