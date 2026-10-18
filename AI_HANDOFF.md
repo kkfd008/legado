@@ -108,9 +108,9 @@ export GRADLE_OPTS="-Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=18080 -Dhttps.pr
 - `app/src/main/java/io/legado/app/ui/book/read/SearchMenu.kt`
 - `app/src/main/java/io/legado/app/model/ReadBook.kt`（`clearSearchResult` 等）
 
-## 5. 尚未完成 / 可能的下一步
+## 5. 状态与后续
 
-- 本次两个功能的改动**尚未提交并 push 到远程**（如需 push，请向用户确认并索取/复用 token）。
+- 两个功能代码 + AI_HANDOFF.md 已提交并推送至 `master`（提交：`a72a405` 功能代码、`81826d2` 交接文档），本地与远程 HEAD 均一致。
 - 建议在真机/模拟器上验证：
   1. 其他设置里关闭「显示书源」后，我的页面书源管理、书架菜单添加网址均隐藏；打开后恢复显示。
   2. 阅读页关键字搜索 → 点结果 → 返回列表仍保留结果；换关键字覆盖；退出书籍后缓存清理。
