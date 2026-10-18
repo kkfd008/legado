@@ -122,7 +122,6 @@ class TagManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
             binding.run {
                 root.setBackgroundColor(context.backgroundColor)
                 tvTag.text = item.name
-                tvOrder.text = "${context.getString(R.string.sort)}: ${item.order}"
             }
         }
 

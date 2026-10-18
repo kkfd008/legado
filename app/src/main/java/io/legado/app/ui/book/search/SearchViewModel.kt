@@ -107,6 +107,10 @@ class SearchViewModel(application: Application) : BaseViewModel(application) {
             if (searchKey.isEmpty()) {
                 return@execute
             }
+            // 书源关闭时，不搜索书源，避免出现"启用书源为空"提示
+            if (!AppConfig.showBookSource) {
+                return@execute
+            }
             searchModel.search(searchID, searchKey)
         }
     }

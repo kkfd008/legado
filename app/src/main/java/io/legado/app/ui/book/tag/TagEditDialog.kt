@@ -52,6 +52,7 @@ class TagEditDialog() : BaseDialogFragment(R.layout.dialog_book_tag_edit) {
                     }
                 }
             }
+            tieTagOrder.setText(tag?.order?.toString() ?: "1")
             btnCancel.setOnClickListener { dismissAllowingStateLoss() }
             btnOk.setOnClickListener {
                 val tagName = tieTagName.text.toString().trim()
@@ -65,20 +66,21 @@ class TagEditDialog() : BaseDialogFragment(R.layout.dialog_book_tag_edit) {
                     toastOnUi(R.string.name_exist)
                     return@setOnClickListener
                 }
+                val order = tieTagOrder.text.toString().toIntOrNull()?.coerceIn(1, 999) ?: 1
                 lifecycleScope.launch {
                     withContext(IO) {
                         tag?.let { oldTag ->
-                            if (oldTag.name != tagName) {
+                            if (oldTag.name != tagName || oldTag.order != order) {
                                 oldTag.name = tagName
+                                oldTag.order = order
                                 viewModel.upTag(oldTag)
                             }
                         } ?: let {
                             val nextTagId = viewModel.getNextTagId()
-                            val maxOrder = (appDb.bookTagDao.maxOrder() ?: 0) + 1
                             val bookTag = BookTag(
                                 tagId = nextTagId,
                                 name = tagName,
-                                order = maxOrder
+                                order = order
                             )
                             viewModel.insert(bookTag)
                         }
