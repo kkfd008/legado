@@ -65,6 +65,12 @@
             android:title="@string/show_book_source"
             app:iconSpaceReserved="false" />
 
+        <io.legado.app.lib.prefs.SwitchPreference
+            android:defaultValue="false"
+            android:key="webDavEnabled"
+            android:title="@string/web_dav_enabled"
+            app:iconSpaceReserved="false" />
+
         <io.legado.app.lib.prefs.Preference
             android:key="localPassword"
             android:summary="@string/set_local_password_summary"

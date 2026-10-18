@@ -110,6 +110,7 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
                 }
             }
             findPreference<Preference>("bookSourceManage")?.isVisible = AppConfig.showBookSource
+            findPreference<Preference>("web_dav_setting")?.isVisible = AppConfig.webDavEnabled
         }
 
         override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -121,6 +122,7 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
             super.onResume()
             preferenceManager.sharedPreferences?.registerOnSharedPreferenceChangeListener(this)
             findPreference<Preference>("bookSourceManage")?.isVisible = AppConfig.showBookSource
+            findPreference<Preference>("web_dav_setting")?.isVisible = AppConfig.webDavEnabled
         }
 
         override fun onPause() {

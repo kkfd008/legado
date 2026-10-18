@@ -225,6 +225,9 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     val showBookSource: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.showBookSource, false)
 
+    val webDavEnabled: Boolean
+        get() = appCtx.getPrefBoolean(PreferKey.webDavEnabled, false)
+
     val autoRefreshBook: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.autoRefresh)
 
@@ -463,9 +466,9 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
             appCtx.putPrefInt(PreferKey.preDownloadNum, value)
         }
 
-    val syncBookProgress get() = appCtx.getPrefBoolean(PreferKey.syncBookProgress, true)
+    val syncBookProgress get() = webDavEnabled && appCtx.getPrefBoolean(PreferKey.syncBookProgress, true)
 
-    val syncBookProgressPlus get() = appCtx.getPrefBoolean(PreferKey.syncBookProgressPlus, false)
+    val syncBookProgressPlus get() = webDavEnabled && appCtx.getPrefBoolean(PreferKey.syncBookProgressPlus, false)
 
     val mediaButtonOnExit get() = appCtx.getPrefBoolean("mediaButtonOnExit", true)
 

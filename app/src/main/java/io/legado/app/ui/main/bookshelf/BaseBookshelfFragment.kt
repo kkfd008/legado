@@ -90,11 +90,13 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
     override fun onResume() {
         super.onResume()
         supportToolbar?.menu?.findItem(R.id.menu_add_url)?.isVisible = AppConfig.showBookSource
+        supportToolbar?.menu?.findItem(R.id.menu_remote)?.isVisible = AppConfig.webDavEnabled
     }
 
     override fun onCompatCreateOptionsMenu(menu: Menu) {
         menuInflater.inflate(R.menu.main_bookshelf, menu)
         menu.findItem(R.id.menu_add_url)?.isVisible = AppConfig.showBookSource
+        menu.findItem(R.id.menu_remote)?.isVisible = AppConfig.webDavEnabled
     }
 
     override fun onCompatOptionsItemSelected(item: MenuItem) {
