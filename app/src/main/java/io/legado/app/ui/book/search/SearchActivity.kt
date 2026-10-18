@@ -87,7 +87,7 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
         }
     }
     private val tagSuggestAdapter by lazy {
-        object : RecyclerAdapter<BookTag, ItemFilletTextBinding>(this) {
+        object : RecyclerAdapter<BookTag, ItemFilletTextBinding>(this@SearchActivity) {
             override fun getViewBinding(parent: ViewGroup): ItemFilletTextBinding =
                 ItemFilletTextBinding.inflate(inflater, parent, false)
 
