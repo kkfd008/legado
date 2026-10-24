@@ -32,6 +32,7 @@ import io.legado.app.data.entities.SearchBook
 import io.legado.app.data.entities.SearchKeyword
 import io.legado.app.databinding.ActivityBookSearchBinding
 import io.legado.app.databinding.ItemFilletTextBinding
+import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.Selector
 import io.legado.app.lib.theme.accentColor
@@ -222,7 +223,10 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
                     viewModel.searchKey = ""
                     viewModel.search(searchKey)
                 }
-                visibleInputHelp(false)
+                // 书源关闭时，不回退到空白结果页，保留输入帮助里的本地搜索结果
+                if (AppConfig.showBookSource) {
+                    visibleInputHelp(false)
+                }
                 return true
             }
 
@@ -254,7 +258,7 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
         binding.rvHistoryKey.adapter = historyKeyAdapter
         binding.rvHistoryKey.applyNavigationBarMargin()
         binding.rvTagSuggest.setEdgeEffectColor(primaryColor)
-        binding.rvTagSuggest.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        binding.rvTagSuggest.layoutManager = FlexboxLayoutManager(this)
         binding.rvTagSuggest.adapter = tagSuggestAdapter
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
