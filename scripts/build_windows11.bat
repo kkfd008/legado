@@ -4,83 +4,77 @@ chcp 65001 >nul
 title Legado - Windows 11 Debug APK 构建
 
 set "SCRIPT_DIR=%~dp0"
-for %%I in ("%SCRIPT_DIR%..") do set "PROJECT_DIR=%%~fI"
-
-rem ==== 与云端保持一致（改动项目版本时请同步修改四个脚本）====
-set "EXPECT_JDK=17"
-set "EXPECT_COMPILE_SDK=36"
-set "EXPECT_DEBUG_KEY_SHA=FA:BD:39:70:66:08:66:65:96:4A:A7:16:3E:E3:3D:DC:E6:7E:CA:12:4E:9F:5B:23:7B:16:BF:32:28:B1:13:2D"
 
 echo.
 echo ==========================================
 echo       Legado Windows 11 Debug Build
 echo ==========================================
+echo 规则: mise 管理 JDK 17 + Gradle; SDK 固定 platform 36 + build-tools 36.0.0
 echo.
 
-echo [1/6] JDK
-set "JAVA_BIN=java"
-if defined JAVA_HOME if exist "%JAVA_HOME%\bin\java.exe" set "JAVA_BIN=%JAVA_HOME%\bin\java.exe"
+echo [0/6] 环境引导 (mise / JDK / Gradle / SDK)
+call "%SCRIPT_DIR%env_bootstrap_windows.bat"
+if errorlevel 1 (
+  echo ERROR: 环境引导失败，请查看上方输出。
+  goto :fail
+)
+
+echo.
+echo [1/6] JDK 校验
 set "JAVA_SPEC="
-for /f "tokens=3" %%A in ('"%JAVA_BIN%" -XshowSettings:properties -version 2^>^&1 ^| findstr /C:"java.specification.version"') do set "JAVA_SPEC=%%A"
-if not "%JAVA_SPEC%"=="%EXPECT_JDK%" (
-  echo ERROR: 需要 JDK %EXPECT_JDK%（Gradle 实际使用 "%JAVA_BIN%"，当前: "%JAVA_SPEC%"），否则与云端编译环境不一致。
+for /f "tokens=3" %%A in ('"%JAVA_HOME%\bin\java.exe" -XshowSettings:properties -version 2^>^&1 ^| findstr /C:"java.specification.version"') do set "JAVA_SPEC=%%A"
+if not "!JAVA_SPEC!"=="%EXPECT_JDK%" (
+  echo ERROR: mise 提供的 JDK 为 !JAVA_SPEC!，要求 %EXPECT_JDK%。
   goto :fail
 )
-echo JDK: %JAVA_SPEC% OK
+echo JDK !JAVA_SPEC! OK (!JAVA_HOME!)
 
 echo.
-echo [2/6] Android SDK
-set "SDK_DIR=%ANDROID_HOME%"
-if not defined SDK_DIR set "SDK_DIR=%ANDROID_SDK_ROOT%"
-if defined SDK_DIR (echo Current SDK: "%SDK_DIR%") else (echo ANDROID_HOME / ANDROID_SDK_ROOT 未设置)
-set /p "INPUT_SDK=输入 Android SDK 目录（直接回车保持当前）: "
-if defined INPUT_SDK set "SDK_DIR=%INPUT_SDK%"
-if not defined SDK_DIR (
-  echo ERROR: 必须指定 Android SDK 目录。
+echo [2/6] Gradle 校验
+set "GRADLE_VER="
+for /f "tokens=2" %%A in ('%GRADLE_PREFIX% --version 2^>^&1 ^| findstr /R /C:"^Gradle [0-9]"') do if not defined GRADLE_VER set "GRADLE_VER=%%A"
+if not defined GRADLE_VER (
+  echo ERROR: 无法运行 mise 管理的 Gradle。
   goto :fail
 )
+set "GV_MAJOR="
+set "GV_MINOR="
+for /f "tokens=1,2 delims=." %%A in ("!GRADLE_VER!") do (
+  set "GV_MAJOR=%%A"
+  set "GV_MINOR=%%B"
+)
+set "GRADLE_OK=0"
+if !GV_MAJOR! GEQ 9 set "GRADLE_OK=1"
+if !GV_MAJOR!==8 if !GV_MINOR! GEQ 13 set "GRADLE_OK=1"
+if not "!GRADLE_OK!"=="1" (
+  echo ERROR: Gradle !GRADLE_VER! 低于 AGP %EXPECT_AGP% 要求的 %EXPECT_GRADLE_MIN%。
+  goto :fail
+)
+echo Gradle !GRADLE_VER! OK (mise !GRADLE_VERSION!)
+
+echo.
+echo [3/6] SDK + 签名一致性校验
 if not exist "%SDK_DIR%\platforms\android-%EXPECT_COMPILE_SDK%\android.jar" (
-  echo ERROR: 未找到 "%SDK_DIR%\platforms\android-%EXPECT_COMPILE_SDK%\android.jar"
-  echo 请安装 SDK Platform %EXPECT_COMPILE_SDK%（与云端一致）。
+  echo ERROR: 缺少 platform android-%EXPECT_COMPILE_SDK%。
   goto :fail
 )
-set "BT_VERSION="
-if exist "%SDK_DIR%\build-tools\36.0.0\aapt2.exe" set "BT_VERSION=36.0.0"
-if not defined BT_VERSION if exist "%SDK_DIR%\build-tools\35.0.0\aapt2.exe" set "BT_VERSION=35.0.0"
-if not defined BT_VERSION (
-  echo ERROR: 未找到 build-tools 36.0.0 / 35.0.0。
+if not exist "%SDK_DIR%\build-tools\%EXPECT_BUILD_TOOLS%\aapt2.exe" (
+  echo ERROR: 缺少 build-tools %EXPECT_BUILD_TOOLS%。
   goto :fail
 )
-set "ANDROID_HOME=%SDK_DIR%"
-set "ANDROID_SDK_ROOT=%SDK_DIR%"
-echo SDK OK (platform %EXPECT_COMPILE_SDK%, build-tools %BT_VERSION%)
-
-echo.
-echo [3/6] 签名一致性校验
 if not exist "%PROJECT_DIR%\app\debug.keystore" (
   echo ERROR: 缺少 app\debug.keystore，本地与云端签名将不一致。
   goto :fail
 )
-set "KEYTOOL="
-if defined JAVA_HOME if exist "%JAVA_HOME%\bin\keytool.exe" set "KEYTOOL=%JAVA_HOME%\bin\keytool.exe"
-if not defined KEYTOOL (
-  where keytool.exe >nul 2>nul
-  if not errorlevel 1 set "KEYTOOL=keytool"
-)
-if not defined KEYTOOL (
-  echo ERROR: 未找到 keytool.exe，无法校验签名。
-  goto :fail
-)
 set "KEY_SHA="
-for /f "tokens=2" %%A in ('"!KEYTOOL!" -list -v -keystore "%PROJECT_DIR%\app\debug.keystore" -storepass android -alias androiddebugkey 2^>nul ^| findstr /C:"SHA256:"') do set "KEY_SHA=%%A"
-if /i not "%KEY_SHA%"=="%EXPECT_DEBUG_KEY_SHA%" (
+for /f "tokens=2" %%A in ('"%JAVA_HOME%\bin\keytool.exe" -list -v -keystore "%PROJECT_DIR%\app\debug.keystore" -storepass android -alias androiddebugkey 2^>nul ^| findstr /C:"SHA256:"') do set "KEY_SHA=%%A"
+if /i not "!KEY_SHA!"=="%EXPECT_DEBUG_KEY_SHA%" (
   echo ERROR: debug.keystore 指纹与云端不一致。
-  echo   当前: "%KEY_SHA%"
-  echo   期望: "%EXPECT_DEBUG_KEY_SHA%"
-  echo 继续构建会覆盖安装失败（签名不一致）。
+  echo   当前: !KEY_SHA!
+  echo   期望: %EXPECT_DEBUG_KEY_SHA%
   goto :fail
 )
-echo 签名 OK: %KEY_SHA%
+echo 签名 OK: !KEY_SHA!
 
 echo.
 echo [4/6] 与云端代码同步（versionCode = 10000 + git 提交数）
@@ -101,12 +95,12 @@ if errorlevel 1 (
   set "DIRTY="
   for /f "delims=" %%A in ('git -C "%PROJECT_DIR%" status --porcelain 2^>nul') do if not defined DIRTY set "DIRTY=%%A"
   if defined DIRTY (
-    echo WARNING: 存在未提交改动，跳过自动拉取，请自行确认与云端在同一提交。
+    echo WARNING: 存在未提交改动，跳过自动拉取，请确认与云端在同一提交。
   ) else (
     echo 正在拉取 origin/master ...
     git -C "%PROJECT_DIR%" pull --rebase origin master
     if errorlevel 1 (
-      echo ERROR: git pull 失败，请先处理冲突后再构建。
+      echo ERROR: git pull 失败，请先处理冲突。
       goto :fail
     )
   )
@@ -132,6 +126,7 @@ pushd "%PROJECT_DIR%" || (
   goto :fail
 )
 
+rem 临时写入 local.properties 指向固定 SDK，构建后还原
 set "LOCAL_PROPERTIES=%PROJECT_DIR%\local.properties"
 set "LOCAL_BACKUP=%TEMP%\legado-local-%RANDOM%-%RANDOM%.properties"
 set "HAD_LOCAL=0"
@@ -147,7 +142,7 @@ if exist "%LOCAL_PROPERTIES%" (
 set "SDK_PROP=%SDK_DIR:\=/%"
 > "%LOCAL_PROPERTIES%" echo sdk.dir=%SDK_PROP%
 
-call gradlew.bat --no-daemon assembleAppDebug
+%GRADLE_PREFIX% --no-daemon assembleAppDebug
 set "BUILD_EXIT=%ERRORLEVEL%"
 
 if "%HAD_LOCAL%"=="1" (
@@ -167,7 +162,7 @@ if not "%BUILD_EXIT%"=="0" (
 set "APK="
 for %%F in ("%PROJECT_DIR%\app\build\outputs\apk\app\debug\legado_app_*.apk") do set "APK=%%~fF"
 if not defined APK (
-  echo ERROR: 未找到构建产物 app\build\outputs\apk\app\debug\legado_app_*.apk
+  echo ERROR: 未找到 app\build\outputs\apk\app\debug\legado_app_*.apk
   popd
   goto :fail
 )
@@ -180,7 +175,7 @@ for /f "delims=" %%A in ('findstr /C:"package: name=" "%TEMP%\legado_badging.txt
 findstr /C:"SHA-256" "%TEMP%\legado_certs.txt"
 findstr /C:"%EXPECT_DEBUG_KEY_SHA%" "%TEMP%\legado_certs.txt" >nul
 if errorlevel 1 (
-  echo WARNING: 产物签名指纹与期望值不一致，请勿与本机已装应用互相覆盖安装。
+  echo WARNING: 产物签名指纹与期望值不一致，请勿与已装应用互相覆盖安装。
 ) else (
   echo 产物签名与云端一致 OK
 )
