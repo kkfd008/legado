@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
-chcp 65001 >nul
-title Legado - Windows 11 æž„å»ºçŽ¯å¢ƒæ£€æŸ¥
+chcp 936 >nul
+title Legado - Windows 11 ¹¹½¨»·¾³¼ì²é
 
 set "SCRIPT_DIR=%~dp0"
 set "REPORT=%SCRIPT_DIR%..\build_env_check_report.txt"
@@ -11,6 +11,11 @@ set "PASS=0"
 set "WARN=0"
 set "FAIL=0"
 
+rem ¼ì²éÄ£Ê½: Ö»¼ì²â, ²»°²×°; È±Ê§ÏîÐ´Èë ENV_FIX_FILE ¹©±¨¸æÊ¹ÓÃ
+set "ENV_NO_INSTALL=1"
+set "ENV_FIX_FILE=%TEMP%\legado_env_fix_%RANDOM%%RANDOM%.txt"
+if exist "!ENV_FIX_FILE!" del "!ENV_FIX_FILE!" >nul 2>nul
+
 > "%REPORT%" echo Legado Windows Build Environment Check
 >>"%REPORT%" echo Date: %DATE% %TIME%
 >>"%REPORT%" echo Project: %SCRIPT_DIR%..
@@ -18,138 +23,145 @@ set "FAIL=0"
 
 echo.
 echo ==============================================
-echo   Legado - Windows 11 æž„å»ºçŽ¯å¢ƒæ£€æŸ¥
+echo   Legado - Windows 11 ¹¹½¨»·¾³¼ì²é
 echo ==============================================
-echo è§„åˆ™: mise ç®¡ç† JDK 17 + Gradle; SDK å›ºå®š platform 36 + build-tools 36.0.0
+echo ¹æÔò: JDK 17 + Gradle ÓÉ mise »òÏîÄ¿ wrapper Ìá¹©; SDK ¹Ì¶¨ platform 36 + build-tools 36.0.0
+echo Ä£Ê½: Ö»¼ì²â, ²»°²×°; È±Ê§Ïî»á¸ø³ö°²×°½¨Òé
 echo Report: "%REPORT%"
 echo.
 
-echo [0/7] çŽ¯å¢ƒå¼•å¯¼ (mise / JDK / Gradle / SDK)
+echo [0/7] »·¾³¼ì²â (mise / JDK / Gradle / SDK)
 call "%SCRIPT_DIR%env_bootstrap_windows.bat"
 if errorlevel 1 (
-  call :fail "çŽ¯å¢ƒå¼•å¯¼å¤±è´¥ï¼Œè¯·æŸ¥çœ‹ä¸Šæ–¹ [ENV] / ERROR è¾“å‡º"
-  goto :summary
-)
-call :pass "çŽ¯å¢ƒå¼•å¯¼å®Œæˆï¼ˆç¼ºä»€ä¹ˆè‡ªåŠ¨è£…ä»€ä¹ˆï¼‰"
-
-echo.
-echo [1/7] JDK (mise æä¾› JDK %EXPECT_JDK%)
-if exist "%JAVA_HOME%\bin\java.exe" (
-  set "JAVA_SPEC="
-  for /f "tokens=3" %%A in ('"%JAVA_HOME%\bin\java.exe" -XshowSettings:properties -version 2^>^&1 ^| findstr /C:"java.specification.version"') do set "JAVA_SPEC=%%A"
-  if "!JAVA_SPEC!"=="%EXPECT_JDK%" (
-    call :pass "JDK %EXPECT_JDK% OK: %JAVA_HOME%"
-  ) else (
-    call :fail "mise æä¾›çš„ JDK ä¸º !JAVA_SPEC!ï¼Œè¦æ±‚ %EXPECT_JDK%"
-  )
-  if exist "%JAVA_HOME%\bin\javac.exe" (
-    call :pass "javac å¯ç”¨ï¼ˆå®Œæ•´ JDKï¼‰"
-  ) else (
-    call :warn "æœªæ‰¾åˆ° javacï¼Œå½“å‰å¯èƒ½æ˜¯ JRE"
-  )
+  call :fail "»·¾³¼ì²â·¢ÏÖÈ±Ê§Ïî£¬¼ûÎÄÄ©°²×°½¨Òé"
 ) else (
-  call :fail "JAVA_HOME æ— æ•ˆ: %JAVA_HOME%"
+  call :pass "»·¾³¼ì²âÍê³É£¬ËùÐè×é¼þÆë±¸"
 )
 
 echo.
-echo [2/7] Gradle (mise æŒ‡å®šç‰ˆæœ¬ä¼˜å…ˆï¼Œç¼ºå¤±åˆ™ mise å®‰è£…ï¼›è¦æ±‚ >= %EXPECT_GRADLE_MIN%)
-set "GRADLE_VER="
-for /f "tokens=2" %%A in ('%GRADLE_PREFIX% --version 2^>^&1 ^| findstr /R /C:"^Gradle [0-9]"') do if not defined GRADLE_VER set "GRADLE_VER=%%A"
-if defined GRADLE_VER (
-  set "GV_MAJOR="
-  set "GV_MINOR="
-  for /f "tokens=1,2 delims=." %%A in ("!GRADLE_VER!") do (
-    set "GV_MAJOR=%%A"
-    set "GV_MINOR=%%B"
-  )
-  set "GRADLE_OK=0"
-  if !GV_MAJOR! GEQ 9 set "GRADLE_OK=1"
-  if !GV_MAJOR!==8 if !GV_MINOR! GEQ 13 set "GRADLE_OK=1"
-  if "!GRADLE_OK!"=="1" (
-    call :pass "Gradle !GRADLE_VER! OKï¼ˆmise ç‰ˆæœ¬ !GRADLE_VERSION!ï¼Œæ»¡è¶³ AGP %EXPECT_AGP% è¦æ±‚ï¼‰"
-  ) else (
-    call :fail "Gradle !GRADLE_VER! ä½ŽäºŽ AGP %EXPECT_AGP% è¦æ±‚çš„ %EXPECT_GRADLE_MIN%"
-  )
+echo [1/7] JDK ÆÚÍû°æ±¾ %EXPECT_JDK%
+if "!JAVA_SPEC!"=="%EXPECT_JDK%" (
+  call :pass "JDK %EXPECT_JDK% OK: !JAVA_HOME!"
 ) else (
-  call :fail "æ— æ³•è¿è¡Œ mise ç®¡ç†çš„ Gradleï¼ˆ!GRADLE_PREFIX!ï¼‰"
+  call :fail "JDK Ö÷°æ±¾Îª !JAVA_SPEC!£¬ÒªÇó %EXPECT_JDK%£¬JAVA_HOME=!JAVA_HOME!"
+)
+if exist "%JAVA_HOME%\bin\javac.exe" (
+  call :pass "javac ¿ÉÓÃ£¬ÊÇÍêÕû JDK"
+) else (
+  call :warn "Î´ÕÒµ½ javac£¬µ±Ç°¿ÉÄÜÊÇ JRE"
 )
 
 echo.
-echo [3/7] Android SDKï¼ˆå›ºå®š platform %EXPECT_COMPILE_SDK% + build-tools %EXPECT_BUILD_TOOLS%ï¼‰
+echo [2/7] Gradle ÆÚÍû°æ±¾²»µÍÓÚ %EXPECT_GRADLE_MIN%£¬µ±Ç° !GRADLE_VERSION!£¬À´Ô´ !GRADLE_SRC!
+set "GV_MAJOR="
+set "GV_MINOR="
+for /f "tokens=1,2 delims=." %%A in ("!GRADLE_VERSION!") do (
+  set "GV_MAJOR=%%A"
+  set "GV_MINOR=%%B"
+)
+if not defined GV_MAJOR set "GV_MAJOR=0"
+if not defined GV_MINOR set "GV_MINOR=0"
+set "MIN_MAJOR="
+set "MIN_MINOR="
+for /f "tokens=1,2 delims=." %%A in ("%EXPECT_GRADLE_MIN%") do (
+  set "MIN_MAJOR=%%A"
+  set "MIN_MINOR=%%B"
+)
+if not defined MIN_MAJOR set "MIN_MAJOR=0"
+if not defined MIN_MINOR set "MIN_MINOR=0"
+set "GRADLE_OK=0"
+if !GV_MAJOR! GTR !MIN_MAJOR! set "GRADLE_OK=1"
+if !GV_MAJOR! EQU !MIN_MAJOR! if !GV_MINOR! GEQ !MIN_MINOR! set "GRADLE_OK=1"
+if not "!GRADLE_OK!"=="1" (
+  call :fail "Gradle !GRADLE_VERSION! µÍÓÚ AGP %EXPECT_AGP% ÒªÇóµÄ %EXPECT_GRADLE_MIN%"
+) else (
+  call :pass "Gradle !GRADLE_VERSION! OK£¬Âú×ã AGP %EXPECT_AGP% ÒªÇó"
+)
+if "!GRADLE_CACHED!"=="1" (
+  call :pass "Gradle distribution ÒÑÔÚ±¾µØ»º´æ£¬¹¹½¨ÎÞÐèÁªÍø"
+) else (
+  call :warn "±¾µØÎ´»º´æ Gradle !GRADLE_VERSION! distribution£¬Ê×´Î¹¹½¨ÐèÁªÍøÏÂÔØ"
+)
+
+echo.
+echo [3/7] Android SDK ¹Ì¶¨ platform %EXPECT_COMPILE_SDK% + build-tools %EXPECT_BUILD_TOOLS%
 if exist "%SDK_DIR%\platforms\android-%EXPECT_COMPILE_SDK%\android.jar" (
-  call :pass "platform android-%EXPECT_COMPILE_SDK% å·²å®‰è£…"
+  call :pass "platform android-%EXPECT_COMPILE_SDK% ÒÑ°²×°"
 ) else (
-  call :fail "ç¼ºå°‘ platform android-%EXPECT_COMPILE_SDK%"
+  call :fail "È±ÉÙ platform android-%EXPECT_COMPILE_SDK%"
 )
 if exist "%SDK_DIR%\build-tools\%EXPECT_BUILD_TOOLS%\aapt2.exe" (
-  call :pass "build-tools %EXPECT_BUILD_TOOLS% å·²å®‰è£…"
+  call :pass "build-tools %EXPECT_BUILD_TOOLS% ÒÑ°²×°"
 ) else (
-  call :fail "ç¼ºå°‘ build-tools %EXPECT_BUILD_TOOLS%"
+  call :fail "È±ÉÙ build-tools %EXPECT_BUILD_TOOLS%"
 )
 if exist "%SDK_DIR%\platform-tools\adb.exe" (
-  call :pass "platform-tools (adb) å·²å®‰è£…"
+  call :pass "platform-tools adb ÒÑ°²×°"
 ) else (
-  call :warn "æœªæ‰¾åˆ° adbï¼ˆä¸å½±å“ç¼–è¯‘ï¼‰"
+  call :warn "Î´ÕÒµ½ adb£¬²»Ó°Ïì±àÒë"
 )
 
 echo.
-echo [4/7] é¡¹ç›®ç‰ˆæœ¬é…ç½®ï¼ˆAGP / Kotlin / compileSdk / targetSdkï¼‰
+echo [4/7] ÏîÄ¿°æ±¾ÅäÖÃ AGP / Kotlin / compileSdk / targetSdk
 set "AGP_VER="
 for /f "tokens=3" %%A in ('findstr /B /C:"agp = " "%PROJECT_DIR%\gradle\libs.versions.toml"') do set "AGP_VER=%%~A"
 if "!AGP_VER!"=="%EXPECT_AGP%" (
-  call :pass "AGP ç‰ˆæœ¬æ­£ç¡®: !AGP_VER!"
+  call :pass "AGP °æ±¾ÕýÈ·: !AGP_VER!"
 ) else (
-  call :fail "AGP ä¸º !AGP_VER!ï¼ŒæœŸæœ› %EXPECT_AGP%"
+  call :fail "AGP Îª !AGP_VER!£¬ÆÚÍû %EXPECT_AGP%"
 )
 set "KOTLIN_VER="
 for /f "tokens=3" %%A in ('findstr /B /C:"kotlin = " "%PROJECT_DIR%\gradle\libs.versions.toml"') do set "KOTLIN_VER=%%~A"
 if "!KOTLIN_VER!"=="%EXPECT_KOTLIN%" (
-  call :pass "Kotlin ç‰ˆæœ¬æ­£ç¡®: !KOTLIN_VER!"
+  call :pass "Kotlin °æ±¾ÕýÈ·: !KOTLIN_VER!"
 ) else (
-  call :warn "Kotlin ä¸º !KOTLIN_VER!ï¼ŒæœŸæœ› %EXPECT_KOTLIN%"
+  call :warn "Kotlin Îª !KOTLIN_VER!£¬ÆÚÍû %EXPECT_KOTLIN%"
 )
 set "COMPILE_SDK="
 for /f "tokens=3" %%A in ('findstr /C:"compile_sdk_version =" "%PROJECT_DIR%\build.gradle"') do set "COMPILE_SDK=%%A"
 if "!COMPILE_SDK!"=="%EXPECT_COMPILE_SDK%" (
-  call :pass "compileSdk æ­£ç¡®: !COMPILE_SDK!"
+  call :pass "compileSdk ÕýÈ·: !COMPILE_SDK!"
 ) else (
-  call :fail "compileSdk ä¸º !COMPILE_SDK!ï¼ŒæœŸæœ› %EXPECT_COMPILE_SDK%"
+  call :fail "compileSdk Îª !COMPILE_SDK!£¬ÆÚÍû %EXPECT_COMPILE_SDK%"
 )
 set "TARGET_SDK="
 for /f "tokens=2" %%A in ('findstr /C:"targetSdk " "%PROJECT_DIR%\app\build.gradle"') do set "TARGET_SDK=%%A"
 if "!TARGET_SDK!"=="%EXPECT_COMPILE_SDK%" (
-  call :pass "targetSdk æ­£ç¡®: !TARGET_SDK!"
+  call :pass "targetSdk ÕýÈ·: !TARGET_SDK!"
 ) else (
-  call :warn "targetSdk ä¸º !TARGET_SDK!ï¼ŒæœŸæœ› %EXPECT_COMPILE_SDK%"
+  call :warn "targetSdk Îª !TARGET_SDK!£¬ÆÚÍû %EXPECT_COMPILE_SDK%"
 )
 
 echo.
-echo [5/7] ç­¾åï¼ˆä¸¤ç«¯å…±ç”¨ä»“åº“å†… app\debug.keystoreï¼‰
+echo [5/7] Ç©Ãû£¬Á½¶Ë¹²ÓÃ²Ö¿âÄÚ app\debug.keystore
 if exist "%PROJECT_DIR%\app\debug.keystore" (
-  call :pass "ç­¾åæ–‡ä»¶å­˜åœ¨: app\debug.keystore"
+  call :pass "Ç©ÃûÎÄ¼þ´æÔÚ: app\debug.keystore"
   set "KEY_SHA="
-  for /f "tokens=2" %%A in ('"%JAVA_HOME%\bin\keytool.exe" -list -v -keystore "%PROJECT_DIR%\app\debug.keystore" -storepass android -alias androiddebugkey 2^>nul ^| findstr /C:"SHA256:"') do set "KEY_SHA=%%A"
+  set "KEY_FILE=%TEMP%\legado_key_%RANDOM%%RANDOM%.txt"
+  "!JAVA_HOME!\bin\keytool.exe" -list -v -keystore "%PROJECT_DIR%\app\debug.keystore" -storepass android -alias androiddebugkey >"!KEY_FILE!" 2>&1
+  for /f "tokens=2" %%A in ('findstr /C:"SHA256:" "!KEY_FILE!"') do if not defined KEY_SHA set "KEY_SHA=%%A"
+  if exist "!KEY_FILE!" del "!KEY_FILE!" >nul 2>nul
   if /i "!KEY_SHA!"=="%EXPECT_DEBUG_KEY_SHA%" (
-    call :pass "ç­¾åæŒ‡çº¹ä¸Žäº‘ç«¯ä¸€è‡´ï¼Œè¦†ç›–å®‰è£…ä¸ä¼šæŠ¥ç­¾åå†²çª"
+    call :pass "Ç©ÃûÖ¸ÎÆÓëÔÆ¶ËÒ»ÖÂ£¬¸²¸Ç°²×°²»»á±¨Ç©Ãû³åÍ»"
   ) else (
-    call :fail "ç­¾åæŒ‡çº¹ä¸Žäº‘ç«¯ä¸ä¸€è‡´: !KEY_SHA!"
+    call :fail "Ç©ÃûÖ¸ÎÆÓëÔÆ¶Ë²»Ò»ÖÂ: !KEY_SHA!"
   )
 ) else (
-  call :fail "ç¼ºå°‘ app\debug.keystore"
+  call :fail "È±ÉÙ app\debug.keystore"
 )
 
 echo.
-echo [6/7] ä»£ç åŒæ­¥ï¼ˆversionCode = 10000 + git æäº¤æ•°ï¼‰
+echo [6/7] ´úÂëÍ¬²½ versionCode = 10000 + git Ìá½»Êý
 where git.exe >nul 2>nul
 if errorlevel 1 (
-  call :warn "æœªæ‰¾åˆ° gitï¼Œè·³è¿‡ versionCode æ ¡éªŒ"
+  call :warn "Î´ÕÒµ½ git£¬Ìø¹ý versionCode Ð£Ñé"
 ) else (
   set "SHALLOW="
   for /f %%A in ('git -C "%PROJECT_DIR%" rev-parse --is-shallow-repository 2^>nul') do set "SHALLOW=%%A"
   if "!SHALLOW!"=="true" (
-    call :fail "æµ…å…‹éš†ä»“åº“ï¼Œæäº¤æ•°ä¸Žäº‘ç«¯ä¸åŒï¼ŒversionCode ä¼šä¸ä¸€è‡´ã€‚è¯·æ‰§è¡Œ: git fetch --unshallow"
+    call :fail "Ç³¿ËÂ¡²Ö¿â£¬Ìá½»ÊýÓëÔÆ¶Ë²»Í¬£¬versionCode »á²»Ò»ÖÂ¡£ÇëÖ´ÐÐ: git fetch --unshallow"
   ) else (
-    call :pass "å®Œæ•´å…‹éš†ï¼Œæäº¤æ•°å¯ä½œ versionCode åŸºæ•°"
+    call :pass "ÍêÕû¿ËÂ¡£¬Ìá½»Êý¿É×÷ versionCode »ùÊý"
   )
   git -C "%PROJECT_DIR%" fetch origin master --quiet >nul 2>nul
   set "LOCAL_SHA="
@@ -160,26 +172,26 @@ if errorlevel 1 (
   for /f %%A in ('git -C "%PROJECT_DIR%" rev-list HEAD --count 2^>nul') do set "LOCAL_COUNT=%%A"
   if defined LOCAL_COUNT (
     set /a VERSION_CODE=10000+!LOCAL_COUNT!
-    call :log "INFO" "æäº¤æ•° !LOCAL_COUNT!ï¼Œé¢„è®¡ versionCode=!VERSION_CODE!ï¼ŒHEAD !LOCAL_SHA! / origin !REMOTE_SHA!"
+    call :log "INFO" "Ìá½»Êý !LOCAL_COUNT!£¬Ô¤¼Æ versionCode=!VERSION_CODE!£¬HEAD !LOCAL_SHA! / origin !REMOTE_SHA!"
     if "!LOCAL_SHA!"=="!REMOTE_SHA!" (
-      call :pass "ä¸Ž origin/master åŒæäº¤ï¼ŒversionCode ä¸Žäº‘ç«¯ä¸€è‡´"
+      call :pass "Óë origin/master Í¬Ìá½»£¬versionCode ÓëÔÆ¶ËÒ»ÖÂ"
     ) else (
-      call :fail "ä¸Ž origin/master ä¸åŒæäº¤ï¼Œä¸¤ç«¯ versionCode ä¼šä¸åŒ"
+      call :fail "Óë origin/master ²»Í¬Ìá½»£¬Á½¶Ë versionCode »á²»Í¬"
     )
   ) else (
-    call :warn "æ— æ³•è¯»å–æäº¤æ•°"
+    call :warn "ÎÞ·¨¶ÁÈ¡Ìá½»Êý"
   )
   set "DIRTY="
   for /f "delims=" %%A in ('git -C "%PROJECT_DIR%" status --porcelain 2^>nul') do if not defined DIRTY set "DIRTY=%%A"
   if defined DIRTY (
-    call :warn "å­˜åœ¨æœªæäº¤æ”¹åŠ¨ï¼ŒåŒ versionCode ä¸‹ä»£ç å¯èƒ½ä¸ä¸€è‡´"
+    call :warn "´æÔÚÎ´Ìá½»¸Ä¶¯£¬Í¬ versionCode ÏÂ´úÂë¿ÉÄÜ²»Ò»ÖÂ"
   ) else (
-    call :pass "å·¥ä½œåŒºå¹²å‡€"
+    call :pass "¹¤×÷Çø¸É¾»"
   )
 )
 
 echo.
-echo [7/7] Gradle ç¼“å­˜ä¸Žå†™å…¥æƒé™
+echo [7/7] Gradle »º´æÓëÐ´ÈëÈ¨ÏÞ
 set "CACHE_DIR=%GRADLE_USER_HOME%"
 if not defined CACHE_DIR set "CACHE_DIR=%USERPROFILE%\.gradle"
 if not exist "!CACHE_DIR!" mkdir "!CACHE_DIR!" >nul 2>nul
@@ -188,35 +200,51 @@ if exist "!CACHE_DIR!" (
   >"!TEST_FILE!" echo test
   if exist "!TEST_FILE!" (
     del "!TEST_FILE!" >nul 2>nul
-    call :pass "Gradle ç¼“å­˜ç›®å½•å¯å†™: !CACHE_DIR!"
+    call :pass "Gradle »º´æÄ¿Â¼¿ÉÐ´: !CACHE_DIR!"
   ) else (
-    call :fail "Gradle ç¼“å­˜ç›®å½•ä¸å¯å†™: !CACHE_DIR!"
+    call :fail "Gradle »º´æÄ¿Â¼²»¿ÉÐ´: !CACHE_DIR!"
   )
 ) else (
-  call :fail "æ— æ³•åˆ›å»º Gradle ç¼“å­˜ç›®å½•: !CACHE_DIR!"
+  call :fail "ÎÞ·¨´´½¨ Gradle »º´æÄ¿Â¼: !CACHE_DIR!"
 )
 
 :summary
 echo.
 echo ==============================================
-echo   æ£€æŸ¥æ±‡æ€»
+echo   ¼ì²é»ã×Ü
 echo ==============================================
 echo PASS: !PASS!
 echo WARN: !WARN!
 echo FAIL: !FAIL!
 >>"%REPORT%" echo.
 >>"%REPORT%" echo Summary: PASS=!PASS! WARN=!WARN! FAIL=!FAIL!
-echo å®Œæ•´æŠ¥å‘Š: "%REPORT%"
+
+if exist "!ENV_FIX_FILE!" (
+  echo.
+  echo ----------------------------------------------
+  echo   °²×°½¨Òé / ÐÞ¸´Ö¸Áî
+  echo ----------------------------------------------
+  >>"%REPORT%" echo.
+  >>"%REPORT%" echo ---- FIX ----
+  for /f "usebackq delims=" %%A in ("!ENV_FIX_FILE!") do (
+    echo   %%A
+    >>"%REPORT%" echo   %%A
+  )
+  >>"%REPORT%" echo ---- END FIX ----
+)
+
+echo ÍêÕû±¨¸æ: "%REPORT%"
 if !FAIL! GTR 0 (
   echo.
-  echo ç»“è®º: å­˜åœ¨é˜»æ–­é¡¹ï¼Œè¯·å…ˆä¿®å¤ FAIL å†æž„å»ºã€‚
+  echo ½áÂÛ: ´æÔÚ×è¶ÏÏî£¬Çë°´ÉÏ·½°²×°½¨Òé´¦ÀíºóÖØÐÂÔËÐÐ±¾¼ì²é¡£
 ) else if !WARN! GTR 0 (
   echo.
-  echo ç»“è®º: æ— é˜»æ–­é¡¹ï¼Œè¯·å…³æ³¨ WARNã€‚
+  echo ½áÂÛ: ÎÞ×è¶ÏÏî£¬Çë¹Ø×¢ WARN¡£
 ) else (
   echo.
-  echo ç»“è®º: çŽ¯å¢ƒä¸Žäº‘ç«¯ä¸€è‡´ï¼Œå¯ä»¥æž„å»ºã€‚
+  echo ½áÂÛ: »·¾³ÓëÔÆ¶ËÒ»ÖÂ£¬¿ÉÒÔ¹¹½¨¡£
 )
+if exist "!ENV_FIX_FILE!" del "!ENV_FIX_FILE!" >nul 2>nul
 echo.
 pause
 endlocal

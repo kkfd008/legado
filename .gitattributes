@@ -5,6 +5,10 @@
 # 所有文本文件统一 LF
 * text=auto eol=lf
 
+# Windows 批处理必须 CRLF（cmd.exe 无法正确解析 LF 换行的 bat）
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
 # 二进制文件禁止换行转换（避免图片、压缩包损坏）
 *.png binary
 *.jpg binary

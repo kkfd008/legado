@@ -1,10 +1,22 @@
 @echo off
 rem ============================================================
-rem env_bootstrap_windows.bat - Windows æ„å»ºç¯å¢ƒç»Ÿä¸€å¼•å¯¼
-rem ç”± check_build_env_windows11.bat / build_windows11.bat è°ƒç”¨:
+rem env_bootstrap_windows.bat - Windows ¹¹½¨»·¾³Í³Ò»Òıµ¼
+rem ÓÉ check_build_env_windows11.bat / build_windows11.bat µ÷ÓÃ:
 rem     call "%~dp0env_bootstrap_windows.bat"
-rem è§„åˆ™: mise ç®¡ç† JDK 17 ä¸ Gradle; Android SDK å›ºå®š platform 36 + build-tools 36.0.0
-rem æ³¨æ„: æœ¬è„šæœ¬ä¸ä½¿ç”¨ setlocal, å˜é‡éœ€å›ä¼ ç»™è°ƒç”¨è„šæœ¬
+rem ¹æÔò: JDK 17 + Gradle ÓÉ mise »òÏîÄ¿×ÔÉíÌá¹©; SDK ¹Ì¶¨ platform 36 + build-tools 36.0.0
+rem ×¢Òâ: ±¾½Å±¾²»Ê¹ÓÃ setlocal, ±äÁ¿Ğè»Ø´«¸øµ÷ÓÃ½Å±¾
+rem
+rem Á½ÖÖÄ£Ê½:
+rem   Ä¬ÈÏ(¹¹½¨): È±Ê²Ã´×Ô¶¯°²×°
+rem   ENV_NO_INSTALL=1(¼ì²é): Ö»¼ì²â²»°²×°, °Ñ°²×°½¨ÒéĞ´Èë ENV_FIX_FILE
+rem
+rem µ¼³ö±äÁ¿:
+rem   JAVA_HOME / JAVA_SPEC        JDK Â·¾¶ÓëÊµ¼Ê°æ±¾(ÒªÇó 17)
+rem   GRADLE_CMD                   Gradle ¿ÉÖ´ĞĞÎÄ¼ş(ÓÅÏÈÏîÄ¿ wrapper)
+rem   GRADLE_VERSION / GRADLE_SRC  Gradle °æ±¾ÓëÀ´Ô´(wrapper / mise)
+rem   GRADLE_CACHED                1=±¾µØÒÑÓĞ¿ÉÓÃ distribution, 0=Ê×´Î¹¹½¨ĞèÁªÍøÏÂÔØ
+rem   SDK_DIR / BT_VERSION / PROJECT_DIR
+rem   ENV_MISSING                  1=´æÔÚÈ±Ê§Ïî
 rem ============================================================
 
 set "EXPECT_JDK=17"
@@ -18,12 +30,19 @@ set "EXPECT_DEBUG_KEY_SHA=FA:BD:39:70:66:08:66:65:96:4A:A7:16:3E:E3:3D:DC:E6:7E:
 
 for %%I in ("%~dp0..") do set "PROJECT_DIR=%%~fI"
 
+if not defined ENV_NO_INSTALL set "ENV_NO_INSTALL=0"
+
 set "MISE_BIN="
-set "GRADLE_PREFIX="
-set "GRADLE_VERSION="
 set "JAVA_HOME_MISE="
+set "JAVA_SPEC="
+set "JDK_SRC="
+set "GRADLE_CMD="
+set "GRADLE_VERSION="
+set "GRADLE_SRC="
+set "GRADLE_CACHED=0"
 set "SDK_DIR="
 set "BT_VERSION="
+set "ENV_MISSING=0"
 
 call :ensure_mise || exit /b 1
 call :ensure_java17 || exit /b 1
@@ -32,23 +51,45 @@ call :ensure_sdk || exit /b 1
 exit /b 0
 
 rem ------------------------------------------------------------
-rem 1) mise: æœªå®‰è£…åˆ™è‡ªåŠ¨å®‰è£… (winget -> scoop -> å¸¸è§è·¯å¾„)
+rem ¼ÇÂ¼°²×°½¨Òé: ½ö¼ì²éÄ£Ê½ÏÂÊä³öµ½¿ØÖÆÌ¨²¢Ğ´Èë ENV_FIX_FILE
+rem ------------------------------------------------------------
+:suggest
+if /i not "!ENV_NO_INSTALL!"=="1" exit /b 0
+echo [FIX] %~1
+if defined ENV_FIX_FILE >>"!ENV_FIX_FILE!" echo %~1
+exit /b 0
+
+rem È±Ê§ÏîÍ³Ò»³ö¿Ú
+:missing
+set "ENV_MISSING=1"
+call :suggest "%~1"
+exit /b 1
+
+rem ------------------------------------------------------------
+rem 1) mise: Î´°²×°Ôò×Ô¶¯°²×° (winget -> ³£¼ûÂ·¾¶)
 rem ------------------------------------------------------------
 :ensure_mise
+set "MISE_VER="
 where mise.exe >nul 2>nul
 if not errorlevel 1 (
   set "MISE_BIN=mise"
-  for /f "delims=" %%A in ('mise --version 2^>nul') do echo [ENV] mise å·²å­˜åœ¨: %%A
+  for /f "delims=" %%A in ('mise --version 2^>nul') do if not defined MISE_VER set "MISE_VER=%%A"
+  echo [ENV] mise ÒÑ´æÔÚ: !MISE_VER!
   exit /b 0
 )
 if exist "%LOCALAPPDATA%\Programs\mise\mise.exe" set "MISE_BIN=%LOCALAPPDATA%\Programs\mise\mise.exe"
 if not defined MISE_BIN if exist "%USERPROFILE%\scoop\shims\mise.exe" set "MISE_BIN=%USERPROFILE%\scoop\shims\mise.exe"
 if not defined MISE_BIN if exist "%USERPROFILE%\.local\bin\mise.exe" set "MISE_BIN=%USERPROFILE%\.local\bin\mise.exe"
 if defined MISE_BIN (
-  echo [ENV] mise å·²å­˜åœ¨: !MISE_BIN!
+  echo [ENV] mise ÒÑ´æÔÚ: !MISE_BIN!
   exit /b 0
 )
-echo [ENV] æœªæ‰¾åˆ° mise, æ­£åœ¨å®‰è£… ...
+if /i "!ENV_NO_INSTALL!"=="1" (
+  echo [ENV] Î´ÕÒµ½ mise
+  call :missing "°²×° mise£¨ÈÎÑ¡ÆäÒ»£©: winget install --id jdx.mise -e"
+  exit /b 1
+)
+echo [ENV] Î´ÕÒµ½ mise, ÕıÔÚ°²×° ...
 where winget.exe >nul 2>nul
 if not errorlevel 1 (
   winget install --id jdx.mise -e --accept-source-agreements --accept-package-agreements
@@ -61,64 +102,138 @@ if not errorlevel 1 (
 if not defined MISE_BIN if exist "%LOCALAPPDATA%\Programs\mise\mise.exe" set "MISE_BIN=%LOCALAPPDATA%\Programs\mise\mise.exe"
 if not defined MISE_BIN if exist "%USERPROFILE%\scoop\shims\mise.exe" set "MISE_BIN=%USERPROFILE%\scoop\shims\mise.exe"
 if not defined MISE_BIN (
-  echo ERROR: mise å®‰è£…å¤±è´¥ã€‚è¯·æ‰‹åŠ¨æ‰§è¡Œ: winget install jdx.mise
+  echo ERROR: mise °²×°Ê§°Ü
   exit /b 1
 )
-echo [ENV] mise å®‰è£…å®Œæˆ: !MISE_BIN!
+echo [ENV] mise °²×°Íê³É: !MISE_BIN!
 exit /b 0
 
 rem ------------------------------------------------------------
-rem 2) JDK 17: ç”± mise å®‰è£…å¹¶å¯¼å‡º JAVA_HOME
+rem 2) JDK 17: ÓÅÏÈ¸´ÓÃºÏ·¨ JAVA_HOME, ·ñÔòÓÃ mise Ìá¹©µÄ JDK 17
+rem    °æ±¾ÒÔ java -version Êµ¼ÊÊä³öÎª×¼, ²»ĞÅÈÎ»·¾³±äÁ¿
 rem ------------------------------------------------------------
 :ensure_java17
-set "JAVA_HOME_MISE="
-for /f "delims=" %%A in ('"%MISE_BIN%" where java@%EXPECT_JDK% 2^>nul') do set "JAVA_HOME_MISE=%%A"
-if not exist "!JAVA_HOME_MISE!\bin\java.exe" (
-  echo [ENV] mise ä¸­æœªå®‰è£… JDK %EXPECT_JDK%, æ­£åœ¨å®‰è£… ...
-  call "%MISE_BIN%" install java@%EXPECT_JDK%
+set "JAVA_SPEC="
+set "JDK_SRC="
+
+if defined JAVA_HOME (
+  call :probe_java "%JAVA_HOME%"
+  if "!JAVA_SPEC!"=="%EXPECT_JDK%" set "JDK_SRC=JAVA_HOME"
+)
+
+if not defined JDK_SRC (
   set "JAVA_HOME_MISE="
   for /f "delims=" %%A in ('"%MISE_BIN%" where java@%EXPECT_JDK% 2^>nul') do set "JAVA_HOME_MISE=%%A"
+  if not exist "!JAVA_HOME_MISE!\bin\java.exe" if /i not "!ENV_NO_INSTALL!"=="1" (
+    echo [ENV] mise Î´°²×° JDK %EXPECT_JDK%, ÕıÔÚ°²×° ...
+    call "%MISE_BIN%" install java@%EXPECT_JDK%
+    set "JAVA_HOME_MISE="
+    for /f "delims=" %%A in ('"%MISE_BIN%" where java@%EXPECT_JDK% 2^>nul') do set "JAVA_HOME_MISE=%%A"
+  )
+  if exist "!JAVA_HOME_MISE!\bin\java.exe" (
+    set "JAVA_HOME=!JAVA_HOME_MISE!"
+    set "JAVA_SPEC="
+    call :probe_java "!JAVA_HOME!"
+    set "JDK_SRC=mise"
+  )
 )
-if not exist "!JAVA_HOME_MISE!\bin\java.exe" (
-  echo ERROR: mise æœªèƒ½æä¾› JDK %EXPECT_JDK%
+
+if not "!JAVA_SPEC!"=="%EXPECT_JDK%" (
+  echo [ENV] JDK %EXPECT_JDK% ²»¿ÉÓÃ£¬µ±Ç° JAVA_SPEC="!JAVA_SPEC!"£¬JAVA_HOME=!JAVA_HOME!
+  if /i "!ENV_NO_INSTALL!"=="1" (
+    call :missing "°²×°²¢ÆôÓÃ JDK %EXPECT_JDK%: mise install java@%EXPECT_JDK%  È»ºó  mise use java@%EXPECT_JDK%"
+    exit /b 1
+  )
+  echo ERROR: È±ÉÙ JDK %EXPECT_JDK%
   exit /b 1
 )
-set "JAVA_HOME=!JAVA_HOME_MISE!"
+
 set "PATH=!JAVA_HOME!\bin;!PATH!"
-echo [ENV] JAVA_HOME=!JAVA_HOME!
+echo [ENV] JDK !JAVA_SPEC! ¾ÍĞ÷: !JAVA_HOME!  À´Ô´: !JDK_SRC!
+exit /b 0
+
+rem Ì½²â %1 Ä¿Â¼ÏÂµÄ JDK Ö÷°æ±¾ºÅ -> JAVA_SPEC
+:probe_java
+set "JAVA_SPEC="
+if not exist "%~1\bin\java.exe" exit /b 1
+set "JV_RAW="
+set "JV_FILE=%TEMP%\legado_java_ver_%RANDOM%%RANDOM%.txt"
+"%~1\bin\java.exe" -version >"!JV_FILE!" 2>&1
+for /f "tokens=3" %%A in ('findstr /I /C:"version" "!JV_FILE!"') do if not defined JV_RAW set "JV_RAW=%%~A"
+if exist "!JV_FILE!" del "!JV_FILE!" >nul 2>nul
+if not defined JV_RAW exit /b 1
+for /f "tokens=1 delims=." %%A in ("!JV_RAW!") do set "JAVA_SPEC=%%A"
 exit /b 0
 
 rem ------------------------------------------------------------
-rem 3) Gradle: ä¼˜å…ˆ mise æŒ‡å®šç‰ˆæœ¬, ç¼ºå¤±åˆ™é€šè¿‡ mise å®‰è£…
-rem    mise ä»“åº“æœ€ä½æä¾› 8.14, AGP 8.13.2 è¦æ±‚ >= 8.13
+rem 3) Gradle: ÓÅÏÈÏîÄ¿ wrapper(°æ±¾ÓëÔÆ¶Ë/CI ÍêÈ«Ò»ÖÂ), Æä´Î mise
+rem    ²»ÔÙÊ¹ÓÃ "mise x ... -- gradle" Ç°×º: º¬ÒıºÅ»áÈÃ for /f ÃüÁî½âÎöÊ§°Ü
+rem    Í¬Ê±¼ì²é±¾µØ distribution »º´æ, ±ÜÃâ¼ì²é½×¶Î´¥·¢ÁªÍøÏÂÔØ
 rem ------------------------------------------------------------
 :ensure_gradle
-set "GRADLE_CURRENT="
-for /f "delims=" %%A in ('"%MISE_BIN%" current gradle 2^>nul') do if not defined GRADLE_CURRENT set "GRADLE_CURRENT=%%A"
-set "GRADLE_VERSION=!GRADLE_CURRENT!"
-if not defined GRADLE_VERSION set "GRADLE_VERSION=%DEFAULT_GRADLE%"
-set "GRADLE_DIR_MISE="
-for /f "delims=" %%A in ('"%MISE_BIN%" where gradle@!GRADLE_VERSION! 2^>nul') do set "GRADLE_DIR_MISE=%%A"
-if not defined GRADLE_DIR_MISE (
-  echo [ENV] mise ä¸­æœªå®‰è£… Gradle !GRADLE_VERSION!, æ­£åœ¨å®‰è£… ...
-  call "%MISE_BIN%" install gradle@!GRADLE_VERSION!
-  set "GRADLE_DIR_MISE="
-  for /f "delims=" %%A in ('"%MISE_BIN%" where gradle@!GRADLE_VERSION! 2^>nul') do set "GRADLE_DIR_MISE=%%A"
+set "GRADLE_CMD="
+set "GRADLE_VERSION="
+set "GRADLE_SRC="
+set "GRADLE_CACHED=0"
+
+if exist "%PROJECT_DIR%\gradlew.bat" (
+  set "WRAPPER_PROPS=%PROJECT_DIR%\gradle\wrapper\gradle-wrapper.properties"
+  if exist "!WRAPPER_PROPS!" (
+    for /f "tokens=2 delims=-" %%A in ('findstr /R /C:"gradle-[0-9]" "!WRAPPER_PROPS!"') do if not defined GRADLE_VERSION set "GRADLE_VERSION=%%A"
+  )
+  if defined GRADLE_VERSION (
+    set "GRADLE_CMD=%PROJECT_DIR%\gradlew.bat"
+    set "GRADLE_SRC=wrapper"
+    call :check_gradle_cache
+    echo [ENV] Gradle !GRADLE_VERSION! ¾ÍĞ÷£¬À´Ô´: ÏîÄ¿ wrapper£¬±¾µØ»º´æ: !GRADLE_CACHED!
+    if "!GRADLE_CACHED!"=="0" call :suggest "ÍøÂç¿É´ïÊ±ÓÉ wrapper ×Ô¶¯ÏÂÔØ£»»òÏÈÖ´ĞĞÏÂÔØÖ¸Áî: powershell -Command Invoke-WebRequest https://services.gradle.org/distributions/gradle-!GRADLE_VERSION!-bin.zip -OutFile gradle-!GRADLE_VERSION!-bin.zip"
+    exit /b 0
+  )
 )
-if not defined GRADLE_DIR_MISE (
-  echo ERROR: mise æ— æ³•å®‰è£… Gradle !GRADLE_VERSION!
+
+set "GRADLE_VERSION="
+for /f "delims=" %%A in ('"%MISE_BIN%" current gradle 2^>nul') do if not defined GRADLE_VERSION set "GRADLE_VERSION=%%A"
+if not defined GRADLE_VERSION set "GRADLE_VERSION=%DEFAULT_GRADLE%"
+
+set "GRADLE_DIR="
+for /f "delims=" %%A in ('"%MISE_BIN%" where gradle@!GRADLE_VERSION! 2^>nul') do set "GRADLE_DIR=%%A"
+if not exist "!GRADLE_DIR!\bin\gradle.bat" if /i not "!ENV_NO_INSTALL!"=="1" (
+  echo [ENV] mise Î´°²×° Gradle !GRADLE_VERSION!, ÕıÔÚ°²×° ...
+  call "%MISE_BIN%" install gradle@!GRADLE_VERSION!
+  set "GRADLE_DIR="
+  for /f "delims=" %%A in ('"%MISE_BIN%" where gradle@!GRADLE_VERSION! 2^>nul') do set "GRADLE_DIR=%%A"
+)
+
+if exist "!GRADLE_DIR!\bin\gradle.bat" set "GRADLE_CMD=!GRADLE_DIR!\bin\gradle.bat"
+if not defined GRADLE_CMD (
+  for /d %%D in ("!GRADLE_DIR!\gradle-*") do if not defined GRADLE_CMD if exist "%%~fD\bin\gradle.bat" set "GRADLE_CMD=%%~fD\bin\gradle.bat"
+)
+if not defined GRADLE_CMD (
+  echo [ENV] Î´ÕÒµ½¿ÉÓÃµÄ Gradle£¬wrapper È±Ê§ÇÒ mise Î´Ìá¹© !GRADLE_VERSION!
+  if /i "!ENV_NO_INSTALL!"=="1" (
+    call :missing "°²×° Gradle !GRADLE_VERSION!: mise install gradle@!GRADLE_VERSION!  È»ºó  mise use gradle@!GRADLE_VERSION!"
+    exit /b 1
+  )
+  echo ERROR: Î´ÕÒµ½¿ÉÓÃµÄ Gradle
   exit /b 1
 )
-set "GRADLE_PREFIX="%MISE_BIN%" x gradle@!GRADLE_VERSION! -- gradle"
-if defined GRADLE_CURRENT (
-  echo [ENV] ä½¿ç”¨ mise æŒ‡å®šçš„ Gradle !GRADLE_VERSION!
-) else (
-  echo [ENV] mise æœªæŒ‡å®š Gradle, ä½¿ç”¨é»˜è®¤ !GRADLE_VERSION!
-)
+set "GRADLE_SRC=mise"
+set "GRADLE_CACHED=1"
+echo [ENV] Gradle !GRADLE_VERSION! ¾ÍĞ÷£¬À´Ô´: mise
+exit /b 0
+
+rem ÅĞ¶Ï wrapper distribution ÊÇ·ñÒÑÔÚ±¾µØ½âÑ¹ -> GRADLE_CACHED
+:check_gradle_cache
+set "GRADLE_CACHED=0"
+set "GRADLE_STORE=%GRADLE_USER_HOME%"
+if not defined GRADLE_STORE set "GRADLE_STORE=%USERPROFILE%\.gradle"
+set "GDIST_DIR="
+for /d %%D in ("!GRADLE_STORE!\wrapper\dists\gradle-!GRADLE_VERSION!-bin\*") do if not defined GDIST_DIR set "GDIST_DIR=%%~fD"
+if defined GDIST_DIR if exist "!GDIST_DIR!\gradle-!GRADLE_VERSION!\bin\gradle.bat" set "GRADLE_CACHED=1"
 exit /b 0
 
 rem ------------------------------------------------------------
-rem 4) Android SDK: å›ºå®š platform 36 + build-tools 36.0.0
+rem 4) Android SDK: ¹Ì¶¨ platform 36 + build-tools 36.0.0
 rem ------------------------------------------------------------
 :ensure_sdk
 set "SDK_DIR=%ANDROID_HOME%"
@@ -130,7 +245,12 @@ if not defined SDK_DIR if exist "%PROJECT_DIR%\local.properties" (
 )
 if not defined SDK_DIR if exist "%LOCALAPPDATA%\Android\Sdk" set "SDK_DIR=%LOCALAPPDATA%\Android\Sdk"
 if not defined SDK_DIR (
-  echo ERROR: æœªæ‰¾åˆ° Android SDK, è¯·è®¾ç½® ANDROID_HOME æˆ– local.properties
+  echo [ENV] Î´ÕÒµ½ Android SDK
+  if /i "!ENV_NO_INSTALL!"=="1" (
+    call :missing "°²×° Android SDK ÃüÁîĞĞ¹¤¾ß²¢ÔÚ local.properties Ğ´Èë sdk.dir£¬»òÉèÖÃ»·¾³±äÁ¿ ANDROID_HOME"
+    exit /b 1
+  )
+  echo ERROR: Î´ÕÒµ½ Android SDK, ÇëÉèÖÃ ANDROID_HOME »ò local.properties
   exit /b 1
 )
 set "SDK_DIR=!SDK_DIR:/=\!"
@@ -144,19 +264,24 @@ if not exist "!NEED_BT!" goto :sdk_install
 goto :sdk_ready
 
 :sdk_install
-if not exist "!SDK_DIR!\cmdline-tools\latest\bin\sdkmanager.bat" (
-  echo ERROR: ç¼ºå°‘ platform %EXPECT_COMPILE_SDK% æˆ– build-tools %EXPECT_BUILD_TOOLS%
-  echo        ä¸”æœªæ‰¾åˆ° sdkmanager, è¯·æ‰‹åŠ¨å®‰è£…åé‡è¯•ã€‚
+if /i "!ENV_NO_INSTALL!"=="1" (
+  if not exist "!NEED_PLATFORM!" echo [ENV] È±ÉÙ platform android-%EXPECT_COMPILE_SDK%
+  if not exist "!NEED_BT!" echo [ENV] È±ÉÙ build-tools %EXPECT_BUILD_TOOLS%
+  call :missing "°²×° SDK ×é¼ş: \"!SDK_DIR!\cmdline-tools\latest\bin\sdkmanager.bat\" \"platforms;android-%EXPECT_COMPILE_SDK%\" \"build-tools;%EXPECT_BUILD_TOOLS%\""
   exit /b 1
 )
-echo [ENV] SDK ç¼ºå°‘å›ºå®šç‰ˆæœ¬ç»„ä»¶, æ­£åœ¨å®‰è£… platform %EXPECT_COMPILE_SDK% + build-tools %EXPECT_BUILD_TOOLS% ...
+if not exist "!SDK_DIR!\cmdline-tools\latest\bin\sdkmanager.bat" (
+  echo ERROR: È±ÉÙ platform %EXPECT_COMPILE_SDK% »ò build-tools %EXPECT_BUILD_TOOLS%£¬ÇÒÎ´ÕÒµ½ sdkmanager£¬ÇëÊÖ¶¯°²×°ºóÖØÊÔ¡£
+  exit /b 1
+)
+echo [ENV] SDK È±ÉÙ¹Ì¶¨°æ±¾×é¼ş, ÕıÔÚ°²×° platform %EXPECT_COMPILE_SDK% + build-tools %EXPECT_BUILD_TOOLS% ...
 call :run_sdkmanager
 if not exist "!NEED_PLATFORM!" (
-  echo ERROR: platform android-%EXPECT_COMPILE_SDK% å®‰è£…å¤±è´¥
+  echo ERROR: platform android-%EXPECT_COMPILE_SDK% °²×°Ê§°Ü
   exit /b 1
 )
 if not exist "!NEED_BT!" (
-  echo ERROR: build-tools %EXPECT_BUILD_TOOLS% å®‰è£…å¤±è´¥
+  echo ERROR: build-tools %EXPECT_BUILD_TOOLS% °²×°Ê§°Ü
   exit /b 1
 )
 
@@ -168,7 +293,7 @@ echo [ENV] SDK OK: platform %EXPECT_COMPILE_SDK% + build-tools %EXPECT_BUILD_TOO
 exit /b 0
 
 :run_sdkmanager
-rem ç”¨å­è¿›ç¨‹å–‚å…¥ y ä»¥è‡ªåŠ¨æ¥å—è®¸å¯
+rem ÓÃ×Ó½ø³ÌÎ¹Èë y ÒÔ×Ô¶¯½ÓÊÜĞí¿É
 (
   for /l %%i in (1,1,40) do @echo y
 ) | call "!SDK_DIR!\cmdline-tools\latest\bin\sdkmanager.bat" "platforms;android-%EXPECT_COMPILE_SDK%" "build-tools;%EXPECT_BUILD_TOOLS%"
