@@ -18,8 +18,10 @@ class TagViewModel : ViewModel() {
 
     fun upOrder(bookTagList: List<BookTag>) {
         appDb.bookTagDao.run {
+            // 与界面按 order 从大到小展示保持一致, 拖拽后的第一项保持最大 order
+            val size = bookTagList.size
             bookTagList.forEachIndexed { index, bookTag ->
-                bookTag.order = index
+                bookTag.order = size - index
                 update(bookTag)
             }
         }

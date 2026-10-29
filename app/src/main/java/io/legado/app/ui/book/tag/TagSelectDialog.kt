@@ -17,6 +17,7 @@ import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.data.entities.BookTag
 import io.legado.app.databinding.DialogBookTagPickerBinding
 import io.legado.app.databinding.ItemTagSelectBinding
+import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
@@ -140,7 +141,8 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
     }
 
     private fun initRecyclerView() {
-        binding.recyclerView.layoutManager = GridLayoutManager(requireContext(), 2)
+        binding.recyclerView.layoutManager =
+            GridLayoutManager(requireContext(), AppConfig.tagManageSpanCount)
         binding.recyclerView.adapter = adapter
         val itemTouchCallback = ItemTouchCallback(adapter)
         itemTouchCallback.isCanDrag = true
@@ -161,7 +163,8 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
     private fun initData() {
         lifecycleScope.launchWhenStarted {
             viewModel.tagList.conflate().collect {
-                adapter.setItems(it)
+                // 按排序值从大到小展示
+                adapter.setItems(it.sortedByDescending { tag -> tag.order })
             }
         }
     }
