@@ -20,3 +20,4 @@ package-lock.json
 # shell 目录下的 txt 文件
 /shell/*.txt
 build_env_check_report.txt
+*.apk
