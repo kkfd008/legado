@@ -71,6 +71,10 @@ class OtherConfigFragment : PreferenceFragment(),
         upPreferenceSummary(PreferKey.bitmapCacheSize, AppConfig.bitmapCacheSize.toString())
         upPreferenceSummary(PreferKey.imageRetainNum, AppConfig.imageRetainNum.toString())
         upPreferenceSummary(PreferKey.sourceEditMaxLine, AppConfig.sourceEditMaxLine.toString())
+        upPreferenceSummary(
+            PreferKey.tagManageSpanCount,
+            AppConfig.tagManageSpanCount.toString()
+        )
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -154,6 +158,15 @@ class OtherConfigFragment : PreferenceFragment(),
                     }
             }
 
+            PreferKey.tagManageSpanCount -> NumberPickerDialog(requireContext())
+                .setTitle(getString(R.string.tag_manage_span_count))
+                .setMaxValue(4)
+                .setMinValue(1)
+                .setValue(AppConfig.tagManageSpanCount)
+                .show {
+                    AppConfig.tagManageSpanCount = it
+                }
+
             PreferKey.clearWebViewData -> clearWebViewData()
             "localPassword" -> alertLocalPassword()
             PreferKey.shrinkDatabase -> shrinkDatabase()
@@ -221,6 +234,10 @@ class OtherConfigFragment : PreferenceFragment(),
             PreferKey.sourceEditMaxLine -> {
                 upPreferenceSummary(key, AppConfig.sourceEditMaxLine.toString())
             }
+
+            PreferKey.tagManageSpanCount -> {
+                upPreferenceSummary(key, AppConfig.tagManageSpanCount.toString())
+            }
         }
     }
 
@@ -239,6 +256,9 @@ class OtherConfigFragment : PreferenceFragment(),
 
             PreferKey.sourceEditMaxLine -> preference.summary =
                 getString(R.string.source_edit_max_line_summary, value)
+
+            PreferKey.tagManageSpanCount -> preference.summary =
+                getString(R.string.tag_manage_span_count_summary, value)
 
             else -> if (preference is ListPreference) {
                 val index = preference.findIndexOfValue(value)

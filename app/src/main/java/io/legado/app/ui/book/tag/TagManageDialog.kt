@@ -19,6 +19,7 @@ import io.legado.app.constant.AppLog
 import io.legado.app.data.entities.BookTag
 import io.legado.app.databinding.DialogRecyclerViewBinding
 import io.legado.app.databinding.ItemBookTagManageBinding
+import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
@@ -58,7 +59,8 @@ class TagManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
     }
 
     private fun initView() {
-        binding.recyclerView.layoutManager = GridLayoutManager(requireContext(), 2)
+        binding.recyclerView.layoutManager =
+            GridLayoutManager(requireContext(), AppConfig.tagManageSpanCount)
         binding.recyclerView.adapter = adapter
         val itemTouchCallback = ItemTouchCallback(adapter)
         itemTouchCallback.isCanDrag = true

@@ -97,6 +97,7 @@ object PreferKey {
     const val antiAlias = "antiAlias"
     const val bitmapCacheSize = "bitmapCacheSize"
     const val imageRetainNum = "imageRetainNum"
+    const val tagManageSpanCount = "tagManageSpanCount"
     const val preDownloadNum = "preDownloadNum"
     const val mangaPreDownloadNum = "mangaPreDownloadNum"
     const val mangaAutoPageSpeed = "mangaAutoPageSpeed"

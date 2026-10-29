@@ -92,6 +92,11 @@
             android:title="@string/book_tree_uri_t" />
 
         <io.legado.app.lib.prefs.Preference
+            android:key="tagManageSpanCount"
+            android:title="@string/tag_manage_span_count"
+            app:iconSpaceReserved="false" />
+
+        <io.legado.app.lib.prefs.Preference
             android:key="sourceEditMaxLine"
             android:title="@string/source_edit_text_max_line" />
 

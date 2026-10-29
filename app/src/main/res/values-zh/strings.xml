@@ -701,6 +701,8 @@
     <string name="change_tags">设置标签</string>
     <string name="tag_select">选择标签</string>
     <string name="tag_manage">标签管理</string>
+    <string name="tag_manage_span_count">标签管理每行标签数</string>
+    <string name="tag_manage_span_count_summary">每行 %s 个</string>
     <string name="name_exist">名称重复</string>
     <string name="add_tag">添加标签</string>
     <string name="tag_name">标签名称</string>

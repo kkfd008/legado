@@ -582,6 +582,12 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
             appCtx.putPrefInt(PreferKey.imageRetainNum, value)
         }
 
+    var tagManageSpanCount: Int
+        get() = appCtx.getPrefInt(PreferKey.tagManageSpanCount, 1).coerceIn(1, 4)
+        set(value) {
+            appCtx.putPrefInt(PreferKey.tagManageSpanCount, value.coerceIn(1, 4))
+        }
+
     var showReadTitleBarAddition: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.showReadTitleAddition, true)
         set(value) {
