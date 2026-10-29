@@ -7,8 +7,8 @@ import android.view.ViewGroup
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
@@ -21,6 +21,7 @@ import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.utils.applyTint
+import io.legado.app.utils.getCompatColor
 import io.legado.app.utils.setLayout
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.viewbindingdelegate.viewBinding
@@ -58,16 +59,15 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
             ) {
                 binding.run {
                     cbTag.text = item.name
-                    // 避免重复触发 checkListener
-                    cbTag.setOnCheckedChangeListener(null)
-                    cbTag.isChecked = currentTags and item.tagId > 0
-                    cbTag.setOnCheckedChangeListener { _, isChecked ->
-                        if (isChecked) {
-                            currentTags = currentTags or item.tagId
-                        } else {
-                            currentTags = currentTags and item.tagId.inv()
-                        }
-                    }
+                    val selected = currentTags and item.tagId > 0
+                    root.isActivated = selected
+                    cbTag.setTextColor(
+                        if (selected) 0xFFFFFFFF.toInt()
+                        else context.getCompatColor(R.color.primaryText)
+                    )
+                    val editTint = if (selected) 0xFFFFFFFF.toInt()
+                    else context.getCompatColor(R.color.secondaryText)
+                    tvEdit.setColorFilter(editTint)
                 }
             }
 
@@ -75,6 +75,25 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
                 binding.tvEdit.setOnClickListener {
                     getItem(holder.layoutPosition)?.let {
                         showDialogFragment(TagEditDialog(it))
+                    }
+                }
+                binding.root.setOnClickListener {
+                    getItem(holder.layoutPosition)?.let { item ->
+                        if (currentTags and item.tagId > 0) {
+                            currentTags = currentTags and item.tagId.inv()
+                        } else {
+                            currentTags = currentTags or item.tagId
+                        }
+                        // 切换选中态视觉
+                        val selected = currentTags and item.tagId > 0
+                        binding.root.isActivated = selected
+                        binding.cbTag.setTextColor(
+                            if (selected) 0xFFFFFFFF.toInt()
+                            else context.getCompatColor(R.color.primaryText)
+                        )
+                        val tint = if (selected) 0xFFFFFFFF.toInt()
+                        else context.getCompatColor(R.color.secondaryText)
+                        binding.tvEdit.setColorFilter(tint)
                     }
                 }
                 holder.itemView.setOnLongClickListener {
@@ -121,7 +140,7 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
     }
 
     private fun initRecyclerView() {
-        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.recyclerView.layoutManager = GridLayoutManager(requireContext(), 2)
         binding.recyclerView.adapter = adapter
         val itemTouchCallback = ItemTouchCallback(adapter)
         itemTouchCallback.isCanDrag = true

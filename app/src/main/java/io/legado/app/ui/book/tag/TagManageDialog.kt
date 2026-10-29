@@ -8,8 +8,8 @@ import android.view.ViewGroup
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
@@ -20,10 +20,8 @@ import io.legado.app.data.entities.BookTag
 import io.legado.app.databinding.DialogRecyclerViewBinding
 import io.legado.app.databinding.ItemBookTagManageBinding
 import io.legado.app.lib.theme.accentColor
-import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
-import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.applyTint
 import io.legado.app.utils.setLayout
 import io.legado.app.utils.showDialogFragment
@@ -60,8 +58,7 @@ class TagManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
     }
 
     private fun initView() {
-        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        binding.recyclerView.addItemDecoration(VerticalDivider(requireContext()))
+        binding.recyclerView.layoutManager = GridLayoutManager(requireContext(), 2)
         binding.recyclerView.adapter = adapter
         val itemTouchCallback = ItemTouchCallback(adapter)
         itemTouchCallback.isCanDrag = true
@@ -119,10 +116,7 @@ class TagManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
             item: BookTag,
             payloads: MutableList<Any>
         ) {
-            binding.run {
-                root.setBackgroundColor(context.backgroundColor)
-                tvTag.text = item.name
-            }
+            binding.tvTag.text = item.name
         }
 
         override fun registerListener(
