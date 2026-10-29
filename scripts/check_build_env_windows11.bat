@@ -78,9 +78,9 @@ if not "!GRADLE_OK!"=="1" (
   call :pass "Gradle !GRADLE_VERSION! OK，满足 AGP %EXPECT_AGP% 要求"
 )
 if "!GRADLE_CACHED!"=="1" (
-  call :pass "Gradle distribution 已在本地缓存，构建无需联网"
+  call :pass "Gradle 本地已就绪，构建无需联网下载"
 ) else (
-  call :warn "本地未缓存 Gradle !GRADLE_VERSION! distribution，首次构建需联网下载"
+  call :warn "本地缺少 Gradle !GRADLE_VERSION! 发行包，首次构建需联网下载"
 )
 
 echo.

@@ -1,20 +1,20 @@
 @echo off
 rem ============================================================
 rem env_bootstrap_windows.bat - Windows 构建环境统一引导
-rem 由 check_build_env_windows11.bat / build_windows11.bat 调用:
+rem 被 check_build_env_windows11.bat / build_windows11.bat 调用:
 rem     call "%~dp0env_bootstrap_windows.bat"
 rem 规则: JDK 17 + Gradle 由 mise 或项目自身提供; SDK 固定 platform 36 + build-tools 36.0.0
 rem 注意: 本脚本不使用 setlocal, 变量需回传给调用脚本
 rem
 rem 两种模式:
 rem   默认(构建): 缺什么自动安装
-rem   ENV_NO_INSTALL=1(检查): 只检测不安装, 把安装建议写入 ENV_FIX_FILE
+rem   ENV_NO_INSTALL=1(检测): 只检测不安装, 把安装建议写入 ENV_FIX_FILE
 rem
 rem 导出变量:
 rem   JAVA_HOME / JAVA_SPEC        JDK 路径与实际版本(要求 17)
-rem   GRADLE_CMD                   Gradle 可执行文件(优先项目 wrapper)
-rem   GRADLE_VERSION / GRADLE_SRC  Gradle 版本与来源(wrapper / mise)
-rem   GRADLE_CACHED                1=本地已有可用 distribution, 0=首次构建需联网下载
+rem   GRADLE_CMD                   Gradle 可执行文件
+rem   GRADLE_VERSION / GRADLE_SRC  Gradle 版本与来源: wrapper / mise
+rem   GRADLE_CACHED                1=本地已就绪, 0=需要联网下载 distribution
 rem   SDK_DIR / BT_VERSION / PROJECT_DIR
 rem   ENV_MISSING                  1=存在缺失项
 rem ============================================================
@@ -166,70 +166,135 @@ for /f "tokens=1 delims=." %%A in ("!JV_RAW!") do set "JAVA_SPEC=%%A"
 exit /b 0
 
 rem ------------------------------------------------------------
-rem 3) Gradle: 优先项目 wrapper(版本与云端/CI 完全一致), 其次 mise
-rem    不再使用 "mise x ... -- gradle" 前缀: 含引号会让 for /f 命令解析失败
-rem    同时检查本地 distribution 缓存, 避免检查阶段触发联网下载
+rem 3) Gradle 选择顺序(全部离线判定, 不启动 JVM):
+rem    a. wrapper distribution 已缓存 -> 用 wrapper(与 CI 完全一致)
+rem    b. mise 本地已装 gradle 且版本满足 -> 直接用它(免联网下载)
+rem    c. wrapper 存在但未缓存 -> 仍用 wrapper(会触发联网下载)
+rem    d. 都没有 -> 构建模式 mise 安装, 检查模式给出安装指令
+rem    不使用 "mise x ... -- gradle": 引号会让 for /f 命令解析失败
 rem ------------------------------------------------------------
 :ensure_gradle
 set "GRADLE_CMD="
 set "GRADLE_VERSION="
 set "GRADLE_SRC="
 set "GRADLE_CACHED=0"
+set "WRAPPER_VER="
+set "MISE_GVER="
+set "MISE_GBIN="
+set "VER_GE=0"
 
+rem a0) 读取 wrapper 期望版本, 并判断其 distribution 是否已缓存
 if exist "%PROJECT_DIR%\gradlew.bat" (
   set "WRAPPER_PROPS=%PROJECT_DIR%\gradle\wrapper\gradle-wrapper.properties"
   if exist "!WRAPPER_PROPS!" (
-    for /f "tokens=2 delims=-" %%A in ('findstr /R /C:"gradle-[0-9]" "!WRAPPER_PROPS!"') do if not defined GRADLE_VERSION set "GRADLE_VERSION=%%A"
+    for /f "tokens=2 delims=-" %%A in ('findstr /R /C:"gradle-[0-9]" "!WRAPPER_PROPS!"') do if not defined WRAPPER_VER set "WRAPPER_VER=%%A"
   )
-  if defined GRADLE_VERSION (
+)
+if defined WRAPPER_VER (
+  set "GRADLE_VERSION=!WRAPPER_VER!"
+  call :wrapper_cached
+  if "!GRADLE_CACHED!"=="1" (
     set "GRADLE_CMD=%PROJECT_DIR%\gradlew.bat"
     set "GRADLE_SRC=wrapper"
-    call :check_gradle_cache
-    echo [ENV] Gradle !GRADLE_VERSION! 就绪，来源: 项目 wrapper，本地缓存: !GRADLE_CACHED!
-    if "!GRADLE_CACHED!"=="0" call :suggest "网络可达时由 wrapper 自动下载；或先执行下载指令: powershell -Command Invoke-WebRequest https://services.gradle.org/distributions/gradle-!GRADLE_VERSION!-bin.zip -OutFile gradle-!GRADLE_VERSION!-bin.zip"
+    echo [ENV] Gradle !GRADLE_VERSION! 就绪，来源: 项目 wrapper，distribution 已缓存
     exit /b 0
   )
 )
 
-set "GRADLE_VERSION="
-for /f "delims=" %%A in ('"%MISE_BIN%" current gradle 2^>nul') do if not defined GRADLE_VERSION set "GRADLE_VERSION=%%A"
-if not defined GRADLE_VERSION set "GRADLE_VERSION=%DEFAULT_GRADLE%"
-
-set "GRADLE_DIR="
-for /f "delims=" %%A in ('"%MISE_BIN%" where gradle@!GRADLE_VERSION! 2^>nul') do set "GRADLE_DIR=%%A"
-if not exist "!GRADLE_DIR!\bin\gradle.bat" if /i not "!ENV_NO_INSTALL!"=="1" (
-  echo [ENV] mise 未安装 Gradle !GRADLE_VERSION!, 正在安装 ...
-  call "%MISE_BIN%" install gradle@!GRADLE_VERSION!
-  set "GRADLE_DIR="
-  for /f "delims=" %%A in ('"%MISE_BIN%" where gradle@!GRADLE_VERSION! 2^>nul') do set "GRADLE_DIR=%%A"
-)
-
-if exist "!GRADLE_DIR!\bin\gradle.bat" set "GRADLE_CMD=!GRADLE_DIR!\bin\gradle.bat"
-if not defined GRADLE_CMD (
-  for /d %%D in ("!GRADLE_DIR!\gradle-*") do if not defined GRADLE_CMD if exist "%%~fD\bin\gradle.bat" set "GRADLE_CMD=%%~fD\bin\gradle.bat"
-)
-if not defined GRADLE_CMD (
-  echo [ENV] 未找到可用的 Gradle，wrapper 缺失且 mise 未提供 !GRADLE_VERSION!
-  if /i "!ENV_NO_INSTALL!"=="1" (
-    call :missing "安装 Gradle !GRADLE_VERSION!: mise install gradle@!GRADLE_VERSION!  然后  mise use gradle@!GRADLE_VERSION!"
-    exit /b 1
+rem b) mise 本地已装 gradle, 版本满足最低要求则直接复用
+for /f "delims=" %%A in ('"%MISE_BIN%" current gradle 2^>nul') do if not defined MISE_GVER set "MISE_GVER=%%A"
+if defined MISE_GVER (
+  for /f "delims=" %%A in ('"%MISE_BIN%" where gradle@!MISE_GVER! 2^>nul') do set "MISE_GDIR=%%A"
+  if defined MISE_GDIR call :find_gradle_bin "!MISE_GDIR!"
+  if defined MISE_GBIN (
+    call :ver_ge_min "!MISE_GVER!"
+    if "!VER_GE!"=="1" (
+      set "GRADLE_CMD=!MISE_GBIN!"
+      set "GRADLE_VERSION=!MISE_GVER!"
+      set "GRADLE_SRC=mise"
+      set "GRADLE_CACHED=1"
+      echo [ENV] Gradle !GRADLE_VERSION! 就绪，来源: mise 本地安装，无需下载
+      if defined WRAPPER_VER if not "!MISE_GVER:~0,4!"=="!WRAPPER_VER:~0,4!" echo [ENV] 提示: mise 的 Gradle !MISE_GVER! 与 wrapper 期望 !WRAPPER_VER! 不同
+      exit /b 0
+    )
   )
-  echo ERROR: 未找到可用的 Gradle
+)
+
+rem c) wrapper 存在但 distribution 未缓存, 仍用 wrapper(会联网下载)
+if defined WRAPPER_VER (
+  set "GRADLE_VERSION=!WRAPPER_VER!"
+  set "GRADLE_CMD=%PROJECT_DIR%\gradlew.bat"
+  set "GRADLE_SRC=wrapper"
+  set "GRADLE_CACHED=0"
+  echo [ENV] Gradle !GRADLE_VERSION! 就绪，来源: 项目 wrapper，distribution 需要下载
+  call :suggest "网络可达时由 wrapper 自动下载；或先执行下载指令: powershell -Command Invoke-WebRequest https://services.gradle.org/distributions/gradle-!GRADLE_VERSION!-bin.zip -OutFile gradle-!GRADLE_VERSION!-bin.zip"
+  exit /b 0
+)
+
+rem d) 既无 wrapper 也无 mise 可用版本
+set "GRADLE_VERSION="
+if defined MISE_GVER set "GRADLE_VERSION=!MISE_GVER!"
+if not defined GRADLE_VERSION set "GRADLE_VERSION=%DEFAULT_GRADLE%"
+if /i not "!ENV_NO_INSTALL!"=="1" (
+  echo [ENV] 未找到可用 Gradle, 正在通过 mise 安装 %GRADLE_VERSION% ...
+  call "%MISE_BIN%" install gradle@!GRADLE_VERSION!
+  set "MISE_GDIR="
+  for /f "delims=" %%A in ('"%MISE_BIN%" where gradle@!GRADLE_VERSION! 2^>nul') do set "MISE_GDIR=%%A"
+  if defined MISE_GDIR call :find_gradle_bin "!MISE_GDIR!"
+  if defined MISE_GBIN (
+    set "GRADLE_CMD=!MISE_GBIN!"
+    set "GRADLE_SRC=mise"
+    set "GRADLE_CACHED=1"
+    echo [ENV] Gradle !GRADLE_VERSION! 就绪，来源: mise
+    exit /b 0
+  )
+  echo ERROR: mise 无法提供可用的 Gradle
   exit /b 1
 )
-set "GRADLE_SRC=mise"
-set "GRADLE_CACHED=1"
-echo [ENV] Gradle !GRADLE_VERSION! 就绪，来源: mise
+echo [ENV] 未找到可用 Gradle
+call :missing "安装 Gradle %GRADLE_VERSION%: mise install gradle@%GRADLE_VERSION%  然后在项目根目录执行  mise use gradle@%GRADLE_VERSION%"
+exit /b 1
+
+rem 在 %1 目录下定位 gradle.bat -> MISE_GBIN
+:find_gradle_bin
+set "MISE_GBIN="
+if exist "%~1\bin\gradle.bat" set "MISE_GBIN=%~1\bin\gradle.bat"
+if not defined MISE_GBIN (
+  for /d %%D in ("%~1\gradle-*") do if not defined MISE_GBIN if exist "%%~fD\bin\gradle.bat" set "MISE_GBIN=%%~fD\bin\gradle.bat"
+)
+exit /b 0
+
+rem 判断 %1 版本是否 >= EXPECT_GRADLE_MIN -> VER_GE
+:ver_ge_min
+set "VG_MAJOR="
+set "VG_MINOR="
+for /f "tokens=1,2 delims=." %%A in ("%~1") do (
+  set "VG_MAJOR=%%A"
+  set "VG_MINOR=%%B"
+)
+if not defined VG_MAJOR set "VG_MAJOR=0"
+if not defined VG_MINOR set "VG_MINOR=0"
+set "VM_MAJOR="
+set "VM_MINOR="
+for /f "tokens=1,2 delims=." %%A in ("%EXPECT_GRADLE_MIN%") do (
+  set "VM_MAJOR=%%A"
+  set "VM_MINOR=%%B"
+)
+if not defined VM_MAJOR set "VM_MAJOR=0"
+if not defined VM_MINOR set "VM_MINOR=0"
+set "VER_GE=0"
+if !VG_MAJOR! GTR !VM_MAJOR! set "VER_GE=1"
+if !VG_MAJOR! EQU !VM_MAJOR! if !VG_MINOR! GEQ !VM_MINOR! set "VER_GE=1"
 exit /b 0
 
 rem 判断 wrapper distribution 是否已在本地解压 -> GRADLE_CACHED
-:check_gradle_cache
+:wrapper_cached
 set "GRADLE_CACHED=0"
 set "GRADLE_STORE=%GRADLE_USER_HOME%"
 if not defined GRADLE_STORE set "GRADLE_STORE=%USERPROFILE%\.gradle"
 set "GDIST_DIR="
-for /d %%D in ("!GRADLE_STORE!\wrapper\dists\gradle-!GRADLE_VERSION!-bin\*") do if not defined GDIST_DIR set "GDIST_DIR=%%~fD"
-if defined GDIST_DIR if exist "!GDIST_DIR!\gradle-!GRADLE_VERSION!\bin\gradle.bat" set "GRADLE_CACHED=1"
+for /d %%D in ("!GRADLE_STORE!\wrapper\dists\gradle-!WRAPPER_VER!-bin\*") do if not defined GDIST_DIR set "GDIST_DIR=%%~fD"
+if defined GDIST_DIR if exist "!GDIST_DIR!\gradle-!WRAPPER_VER!\bin\gradle.bat" set "GRADLE_CACHED=1"
 exit /b 0
 
 rem ------------------------------------------------------------
@@ -271,7 +336,7 @@ if /i "!ENV_NO_INSTALL!"=="1" (
   exit /b 1
 )
 if not exist "!SDK_DIR!\cmdline-tools\latest\bin\sdkmanager.bat" (
-  echo ERROR: 缺少 platform %EXPECT_COMPILE_SDK% 或 build-tools %EXPECT_BUILD_TOOLS%，且未找到 sdkmanager，请手动安装后重试。
+  echo ERROR: 缺少 platform %EXPECT_COMPILE_SDK% 或 build-tools %EXPECT_BUILD_TOOLS%，且未找到 sdkmanager，请手动安装后重试
   exit /b 1
 )
 echo [ENV] SDK 缺少固定版本组件, 正在安装 platform %EXPECT_COMPILE_SDK% + build-tools %EXPECT_BUILD_TOOLS% ...
