@@ -61,7 +61,12 @@ if command -v git >/dev/null 2>&1; then
   LOCAL_SHA=$(git -C "${PROJECT_DIR}" rev-parse --short HEAD)
   REMOTE_SHA=$(git -C "${PROJECT_DIR}" rev-parse --short origin/master)
   if [ "${LOCAL_SHA}" != "${REMOTE_SHA}" ]; then
-    echo "WARNING: 本地 HEAD (${LOCAL_SHA}) 与 origin/master (${REMOTE_SHA}) 不一致，两端 versionCode 会不同。"
+    SYNC_AHEAD=$(git -C "${PROJECT_DIR}" rev-list --count origin/master..HEAD 2>/dev/null || echo 0)
+    SYNC_BEHIND=$(git -C "${PROJECT_DIR}" rev-list --count HEAD..origin/master 2>/dev/null || echo 0)
+    echo "WARNING: 本地 HEAD (${LOCAL_SHA}) 与 origin/master (${REMOTE_SHA}) 不一致：领先 ${SYNC_AHEAD:-0} 个 / 落后 ${SYNC_BEHIND:-0} 个提交，两端 versionCode 会不同。"
+    if [ "${SYNC_BEHIND:-0}" -gt 0 ] 2>/dev/null; then
+      echo "WARNING: 落后 ${SYNC_BEHIND} 个提交，本次编出的 APK 版本号比云端小 ${SYNC_BEHIND}，无法覆盖安装。建议先 git pull --rebase。"
+    fi
   fi
   LOCAL_COUNT=$(git_commit_count)
   echo "versionCode 预计: $((10000 + LOCAL_COUNT))（提交数 ${LOCAL_COUNT}，HEAD ${LOCAL_SHA}）"

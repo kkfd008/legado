@@ -128,7 +128,19 @@ if command -v git >/dev/null 2>&1; then
   LOCAL_COUNT=$(git_commit_count)
   info "本地提交数: ${LOCAL_COUNT}，预计 versionCode=$((10000 + ${LOCAL_COUNT:-0}))"
   info "本地 HEAD: ${LOCAL_SHA} / origin/master: ${REMOTE_SHA}"
-  [ "${LOCAL_SHA}" = "${REMOTE_SHA}" ] && pass "与 origin/master 同提交，versionCode 与本地一致" || fail "与 origin/master 不同提交，两端 versionCode 会不同"
+  if [ "${LOCAL_SHA}" = "${REMOTE_SHA}" ]; then
+    pass "与 origin/master 同提交，versionCode 与本地一致"
+  else
+    SYNC_AHEAD=$(git -C "${PROJECT_DIR}" rev-list --count origin/master..HEAD 2>/dev/null || echo 0)
+    SYNC_BEHIND=$(git -C "${PROJECT_DIR}" rev-list --count HEAD..origin/master 2>/dev/null || echo 0)
+    warn "本地 HEAD ${LOCAL_SHA} 与 origin/master ${REMOTE_SHA} 不同：领先 ${SYNC_AHEAD:-0} 个 / 落后 ${SYNC_BEHIND:-0} 个提交"
+    if [ "${SYNC_BEHIND:-0}" -gt 0 ] 2>/dev/null; then
+      warn "落后 ${SYNC_BEHIND} 个提交，本地 versionCode 会比云端小 ${SYNC_BEHIND}，此处编出的 APK 无法覆盖安装云端版本"
+    fi
+    if [ "${SYNC_AHEAD:-0}" -gt 0 ] 2>/dev/null; then
+      info "领先 ${SYNC_AHEAD} 个提交属正常开发中状态，推送后即与云端一致"
+    fi
+  fi
   [ -n "$(git -C "${PROJECT_DIR}" status --porcelain 2>/dev/null)" ] && warn "存在未提交改动，同 versionCode 下代码可能不一致" || pass "工作区干净"
 else
   warn "未找到 git，跳过 versionCode 校验"
