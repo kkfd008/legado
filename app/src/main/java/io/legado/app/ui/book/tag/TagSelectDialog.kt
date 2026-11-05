@@ -73,6 +73,7 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
             }
 
             override fun registerListener(holder: ItemViewHolder, binding: ItemTagSelectBinding) {
+                // 与管理标签页一致：只有点击右侧修改图标才进入编辑，单击/长按标签区域都不编辑
                 binding.tvEdit.setOnClickListener {
                     getItem(holder.layoutPosition)?.let {
                         showDialogFragment(TagEditDialog(it))
@@ -97,12 +98,8 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
                         binding.tvEdit.setColorFilter(tint)
                     }
                 }
-                holder.itemView.setOnLongClickListener {
-                    getItem(holder.layoutPosition)?.let {
-                        showDialogFragment(TagEditDialog(it))
-                    }
-                    true
-                }
+                // 长按交给 ItemTouchHelper 拖拽排序，不再弹编辑框
+                holder.itemView.setOnLongClickListener(null)
             }
 
             override fun swap(srcPosition: Int, targetPosition: Int): Boolean {
