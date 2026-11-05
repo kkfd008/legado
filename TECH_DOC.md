@@ -156,24 +156,24 @@ Room 数据库是整个应用的数据核心，定义了所有实体、DAO 接�
 | BookmarkDao | Bookmark | 书签数据操作 |
 | BookGroupDao | BookGroup | 书籍分组操作 |
 | BookTagDao | BookTag | 书籍标签操作 |
-| BookSourceDao | BookSource | 书源数据操作 |
+| BookSourceDao | BookSource / BookSourcePart | 书源数据操作（含列表视图查询） |
 | RssSourceDao | RssSource | RSS源数据操作 |
 | RssArticleDao | RssArticle | RSS文章操作 |
+| RssReadRecordDao | RssReadRecord | RSS阅读记录操作 |
+| RssStarDao | RssStar | RSS收藏操作 |
 | ReplaceRuleDao | ReplaceRule | 替换规则操作 |
 | DictRuleDao | DictRule | 词典规则操作 |
 | TxtTocRuleDao | TxtTocRule | TXT目录规则操作 |
 | SearchBookDao | SearchBook | 搜索书籍操作 |
-| SearchKeywordDao | SearchKeyword | 搜索关键词操作 |
-| ReadRecordDao | ReadRecord | 阅读记录操作 |
-| ReadRecordDetailDao | ReadRecordDetail | 阅读记录详情 |
+| SearchKeywordDao | SearchKeyword | 全局搜索关键词操作 |
+| BookSearchKeywordDao | BookSearchKeyword | 书内搜索关键词历史（按书保留） |
+| ReadRecordDao | ReadRecord | 阅读时长统计操作 |
+| KeyboardAssistsDao | KeyboardAssist | 键盘快捷键操作 |
 | CookieDao | Cookie | Cookie存储操作 |
-| HttpTtsDao | HttpTTS | 在线朗读引擎操作 |
+| HttpTTSDao | HttpTTS | 在线朗读引擎操作 |
 | RuleSubDao | RuleSub | 规则订阅操作 |
-| SourceSubDao | SourceSub | 源订阅操作 |
-| KeyedItemDao | KeyedItem | 键值项操作 |
-| ServerDao | Server | WebDAV服务器配置 |
+| ServerDao | Server | WebDAV 服务器配置 |
 | CacheDao | Cache | 缓存数据操作 |
-| AppLogDao | AppLog | 应用日志操作 |
 
 ### 3.3 实体类（23个 + 规则子类）
 
@@ -185,30 +185,33 @@ entities/
 ├── BookGroup.kt          # 书籍分组
 ├── BookTag.kt            # 书籍标签（位掩码设计）
 ├── BookSource.kt         # 书源
+├── BookSourcePart.kt     # 书源部分字段视图（book_sources_part）
 ├── RssSource.kt          # RSS源
 ├── RssArticle.kt         # RSS文章
+├── RssReadRecord.kt      # RSS阅读记录
+├── RssStar.kt            # RSS收藏
 ├── ReplaceRule.kt        # 替换规则
 ├── DictRule.kt           # 词典规则
 ├── TxtTocRule.kt         # TXT目录规则
 ├── SearchBook.kt         # 搜索书籍
-├── SearchKeyword.kt      # 搜索关键词
-├── ReadRecord.kt         # 阅读记录
-├── ReadRecordDetail.kt   # 阅读记录详情
+├── SearchKeyword.kt      # 全局搜索关键词
+├── BookSearchKeyword.kt  # 书内搜索关键词
+├── ReadRecord.kt         # 阅读时长统计
+├── KeyboardAssist.kt     # 键盘快捷键
 ├── Cookie.kt             # Cookie
-├── HttpTts.kt            # 在线TTS引擎
+├── HttpTTS.kt            # 在线TTS引擎
 ├── RuleSub.kt            # 规则订阅
-├── SourceSub.kt          # 源订阅
-├── KeyedItem.kt          # 键值项
-├── Server.kt             # 服务器配置
+├── Server.kt             # 服务器配置（WebDAV）
 ├── Cache.kt              # 缓存
-├── AppLog.kt             # 应用日志
-└── rule/                 # 规则子类
-    ├── SearchRule.kt     # 搜索规则
-    ├── ExploreRule.kt    # 发现规则
-    ├── BookInfoRule.kt   # 书籍信息规则
-    ├── TocRule.kt        # 目录规则
-    ├── ContentRule.kt    # 正文规则
-    └── ReviewRule.kt     # 评论规则
+├── rule/                 # 规则子类
+│   ├── SearchRule.kt     # 搜索规则
+│   ├── ExploreRule.kt    # 发现规则
+│   ├── BookInfoRule.kt   # 书籍信息规则
+│   ├── TocRule.kt        # 目录规则
+│   ├── ContentRule.kt    # 正文规则
+│   └── ReviewRule.kt     # 评论规则
+└── 辅助类（非表）        # BaseBook / BaseSource / BaseRssArticle 基类，
+                          # BookChapterReview / BookProgress / ReadRecordShow 展示模型
 ```
 
 ---
@@ -415,11 +418,12 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 - 漫画阅读
 - 音频播放
 - 书签管理
-- 分组/标签管理
+- 分组/标签管理（标签管理与选择均为网格布局，列数跟随「标签管理每行标签数」）
 - 书源管理
 - 替换规则管理
 - 词典规则
 - 关联导入
+- 远程书籍导入（`ui/book/import/remote/`，WebDAV，受 WebDAV 总开关控制）
 - 扫码导入
 - WebView 登录
 - 字体管理
@@ -458,6 +462,35 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 | 滑动 | 左右滑动切换页面 |
 | 滚动 | 上下滚动连续阅读 |
 
+### 6.6 标签管理网格（TagManageDialog / TagSelectDialog）
+
+标签管理页与标签选择弹窗共用一套网格展示与排序规则。
+
+| 位置 | 实现要点 |
+|------|---------|
+| `ui/book/tag/TagManageDialog.kt` | `GridLayoutManager(ctx, AppConfig.tagManageSpanCount)`；ItemTouchHelper 拖拽排序；拖拽结束在 `onClearView` 里回写 `order = size - index` |
+| `ui/book/tag/TagSelectDialog.kt` | 同样跟随 `AppConfig.tagManageSpanCount`；`setItems(it.sortedByDescending { tag -> tag.order })`；点击整行切换选中位 |
+| `ui/book/tag/TagViewModel.kt` | `tagList = bookTagDao.flowSelect()`；`upOrder` 按 `size - index` 写 order；`getNextTagId()` 取最小可用的 2 的幂次（上限 64 个） |
+| `res/layout/item_book_tag_manage.xml` | 圆角紧凑项，文字靠左、maxLines=2 |
+| `res/layout/item_tag_select.xml` | 选中态背景 `selector_tag_select_bg`（activated → `shape_fillet_btn_selected`，colorAccent 填充） |
+| `res/xml/pref_config_other.xml` | `Preference` key=`tagManageSpanCount`，点击弹 NumberPickerDialog（1-4） |
+| `ui/config/OtherConfigFragment.kt` | 处理 `tagManageSpanCount` 点击与 summary 更新 |
+
+**排序约定**：标签列表按 `order` **倒序**展示，因此写回顺序时首位取最大值（`order = 总数 - 序号`）。若沿用正序 `order = index`，倒序展示会把拖拽结果整体反转。
+
+### 6.7 搜索页输入帮助面板
+
+`ui/book/search/SearchActivity.kt` 的输入帮助面板（`ll_input_help`）结构与数据来源：
+
+| 组成 | 数据来源 / 控件 |
+|------|----------------|
+| 搜索历史 | `HistoryKeyAdapter` + `rv_history_key`（`wrap_content`） |
+| 热门标签标题 | `tv_tag_title`，文案 `@string/hot_tag` |
+| 热门标签列表 | `rv_tag_suggest` + `FlexboxLayoutManager`（流式换行）；数据取 `bookTagDao.all().sortedByDescending { it.order }.take(10)`；点击按 `#标签名` 发起搜索 |
+
+- 回车上屏（`onQueryTextSubmit`）时，仅当 `AppConfig.showBookSource` 为真才调用 `visibleInputHelp(false)`；关闭书源时保留面板，避免落到空白结果页。
+- 布局上 `content_view` / `ll_input_help` / FAB 均以 `parent` 为底部约束，标签列表位于搜索历史之下的 LinearLayout 内。
+
 ---
 
 ## 7. Web API 层
@@ -470,6 +503,7 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 | BookSourceController | 书源管理 API |
 | ReplaceRuleController | 替换规则 API |
 | RssSourceController | RSS 源管理 API |
+| TxtTocRuleController | TXT 目录规则 API（Web 端增删改查，前端 `assets/web/txtTocRule/`） |
 
 ### 7.2 其他组件
 
@@ -504,6 +538,19 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 | ThemeConfig | 主题配置 |
 | SourceConfig | 书源配置 |
 | LocalConfig | 本地配置 |
+
+#### 关键功能开关（功能门控）
+
+`AppConfig` 对部分偏好项做了「能力级」封装，开关关闭时不仅隐藏入口，还直接短路相应能力：
+
+| 开关 | PreferKey | 默认值 | 门控范围 |
+|------|-----------|--------|---------|
+| 显示书源 | `showBookSource` | false | 我的页面「书源管理」（`MyFragment`）、书架菜单「添加网址」（`BaseBookshelfFragment`）；搜索页回车上屏是否收起输入帮助 |
+| WebDAV | `webDavEnabled` | false | 我的页面「备份与恢复」（`web_dav_setting`）、书架菜单「添加远程书籍」（`menu_remote`）；`AppConfig.syncBookProgress` 与 `syncBookProgressPlus` 均 `&& webDavEnabled` |
+| 标签管理每行标签数 | `tagManageSpanCount` | 1 | `AppConfig.tagManageSpanCount`，读写均 `coerceIn(1, 4)`，供两个标签弹窗的 `GridLayoutManager` 使用 |
+
+- 入口显隐在 `onResume` 中刷新（`MyFragment` / `BaseBookshelfFragment`），无需 EventBus 通知。
+- 新增此类开关的步骤：`PreferKey` 加 key → `AppConfig` 加 getter（必要时在派生属性上做 `&&`）→ `pref_*.xml` 加控件 → 相关 Fragment 在 `onCreatePreferences` 与 `onResume` 中设置 `isVisible`。
 
 ### 8.3 书源辅助 (`help/source/`)
 
@@ -1057,8 +1104,39 @@ AnalyzeRule（上下文）
 - 葡萄牙语（巴西）(pt-rBR)
 - 越南语 (vi)
 
+### 13.6 构建与环境脚本
+
+构建环境统一由 **mise** 管理，Windows 与 Linux 使用同一套版本约束。
+
+| 文件 | 平台 | 职责 |
+|------|------|------|
+| `mise.toml` | 通用 | 固定 `java = "17"`、`gradle = "8.13"` |
+| `check.bat` | Windows | 构建环境检测，**只读**（不安装、不写文件）；退出码 = 未通过项数量 |
+| `deploy.bat` | Windows | 环境部署，只安装缺失项（mise / JDK 17 / Gradle 8.13 / cmdline-tools / Platform 36 / Build-Tools 36.0.0 / licenses / local.properties） |
+| `build.bat` | Windows | 只编译，默认任务 `:app:assembleAppDebug`；支持 `--wrapper`（改用仓库 gradlew）与 `--no-color`；退出码与 Gradle 一致 |
+| `scripts/env_common.sh` | Linux | 公共函数（`ensure_java17` / `ensure_gradle` 等） |
+| `scripts/check_build_env_linux.sh` | Linux | 环境检测 |
+| `scripts/build_linux.sh` | Linux | 云端 Debug 构建 |
+
+**版本约束**（与 `app/build.gradle`、`gradle/libs.versions.toml` 对齐）：
+
+| 项 | 要求 |
+|----|------|
+| JDK | 17（`jvmToolchain 17`，高版本会报 No matching toolchains） |
+| Gradle | 8.13 |
+| AGP | 8.13.2 |
+| Kotlin | 2.3.0 |
+| compileSdk / minSdk | 36 / 21 |
+| SDK Platform / Build-Tools | android-36 / 36.0.0 |
+| 签名 | `app/debug.keystore` 指纹需与官方一致，否则无法覆盖安装 |
+
+**产物**：`app/build/outputs/apk/app/debug/legado_app_<versionName>.apk`，`versionCode = 10000 + git 提交数`（见 `app/build.gradle`）。
+
+**批处理注意事项**：`.bat` 首部采用 `chcp 65001` + `goto :legado_main` 的组合。cmd 在文件内部切换代码页后会以新编码重新扫描文件，跳过 `goto` 会导致后续中文注释/命令被截断执行（报「不是内部或外部命令」）。
+
 ---
 
-> **文档版本**: 1.0
+> **文档版本**: 1.1
 > **生成日期**: 2026-07-30
+> **最近更新**: 2026-11-05（补充标签网格列数配置、搜索页输入帮助面板、功能开关门控、构建与环境脚本）
 > **基于代码扫描自动生成**

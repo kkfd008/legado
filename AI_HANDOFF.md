@@ -1,126 +1,121 @@
 # AI 交接文档（会话记忆压缩）
 
 > 用途：供后续 AI 快速接续工作。本文档记录项目现状、已完成工作、关键技术细节与构建方式。
+> 最近更新：2026-11-05（同步 PRD / TECH_DOC 到当前代码）
 
 ## 1. 项目概览
 
 - 项目：Legado（开源 Android 电子书阅读器，Kotlin + MVVM + Room）
 - 仓库：`https://github.com/kkfd008/legado.git`（分支 `master`）
-- 工作目录：`/workspace`
-- 数据库：Room，版本 79，22 表 + 1 视图
-- 已有文档：`PRD.md`、`DB_DOC.md`、`TECH_DOC.md`、`api.md`、`English.md`
+- 本地路径：`D:/liuwen/dev/project/legado`（另有 worktree：`C:/Users/Administrator/WorkBuddy/Worktrees/LegadoPlus/main-f251f0f2`）
+- 数据库：Room，版本 79，23 表 + 1 视图（`book_sources_part`）
+- 文档：`PRD.md`（产品需求/功能，v1.3）、`TECH_DOC.md`（技术实现，v1.1）、`DB_DOC.md`、`api.md`、`English.md`
 
-## 2. 构建环境（重要）
+## 2. 构建环境
 
-- Java 17：`/root/.local/share/mise/installs/java/17.0.2`
-- Android SDK：`/root/android-sdk`（本会话已安装）
-  - `platforms/android-36`
-  - `build-tools/36.0.0`、`build-tools/35.0.0`
-  - `platform-tools`
-- Gradle：8.13（wrapper 已下载）
-- 代理：`127.0.0.1:18080`
-- 编译 SDK：36，AGP 8.13.2，Kotlin JVM 17
+### 2.1 版本约束（Windows / Linux 一致）
 
-### 构建命令（可直接复用）
+| 项 | 要求 |
+|----|------|
+| JDK | 17（`jvmToolchain 17`） |
+| Gradle | 8.13（`mise.toml` + wrapper 双重固定） |
+| AGP / Kotlin | 8.13.2 / 2.3.0 |
+| compileSdk / minSdk | 36 / 21 |
+| SDK Platform / Build-Tools | android-36 / 36.0.0 |
+| 签名 | `app/debug.keystore` 指纹必须与官方一致，否则无法覆盖安装 |
+
+### 2.2 脚本（根目录三件套）
 
 ```bash
-export JAVA_HOME=/root/.local/share/mise/installs/java/17.0.2
-export ANDROID_HOME=/root/android-sdk
-export ANDROID_SDK_ROOT=/root/android-sdk
-export GRADLE_OPTS="-Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=18080 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=18080 -Dorg.gradle.jvmargs=\"-XX:+UseParallelGC -Xmx2g -Xms256m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8\""
-./gradlew assembleAppDebug --no-daemon --max-workers=2
+check.bat            # 只读环境检测，退出码=未通过项数量
+deploy.bat --yes     # 只装缺失项：mise / JDK17 / Gradle8.13 / cmdline-tools / Platform36 / Build-Tools36 / licenses / local.properties
+build.bat            # 默认 :app:assembleAppDebug
+build.bat :app:assembleAppRelease
+build.bat clean :app:assembleAppDebug
+build.bat --wrapper  # 改用仓库 gradlew（默认走 mise 的 gradle）
 ```
 
-> 注意：默认 `gradle.properties` 里 `-Xmx6g` 会因沙箱内存不足导致 Gradle daemon 被 OOM 杀死（报 "daemon disappeared"）。务必按上面用 `-Dorg.gradle.jvmargs` 覆盖为 `-Xmx2g`，并加 `--max-workers=2`。
+Linux 云端：`scripts/check_build_env_linux.sh`、`scripts/build_linux.sh`（公共函数在 `scripts/env_common.sh`）。
 
-### APK 产物路径
+> `.bat` 首部必须保留 `chcp 65001` + `goto :legado_main`：cmd 在文件内切换代码页后会重新扫描文件，去掉 goto 会导致中文注释被截断执行。
+
+### 2.3 APK 产物
 
 ```
-/workspace/app/build/outputs/apk/app/debug/legado_app_3.26.10181407.apk
+app/build/outputs/apk/app/debug/legado_app_<versionName>.apk
 ```
 
-### Git 相关
+`versionCode = 10000 + git 提交数`（见 `app/build.gradle`）。
 
-- 身份已配置：`kkfd008 <kkfd008@github.com>`
-- 远程：`https://github.com/kkfd008/legado.git`
-- 此前 push 使用了用户在对话中提供的 token（勿将 token 明文写入文档；需要 push 时向用户索取或用已保存的凭据）。
+### 2.4 Git
 
-## 3. 本会话之前已完成的工作
+- 身份：`kkfd008 <kkfd008@github.com>`
+- 流程约定：功能分支完成后先合并回 `master`，再在 `master` 上编译 debug APK 验证后汇报
+- `master` 可能被另一个 worktree 检出，`git push . <branch>:master` 会被拒绝（refusing to update checked out branch），需在 master 所在 worktree 里 merge
 
-1. 更新 `PRD.md`，生成 `DB_DOC.md`、`TECH_DOC.md`，为大量 entities/dao/model/service 添加中文注释。
-2. 在线服务新增「TXT 目录规则」功能模块：
-   - 后端：`app/src/main/java/io/legado/app/api/controller/TxtTocRuleController.kt`
-   - 路由：`app/src/main/java/io/legado/app/web/HttpServer.kt`
-   - 前端：`app/src/main/assets/web/txtTocRule/index.html`
-3. 书架优化：
-   - 右上角菜单新增「更新本地书籍」`menu_update_local_book`。
-   - 本地页底部按钮调整（删除/放入书架/放入标签/放入分组 + 删除确认弹窗）。
-4. 修复「更新本地书籍」bug：本地书籍移动目录后未从书架移除。
-   - `app/src/main/java/io/legado/app/model/localBook/LocalBook.kt` 的 `getLastModified` 增加 `content://` 的 `exists()` 校验。
-   - `app/src/main/java/io/legado/app/ui/main/MainViewModel.kt` 的 `upLocalBook()` 改用 `appDb.bookDao.all` 遍历。
+## 3. 已完成的功能（累计）
 
-## 4. 最近完成的两个功能（本次需求）
+1. 文档体系：`PRD.md`、`DB_DOC.md`、`TECH_DOC.md`，entities/dao/model/service 中文注释。
+2. 在线服务新增「TXT 目录规则」模块：
+   - 后端 `app/src/main/java/io/legado/app/api/controller/TxtTocRuleController.kt`
+   - 路由 `app/src/main/java/io/legado/app/web/HttpServer.kt`
+   - 前端 `app/src/main/assets/web/txtTocRule/index.html`
+3. 书架优化：右上角菜单「更新本地书籍」；本地页底部按钮（删除/放入书架/放入标签/放入分组 + 删除确认）。
+4. 修复「更新本地书籍」后已移动目录的本地书未从书架移除（`LocalBook.getLastModified` 增加 `content://` 校验；`MainViewModel.upLocalBook` 改遍历 `bookDao.all`）。
+5. 「显示书源」开关（默认关闭）：隐藏我的页面「书源管理」、书架菜单「添加网址」。
+6. 修复阅读页内容关键字搜索缓存 bug（返回结果列表变空白）。
+7. 「WebDAV」总开关（默认关闭）：隐藏「备份与恢复」「添加远程书籍」，并短路阅读进度同步。
+8. 标签管理页 / 标签选择弹窗改网格布局，新增「标签管理每行标签数」（1-4，默认1），标签文字靠左、按 order 倒序、拖拽排序不回退反转。
+9. 搜索页输入帮助面板：搜索历史 + 「热门标签」标题 + 流式换行标签列表；回车在关闭书源时保留面板。
+10. 构建脚本统一为 `check.bat` / `deploy.bat` / `build.bat` + `scripts/*.sh`，mise 统一管理 JDK 17 / Gradle 8.13，SDK 固定 36。
 
-### 功能1：新增「显示书源」开关（默认关闭）
+## 4. 最近几项功能的关键实现
 
-关闭状态下：
-- 我的页面「书源管理」不显示
-- 书架页面弹窗菜单「添加网址」不显示
+### 4.1 功能开关（能力级门控）
 
-涉及文件与改动：
-- `app/src/main/java/io/legado/app/constant/PreferKey.kt`
-  - 新增 `const val showBookSource = "showBookSource"`（在 `showRss` 后）。
-- `app/src/main/java/io/legado/app/help/config/AppConfig.kt`
-  - 新增 `val showBookSource: Boolean get() = appCtx.getPrefBoolean(PreferKey.showBookSource, false)`。
-- `app/src/main/res/xml/pref_config_other.xml`
-  - 在 `other_setting` 分类顶部新增 `SwitchPreference`（key=`showBookSource`，defaultValue=`false`，title=`@string/show_book_source`）。
-- 文案：`values/strings.xml`、`values-zh/strings.xml` 新增 `show_book_source` / `显示书源`。
-- `app/src/main/java/io/legado/app/ui/main/my/MyFragment.kt`
-  - `onCreatePreferences` 与 `onResume` 中：`findPreference<Preference>("bookSourceManage")?.isVisible = AppConfig.showBookSource`。
-- `app/src/main/java/io/legado/app/ui/main/bookshelf/BaseBookshelfFragment.kt`
-  - `onCompatCreateOptionsMenu` 与新增 `onResume` 中：`menu.findItem(R.id.menu_add_url)?.isVisible = AppConfig.showBookSource`（`onResume` 用 `supportToolbar?.menu`）。
+| 开关 | PreferKey | 默认 | 门控 |
+|------|-----------|------|------|
+| 显示书源 | `showBookSource` | false | `MyFragment`「书源管理」、`BaseBookshelfFragment`「添加网址」、搜索页回车是否收起输入帮助 |
+| WebDAV | `webDavEnabled` | false | `MyFragment`「备份与恢复」(`web_dav_setting`)、`BaseBookshelfFragment`「添加远程书籍」(`menu_remote`)、`AppConfig.syncBookProgress` / `syncBookProgressPlus` |
+| 标签每行数 | `tagManageSpanCount` | 1 | `AppConfig.tagManageSpanCount`（`coerceIn(1,4)`）→ 两个标签弹窗的 `GridLayoutManager` |
 
-> 动态刷新依赖 `MyFragment.onResume` 与 `BaseBookshelfFragment.onResume`，无需额外 EventBus。
+- 入口显隐在 `onCreatePreferences` + `onResume` 里刷 `isVisible`，无需 EventBus。
+- 新增此类开关：`PreferKey` → `AppConfig` getter（必要时在派生属性上 `&&`）→ `pref_*.xml` 控件 → Fragment 里设置可见性。
 
-### 功能2：修复阅读页内容关键字搜索缓存 bug
+### 4.2 标签网格与倒序排序
 
-现象：首次搜索出结果列表 → 点进某个阅读点 → 返回搜索结果列表时变成空白（无缓存）。
+- `TagManageDialog` / `TagSelectDialog` 都用 `GridLayoutManager(ctx, AppConfig.tagManageSpanCount)`。
+- 列表按 `order` **倒序**展示：`sortedByDescending { it.order }`。
+- 拖拽写回必须用 `order = size - index`（`TagManageDialog.onClearView`、`TagViewModel.upOrder`），否则倒序展示会把拖拽结果整体反转。
+- `TagSelectDialog` 取消复选框，改为「点击整行切换选中 + activated 背景填充 colorAccent + 文字转白」。
+- 相关样式：`res/drawable/selector_tag_select_bg.xml`、`shape_fillet_btn_selected.xml`；布局 `item_tag_select.xml`、`item_book_tag_manage.xml`。
 
-根因：
-- `viewModel.searchResultList`（`ReadBookViewModel`）原本只通过 `observeEvent<List<SearchResult>>(EventBus.SEARCH_RESULT)` 回填。
-- 该事件在 `SearchContentActivity.openSearchResult` 里用 `postEvent(...)`（LiveEventBus 非粘性）发出，此时 `ReadBookActivity` 处于 STOPPED 状态，非活跃观察者收不到，导致缓存始终为 null。
-- 第二次打开搜索时 `openSearchActivity` 里 `viewModel.searchResultList?.first()?.let {...}` 命中不了，无法把缓存传给 `SearchContentActivity`，列表变空。
+### 4.3 搜索页输入帮助面板
 
-修复：
-- `app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt` 的 `searchContentActivity` 回调中，新增一行：
-  `viewModel.searchResultList = searchResultList`（在 `viewModel.searchContentQuery = searchResult.query` 之后）。
+- 布局 `activity_book_search.xml`：`ll_input_help` 内自上而下 `tv_tag_title` + 搜索历史 `rv_history_key` + `rv_tag_suggest`。
+- 热门标签数据：`bookTagDao.all().sortedByDescending { it.order }.take(10)`，`FlexboxLayoutManager` 流式换行，点击以 `#标签名` 搜索。
+- `onQueryTextSubmit` 中 `if (AppConfig.showBookSource) visibleInputHelp(false)`，关闭书源时保留面板避免空白结果页。
 
-缓存生命周期（满足需求）：
-- 按书保留：`ReadBookViewModel` 与 `ReadBookActivity` 一一对应（每本书一个实例）。
-- 更新关键字覆盖：新搜索返回的 list 会覆盖 `searchResultList` 与 `searchContentQuery`。
-- 退出阅读页清理：Activity finish 时 ViewModel 随 ViewModelStore 清理，无需显式清除。
+### 4.4 阅读页关键字搜索缓存
 
-关键相关文件：
-- `app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt`（`searchContentActivity` 回调、`openSearchActivity`、`exitSearchMenu`）
-- `app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt`（`searchContentQuery` / `searchResultList` / `searchResultIndex`）
-- `app/src/main/java/io/legado/app/ui/book/searchContent/SearchContentActivity.kt`
-- `app/src/main/java/io/legado/app/ui/book/searchContent/SearchContentViewModel.kt`
-- `app/src/main/java/io/legado/app/ui/book/read/SearchMenu.kt`
-- `app/src/main/java/io/legado/app/model/ReadBook.kt`（`clearSearchResult` 等）
+- 根因：`SearchContentActivity.openSearchResult` 用非粘性 `postEvent` 回填，`ReadBookActivity` 处于 STOPPED 收不到，导致 `ReadBookViewModel.searchResultList` 一直为 null。
+- 修复：`ReadBookActivity.searchContentActivity` 回调里补 `viewModel.searchResultList = searchResultList`。
 
-## 5. 状态与后续
+## 5. 文档维护约定
 
-- 两个功能代码 + AI_HANDOFF.md 已提交并推送至 `master`（提交：`a72a405` 功能代码、`81826d2` 交接文档），本地与远程 HEAD 均一致。
-- 建议在真机/模拟器上验证：
-  1. 其他设置里关闭「显示书源」后，我的页面书源管理、书架菜单添加网址均隐藏；打开后恢复显示。
-  2. 阅读页关键字搜索 → 点结果 → 返回列表仍保留结果；换关键字覆盖；退出书籍后缓存清理。
+- 新增功能后同步三处：`PRD.md`（功能与版本历史）、`TECH_DOC.md`（实现要点）、本文件（交接）。
+- `PRD.md` 数据表清单需与 `AppDatabase.kt` 的 `entities = [...]` 对齐（当前 23 张表 + 1 视图）；`TECH_DOC.md` 第 3 章 DAO / 实体清单同理。
+- 文档头部与尾部分别维护「文档版本 / 更新日期」。
 
 ## 6. 常用代码位置速查
 
-- 偏好键常量：`app/src/main/java/io/legado/app/constant/PreferKey.kt`
-- AppConfig 映射：`app/src/main/java/io/legado/app/help/config/AppConfig.kt`
-- 其他设置页：`app/src/main/java/io/legado/app/ui/config/OtherConfigFragment.kt`
-- 我的页面：`app/src/main/java/io/legado/app/ui/main/my/MyFragment.kt`
-- 书架基类：`app/src/main/java/io/legado/app/ui/main/bookshelf/BaseBookshelfFragment.kt`
-- 阅读页 Activity/ViewModel：`app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt` / `ReadBookViewModel.kt`
-- 内容搜索：`app/src/main/java/io/legado/app/ui/book/searchContent/`
+- 偏好键：`app/src/main/java/io/legado/app/constant/PreferKey.kt`
+- 配置封装：`app/src/main/java/io/legado/app/help/config/AppConfig.kt`
+- 其他设置页：`app/src/main/java/io/legado/app/ui/config/OtherConfigFragment.kt` / `res/xml/pref_config_other.xml`
+- 我的页面：`app/src/main/java/io/legado/app/ui/main/my/MyFragment.kt` / `res/xml/pref_main.xml`
+- 书架基类：`app/src/main/java/io/legado/app/ui/main/bookshelf/BaseBookshelfFragment.kt` / `res/menu/main_bookshelf.xml`
+- 标签：`app/src/main/java/io/legado/app/ui/book/tag/`（TagManageDialog / TagSelectDialog / TagViewModel / TagEditDialog）
+- 搜索：`app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt` / `res/layout/activity_book_search.xml`
+- 阅读与内容搜索：`ui/book/read/ReadBookActivity.kt`、`ReadBookViewModel.kt`、`ui/book/searchContent/`
+- WebDAV：`help/AppWebDav.kt`、`model/remote/`（RemoteBook / RemoteBookManager / RemoteBookWebDav）、`ui/book/import/remote/`、`res/xml/pref_config_backup.xml`
+- 构建脚本：根目录 `check.bat` / `deploy.bat` / `build.bat`、`scripts/*.sh`、`mise.toml`
