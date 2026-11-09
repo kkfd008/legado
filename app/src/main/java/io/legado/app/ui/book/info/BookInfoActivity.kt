@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.DocumentsContract
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
@@ -68,6 +69,7 @@ import io.legado.app.utils.StartActivityContract
 import io.legado.app.utils.applyNavigationBarPadding
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.gone
+import io.legado.app.utils.isContentScheme
 import io.legado.app.utils.longToastOnUi
 import io.legado.app.utils.openFileUri
 import io.legado.app.utils.sendToClip
@@ -80,6 +82,7 @@ import io.legado.app.utils.visible
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class BookInfoActivity :
     VMBaseActivity<ActivityBookInfoBinding, BookInfoViewModel>(toolBarTheme = Theme.Dark),
@@ -340,6 +343,7 @@ class BookInfoActivity :
         tvAuthor.text = book.getRealAuthor()
         upRatingStars(book.rating)
         tvOrigin.text = getString(R.string.origin_show, book.originName)
+        tvSourceAddress.text = getString(R.string.source_address_show, book.getSourceAddress())
         tvLasted.text = getString(R.string.lasted_show, book.latestChapterTitle)
         tvIntro.text = book.getDisplayIntro()
         llToc?.visible(!book.isWebFile)
@@ -347,6 +351,36 @@ class BookInfoActivity :
         upKinds(book)
         upGroup(book.group)
         upTags(book.tags)
+    }
+
+    /**
+     * 书籍来源地址：本地书籍显示相对书籍保存目录的路径，网络书籍显示书源 URL
+     */
+    private fun Book.getSourceAddress(): String {
+        if (!isLocal) {
+            return origin
+        }
+        val fallback = originName.ifBlank {
+            File(Uri.parse(bookUrl).path ?: bookUrl).name
+        }
+        val base = AppConfig.defaultBookTreeUri ?: return fallback
+        return runCatching {
+            val bookUri = Uri.parse(bookUrl)
+            val baseUri = Uri.parse(base)
+            if (bookUri.isContentScheme() && baseUri.isContentScheme()) {
+                val treeId = Uri.decode(DocumentsContract.getTreeDocumentId(baseUri))
+                val docId = Uri.decode(DocumentsContract.getDocumentId(bookUri))
+                docId.removePrefix(treeId).trimStart('/').ifBlank { fallback }
+            } else {
+                val basePath = baseUri.path ?: return@runCatching fallback
+                val path = bookUri.path ?: return@runCatching fallback
+                if (path.startsWith(basePath)) {
+                    path.removePrefix(basePath).trimStart(File.separatorChar).ifBlank { fallback }
+                } else {
+                    fallback
+                }
+            }
+        }.getOrDefault(fallback)
     }
 
     private fun upKinds(book: Book) = binding.run {
@@ -484,6 +518,12 @@ class BookInfoActivity :
                     putExtra("sourceUrl", book.origin)
                 }
             }
+        }
+        tvSourceAddress.setOnLongClickListener {
+            viewModel.getBook()?.let { book ->
+                sendToClip(if (book.isLocal) book.bookUrl else book.origin)
+            }
+            true
         }
         tvChangeSource.setOnClickListener {
             viewModel.getBook()?.let { book ->
