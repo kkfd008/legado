@@ -90,6 +90,8 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                                 tvGroups.text = appDb.bookGroupDao.getGroupNames(item.group).joinToString("，")
                                 tvTags.text = appDb.bookTagDao.getTagNames(item.tags).joinToString(",")
                             }
+                            "group" -> tvGroups.text =
+                                appDb.bookGroupDao.getGroupNames(item.group).joinToString("，")
                             "tags" -> tvTags.text = appDb.bookTagDao.getTagNames(item.tags).joinToString(",")
                         }
                     }

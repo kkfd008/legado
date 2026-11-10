@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
 import io.legado.app.constant.BookType
+import io.legado.app.constant.EventBus
 import io.legado.app.constant.Theme
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
@@ -72,6 +73,7 @@ import io.legado.app.utils.gone
 import io.legado.app.utils.isContentScheme
 import io.legado.app.utils.longToastOnUi
 import io.legado.app.utils.openFileUri
+import io.legado.app.utils.postEvent
 import io.legado.app.utils.sendToClip
 import io.legado.app.utils.shareWithQr
 import io.legado.app.utils.showDialogFragment
@@ -837,11 +839,13 @@ class BookInfoActivity :
         }
     }
 
-override fun upTags(requestCode: Int, tags: Long) {
+    override fun upTags(requestCode: Int, tags: Long) {
         val book = viewModel.getBook() ?: return
         book.tags = tags
         if (viewModel.inBookshelf) {
-            viewModel.saveBook(book)
+            viewModel.saveBook(book) {
+                postEvent(EventBus.BOOKSHELF_REFRESH, "")
+            }
         }
         upTags(book.tags)
         setResult(RESULT_OK)
@@ -852,7 +856,9 @@ override fun upTags(requestCode: Int, tags: Long) {
         viewModel.getBook()?.let { book ->
             book.group = groupId
             if (viewModel.inBookshelf) {
-                viewModel.saveBook(book)
+                viewModel.saveBook(book) {
+                    postEvent(EventBus.BOOKSHELF_REFRESH, "")
+                }
             } else if (groupId > 0) {
                 viewModel.addToBookshelf {
                     upTvBookshelf()

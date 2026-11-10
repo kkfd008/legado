@@ -32,6 +32,8 @@ abstract class BaseBooksAdapter<VB : ViewBinding>(context: Context) :
                     oldItem.rating != newItem.rating -> false
                     oldItem.getDisplayCover() != newItem.getDisplayCover() -> false
                     oldItem.getUnreadChapterNum() != newItem.getUnreadChapterNum() -> false
+                    oldItem.group != newItem.group -> false
+                    oldItem.tags != newItem.tags -> false
                     else -> true
                 }
             }
@@ -63,6 +65,12 @@ abstract class BaseBooksAdapter<VB : ViewBinding>(context: Context) :
                 }
                 if (oldItem.latestChapterTime != newItem.latestChapterTime) {
                     bundle.putBoolean("lastUpdateTime", true)
+                }
+                if (oldItem.group != newItem.group) {
+                    bundle.putBoolean("group", true)
+                }
+                if (oldItem.tags != newItem.tags) {
+                    bundle.putBoolean("tags", true)
                 }
                 if (bundle.isEmpty) return null
                 return bundle
