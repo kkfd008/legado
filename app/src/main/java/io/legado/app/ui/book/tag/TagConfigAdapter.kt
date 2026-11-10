@@ -64,8 +64,7 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
         binding.run {
             if (payloads.isEmpty()) {
                 cbSelect.isChecked = selected.contains(item.tag.tagId)
-                tvName.text = item.tag.name
-                tvCount.text = root.context.getString(R.string.book_count, item.bookCount)
+                tvName.text = item.tag.name + root.context.getString(R.string.book_count, item.bookCount)
                 swtHot.isChecked = item.tag.hot
             } else {
                 for (i in payloads.indices) {
@@ -73,9 +72,7 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
                     bundle.keySet().forEach {
                         when (it) {
                             "selected" -> cbSelect.isChecked = selected.contains(item.tag.tagId)
-                            "upName" -> tvName.text = item.tag.name
-                            "upCount" -> tvCount.text =
-                                root.context.getString(R.string.book_count, item.bookCount)
+                            "upName", "upCount" -> tvName.text = item.tag.name + root.context.getString(R.string.book_count, item.bookCount)
                             "upHot" -> swtHot.isChecked = item.tag.hot
                         }
                     }
@@ -97,8 +94,8 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
         }
         binding.swtHot.setOnUserCheckedChangeListener { isChecked ->
             getItem(holder.layoutPosition)?.let {
-                it.tag.hot = isChecked
-                callBack.update(it.tag)
+                // 用副本落库，避免污染当前列表里的实体对象影响 DiffUtil 判断
+                callBack.update(it.tag.copy(hot = isChecked))
             }
         }
         binding.ivEdit.setOnClickListener {

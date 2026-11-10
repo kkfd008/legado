@@ -1113,7 +1113,7 @@ AnalyzeRule（上下文）
 | `mise.toml` | 通用 | 固定 `java = "17"`、`gradle = "8.13"` |
 | `check.bat` | Windows | 构建环境检测，**只读**（不安装、不写文件）；退出码 = 未通过项数量 |
 | `deploy.bat` | Windows | 环境部署，只安装缺失项（mise / JDK 17 / Gradle 8.13 / cmdline-tools / Platform 36 / Build-Tools 36.0.0 / licenses / local.properties） |
-| `build.bat` | Windows | 只编译，默认任务 `:app:assembleAppDebug`；支持 `--wrapper`（改用仓库 gradlew）与 `--no-color`；退出码与 Gradle 一致 |
+| `build.bat` | Windows | 只编译，默认任务 `:app:assembleAppDebug`；支持 `--wrapper`（改用仓库 gradlew）、`--no-color` 与 `--open-dir`（成功后打开 APK 所在目录并选中 APK）；编译成功打印可直接点击的 `file:///` 格式 APK 地址；退出码与 Gradle 一致 |
 | `scripts/env_common.sh` | Linux | 公共函数（`ensure_java17` / `ensure_gradle` 等） |
 | `scripts/check_build_env_linux.sh` | Linux | 环境检测 |
 | `scripts/build_linux.sh` | Linux | 云端 Debug 构建 |

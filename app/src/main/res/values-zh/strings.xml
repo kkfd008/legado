@@ -53,6 +53,7 @@
     <string name="recent_reading">最近阅读</string>
     <string name="last_read">最后阅读</string>
     <string name="update_log">更新日志</string>
+    <string name="application_id">应用 ID</string>
     <string name="bookshelf_empty">书架还空着，先去搜索书籍或从发现里添加吧！</string>
     <string name="action_search">搜索</string>
     <string name="action_download">下载</string>
@@ -713,7 +714,7 @@
     <string name="tag_config">标签配置</string>
     <string name="config_tag_config">配置标签、书籍数量与热门标签</string>
     <string name="tag_hot">热门</string>
-    <string name="book_count">%1$d 本</string>
+    <string name="book_count">(%1$d)</string>
     <string name="tag_hot_enable">设为热门</string>
     <string name="tag_hot_disable">取消热门</string>
     <string name="view_toc">查看目录</string>

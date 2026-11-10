@@ -16,6 +16,13 @@
         app:iconSpaceReserved="false" />
 
     <io.legado.app.lib.prefs.Preference
+        android:key="app_id"
+        android:title="@string/application_id"
+        app:allowDividerAbove="false"
+        app:allowDividerBelow="false"
+        app:iconSpaceReserved="false" />
+
+    <io.legado.app.lib.prefs.Preference
         android:key="check_update"
         android:title="@string/check_update"
         app:allowDividerAbove="false"

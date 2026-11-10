@@ -32,6 +32,9 @@ interface BookTagDao {
     @Update
     fun update(bookTag: BookTag)
 
+    @Query("update book_tags set hot = :hot where tagId in (:ids)")
+    fun updateHot(ids: List<Long>, hot: Boolean)
+
     @Delete
     fun delete(bookTag: BookTag)
 

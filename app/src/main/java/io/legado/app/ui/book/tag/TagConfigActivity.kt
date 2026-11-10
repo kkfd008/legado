@@ -146,9 +146,20 @@ class TagConfigActivity : VMBaseActivity<ActivityTagConfigBinding, TagConfigView
     }
 
     override fun onMenuItemClick(item: MenuItem): Boolean {
+        val selection = adapter.selection
         when (item.itemId) {
-            R.id.menu_hot_selection -> viewModel.setHot(adapter.selection, true)
-            R.id.menu_unhot_selection -> viewModel.setHot(adapter.selection, false)
+            R.id.menu_hot_selection -> {
+                if (selection.isNotEmpty()) {
+                    viewModel.setHot(selection, true)
+                    toastOnUi(R.string.tag_hot_enable)
+                }
+            }
+            R.id.menu_unhot_selection -> {
+                if (selection.isNotEmpty()) {
+                    viewModel.setHot(selection, false)
+                    toastOnUi(R.string.tag_hot_disable)
+                }
+            }
         }
         return true
     }

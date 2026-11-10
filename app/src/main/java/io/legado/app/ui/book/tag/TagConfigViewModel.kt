@@ -22,11 +22,11 @@ class TagConfigViewModel(app: Application) : BaseViewModel(app) {
     }
 
     fun setHot(tags: List<BookTag>, hot: Boolean) {
+        if (tags.isEmpty()) return
         execute {
-            tags.forEach {
-                it.hot = hot
-                appDb.bookTagDao.update(it)
-            }
+            // 用 SQL 批量更新，不修改 adapter 当前持有的实体对象；
+            // 否则 Room Flow 重新发射时 DiffUtil 会判定新旧内容相同，热门开关不刷新。
+            appDb.bookTagDao.updateHot(tags.map { it.tagId }, hot)
         }
     }
 

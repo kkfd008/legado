@@ -33,6 +33,7 @@ build.bat            # 默认 :app:assembleAppDebug
 build.bat :app:assembleAppRelease
 build.bat clean :app:assembleAppDebug
 build.bat --wrapper  # 改用仓库 gradlew（默认走 mise 的 gradle）
+build.bat --open-dir # 编译成功后打开 APK 所在目录并选中 APK
 ```
 
 Linux 云端：`scripts/check_build_env_linux.sh`、`scripts/build_linux.sh`（公共函数在 `scripts/env_common.sh`）。
@@ -45,7 +46,7 @@ Linux 云端：`scripts/check_build_env_linux.sh`、`scripts/build_linux.sh`（�
 app/build/outputs/apk/app/debug/legado_app_<versionName>.apk
 ```
 
-`versionCode = 10000 + git 提交数`（见 `app/build.gradle`）。
+`versionCode = 10000 + git 提交数`（见 `app/build.gradle`）。`build.bat` 编译成功后会打印 `file:///D:/dev/project/legado/app/build/outputs/apk/app/debug/<apk名>` 形式的可点击地址；加 `--open-dir` 可直接打开所在目录并选中 APK。
 
 ### 2.4 Git
 

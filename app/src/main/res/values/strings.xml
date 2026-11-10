@@ -54,6 +54,7 @@
     <string name="recent_reading">Recent reading</string>
     <string name="last_read">Last reading</string>
     <string name="update_log">What\'s new</string>
+    <string name="application_id">Application ID</string>
     <string name="bookshelf_empty">The bookshelf is still empty. Search for books or add them from discovery!</string>
     <string name="action_search">Search</string>
     <string name="action_download">Download</string>
@@ -715,7 +716,7 @@
     <string name="tag_config">Tag config</string>
     <string name="config_tag_config">Configure tags, book count and popular tags</string>
     <string name="tag_hot">Popular</string>
-    <string name="book_count">%1$d books</string>
+    <string name="book_count">(%1$d)</string>
     <string name="tag_hot_enable">Set as popular</string>
     <string name="tag_hot_disable">Remove from popular</string>
     <string name="view_toc">View Chapters</string>

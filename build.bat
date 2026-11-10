@@ -13,6 +13,8 @@ rem        build.bat :app:assembleAppRelease   编 release 包
 rem        build.bat clean :app:assembleAppDebug
 rem        build.bat --wrapper                  改用仓库 gradlew（默认用 mise 的 gradle）
 rem        build.bat --no-color                 关闭彩色输出
+rem        build.bat --open-dir                 编译成功后打开 APK 所在目录并选中 APK
+rem        编译成功后会打印可直接点击的 file:/// 格式 APK 地址
 rem
 rem  前置：check.bat 全绿（或 deploy.bat 补齐环境）。缺东西会快速失败并给出修复命令。
 rem  退出码：与 Gradle 一致（0 = 成功）
@@ -41,12 +43,15 @@ set "APK_REL=app\build\outputs\apk\app\debug"
 rem ---------- 参数：抽出 --no-color / --wrapper，其余原样传给 Gradle ----------
 set "USE_COLOR=1"
 set "USE_WRAPPER=0"
+set "OPEN_DIR=0"
 set "GRADLE_ARGS="
 for %%A in (%*) do (
   if /i "%%~A"=="--no-color" (
     set "USE_COLOR=0"
   ) else if /i "%%~A"=="--wrapper" (
     set "USE_WRAPPER=1"
+  ) else if /i "%%~A"=="--open-dir" (
+    set "OPEN_DIR=1"
   ) else (
     set "GRADLE_ARGS=!GRADLE_ARGS! %%~A"
   )
@@ -248,10 +253,17 @@ for %%F in ("!APK!") do (
   set "APK_NAME=%%~nxF"
 )
 set /a APK_MB=!APK_SIZE!/1048576
+set "APK_URL=!APK:\=/!"
 echo   APK 输出目录：%PROJECT_DIR%%APK_REL%
 echo     %C_GRN%!APK_NAME!%C_RST%  ^(!APK_SIZE! 字节 ≈ !APK_MB! MB^)
+echo   APK 文件地址（可直接点击打开目录）：
+echo   %C_CYA%file:///!APK_URL!%C_RST%
 echo   %C_DIM%!APK!%C_RST%
 echo.
+if /i "!OPEN_DIR!"=="1" (
+  echo   %C_DIM%正在打开 APK 所在目录...%C_RST%
+  start "" explorer /select,"!APK!"
+)
 
 rem 用 aapt2 读出版本信息（versionCode 是否与 git 提交数一致，肉眼可验）
 set "BADGING=%TEMP%\legado-badging-%RANDOM%.txt"
@@ -308,9 +320,13 @@ if exist "%PROJECT_DIR%local.properties" (
 if not defined SDK_DIR if defined ANDROID_HOME set "SDK_DIR=%ANDROID_HOME%"
 if not defined SDK_DIR if defined ANDROID_SDK_ROOT set "SDK_DIR=%ANDROID_SDK_ROOT%"
 if not defined SDK_DIR if exist "%LOCALAPPDATA%\Android\Sdk" set "SDK_DIR=%LOCALAPPDATA%\Android\Sdk"
+rem local.properties 采用 Java properties 转义：":" 写成 "\:"，"\" 写成 "\\"
 if defined SDK_DIR (
-  set "SDK_DIR=%SDK_DIR:/=\%"
-  if "%SDK_DIR:~-1%"=="\" set "SDK_DIR=%SDK_DIR:~0,-1%"
+  set "SDK_DIR=!SDK_DIR:/=\!"
+
+  set "SDK_DIR=!SDK_DIR:\:=:!"
+  set "SDK_DIR=!SDK_DIR:\\=\!"
+  if "!SDK_DIR:~-1!"=="\" set "SDK_DIR=!SDK_DIR:~0,-1!"
 )
 exit /b 0
 
