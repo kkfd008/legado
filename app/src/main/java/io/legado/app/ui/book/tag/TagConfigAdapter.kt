@@ -7,18 +7,28 @@ import android.view.ViewGroup
 import android.widget.PopupMenu
 import androidx.core.os.bundleOf
 import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.RecyclerView
 import io.legado.app.R
 import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.data.entities.BookTag
 import io.legado.app.databinding.ItemTagConfigBinding
+import io.legado.app.ui.widget.recycler.ItemTouchCallback
 
 data class TagConfigItem(val tag: BookTag, val bookCount: Int)
 
 class TagConfigAdapter(context: Context, private val callBack: CallBack) :
-    RecyclerAdapter<TagConfigItem, ItemTagConfigBinding>(context) {
+    RecyclerAdapter<TagConfigItem, ItemTagConfigBinding>(context),
+    ItemTouchCallback.Callback {
 
     private val selected = linkedSetOf<Long>()
+
+    /**
+     * 拖拽进行中。此时忽略 Room Flow 的新数据，
+     * 否则列表会按数据库里的旧 order 重排，把正在拖动的位置弹回。
+     */
+    var isDragging = false
+        private set
 
     val selection: List<BookTag>
         get() = getItems().filter { selected.contains(it.tag.tagId) }.map { it.tag }
@@ -148,12 +158,32 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
         callBack.upCountView()
     }
 
+    override fun swap(srcPosition: Int, targetPosition: Int): Boolean {
+        swapItem(srcPosition, targetPosition)
+        isDragging = true
+        return true
+    }
+
+    override fun onClearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
+        if (!isDragging) return
+        isDragging = false
+        val items = getItems()
+        val size = items.size
+        // 界面按 order 降序展示，拖拽后的第 0 项应保持最大 order。
+        // 用 copy 生成新对象落库，不修改 adapter 持有的实体，避免污染 DiffUtil 的旧列表。
+        val orderedTags = items.mapIndexed { index, item ->
+            item.tag.copy(order = size - index)
+        }
+        callBack.upOrder(orderedTags)
+    }
+
     interface CallBack {
         fun del(tag: BookTag)
         fun edit(tag: BookTag)
         fun update(tag: BookTag)
         fun toTop(tag: BookTag)
         fun toBottom(tag: BookTag)
+        fun upOrder(tags: List<BookTag>)
         fun upCountView()
     }
 

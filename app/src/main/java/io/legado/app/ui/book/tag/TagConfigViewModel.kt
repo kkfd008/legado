@@ -32,15 +32,28 @@ class TagConfigViewModel(app: Application) : BaseViewModel(app) {
 
     fun toTop(tag: BookTag) {
         execute {
-            tag.order = (appDb.bookTagDao.maxOrder() ?: 0) + 1
-            appDb.bookTagDao.update(tag)
+            val order = (appDb.bookTagDao.maxOrder() ?: 0) + 1
+            // 用副本落库，避免污染 adapter 当前持有的实体对象影响 DiffUtil 判断
+            appDb.bookTagDao.update(tag.copy(order = order))
         }
     }
 
     fun toBottom(tag: BookTag) {
         execute {
-            tag.order = (appDb.bookTagDao.minOrder() ?: 0) - 1
-            appDb.bookTagDao.update(tag)
+            val order = (appDb.bookTagDao.minOrder() ?: 0) - 1
+            appDb.bookTagDao.update(tag.copy(order = order))
+        }
+    }
+
+    /**
+     * 拖拽结束后按界面顺序重排 order。
+     * 列表按 order 降序展示，因此第 0 项 order 最大。
+     * 一次性批量更新，保证单次事务、Room Flow 只发射一次，避免拖拽后的列表被中间态弹回。
+     */
+    fun upOrder(tags: List<BookTag>) {
+        if (tags.isEmpty()) return
+        execute {
+            appDb.bookTagDao.update(*tags.toTypedArray())
         }
     }
 

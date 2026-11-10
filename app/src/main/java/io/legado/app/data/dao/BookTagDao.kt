@@ -29,8 +29,8 @@ interface BookTagDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(bookTag: BookTag)
 
-    @Update
-    fun update(bookTag: BookTag)
+    @Update(onConflict = OnConflictStrategy.REPLACE)
+    fun update(vararg bookTag: BookTag)
 
     @Query("update book_tags set hot = :hot where tagId in (:ids)")
     fun updateHot(ids: List<Long>, hot: Boolean)

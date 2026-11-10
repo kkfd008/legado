@@ -6,6 +6,7 @@ import android.view.MenuItem
 import androidx.activity.viewModels
 import androidx.appcompat.widget.PopupMenu
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ItemTouchHelper
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
 import io.legado.app.constant.AppLog
@@ -15,6 +16,7 @@ import io.legado.app.databinding.ActivityTagConfigBinding
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.widget.SelectActionBar
+import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.showDialogFragment
@@ -52,6 +54,10 @@ class TagConfigActivity : VMBaseActivity<ActivityTagConfigBinding, TagConfigView
         recyclerView.setEdgeEffectColor(primaryColor)
         recyclerView.addItemDecoration(VerticalDivider(this@TagConfigActivity))
         recyclerView.adapter = adapter
+        // 与 TXT 目录规则列表页一致：长按条目即可上下拖动排序
+        val itemTouchCallback = ItemTouchCallback(adapter)
+        itemTouchCallback.isCanDrag = true
+        ItemTouchHelper(itemTouchCallback).attachToRecyclerView(recyclerView)
     }
 
     private fun initBottomActionBar() {
@@ -73,6 +79,8 @@ class TagConfigActivity : VMBaseActivity<ActivityTagConfigBinding, TagConfigView
             }.catch {
                 AppLog.put("标签配置界面获取数据失败\n${it.localizedMessage}", it)
             }.flowOn(IO).conflate().collect { items ->
+                // 拖拽过程中忽略数据库新数据，避免列表按旧 order 重排、打断正在进行的拖动
+                if (adapter.isDragging) return@collect
                 adapter.setItems(items, adapter.diffItemCallBack)
             }
         }
@@ -120,6 +128,10 @@ class TagConfigActivity : VMBaseActivity<ActivityTagConfigBinding, TagConfigView
 
     override fun toBottom(tag: BookTag) {
         viewModel.toBottom(tag)
+    }
+
+    override fun upOrder(tags: List<BookTag>) {
+        viewModel.upOrder(tags)
     }
 
     override fun upCountView() {

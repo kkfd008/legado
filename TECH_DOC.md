@@ -471,7 +471,8 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 | `ui/book/tag/TagManageDialog.kt` | `GridLayoutManager(ctx, AppConfig.tagManageSpanCount)`；ItemTouchHelper 拖拽排序；拖拽结束在 `onClearView` 里回写 `order = size - index` |
 | `ui/book/tag/TagSelectDialog.kt` | 同样跟随 `AppConfig.tagManageSpanCount`；`setItems(it.sortedByDescending { tag -> tag.order })`；点击整行切换选中位 |
 | `ui/book/tag/TagViewModel.kt` | `tagList = bookTagDao.flowSelect()`；`upOrder` 按 `size - index` 写 order；`getNextTagId()` 取最小可用的 2 的幂次（上限 64 个） |
-| `res/layout/item_book_tag_manage.xml` | 圆角紧凑项，文字靠左、maxLines=2 |
+| `ui/book/tag/TagConfigActivity.kt` / `TagConfigAdapter.kt` | 标签配置单行列表同样支持 `ItemTouchCallback` 长按拖拽（参考 TXT 目录规则页）；拖拽期间 `isDragging` 时跳过 Flow 刷新；松手按 `size - index` 用 `copy` 生成新对象，经 `BookTagDao.update(vararg)` 单事务批量回写 order，避免污染 DiffUtil 旧列表 |
+| `res/layout/item_book_tag_manage.xml` | 圆角紧凑项，文字靠右、maxLines=2 |
 | `res/layout/item_tag_select.xml` | 选中态背景 `selector_tag_select_bg`（activated → `shape_fillet_btn_selected`，colorAccent 填充） |
 | `res/xml/pref_config_other.xml` | `Preference` key=`tagManageSpanCount`，点击弹 NumberPickerDialog（1-4） |
 | `ui/config/OtherConfigFragment.kt` | 处理 `tagManageSpanCount` 点击与 summary 更新 |

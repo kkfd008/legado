@@ -66,7 +66,7 @@ app/build/outputs/apk/app/debug/legado_app_<versionName>.apk
 5. 「显示书源」开关（默认关闭）：隐藏我的页面「书源管理」、书架菜单「添加网址」。
 6. 修复阅读页内容关键字搜索缓存 bug（返回结果列表变空白）。
 7. 「WebDAV」总开关（默认关闭）：隐藏「备份与恢复」「添加远程书籍」，并短路阅读进度同步。
-8. 标签管理页 / 标签选择弹窗改网格布局，新增「标签管理每行标签数」（1-4，默认1），标签文字靠左、按 order 倒序、拖拽排序不回退反转。
+8. 标签管理页 / 标签选择弹窗改网格布局，新增「标签管理每行标签数」（1-4，默认1），标签文字靠右、按 order 倒序、拖拽排序不回退反转。
 9. 搜索页输入帮助面板：搜索历史 + 「热门标签」标题 + 流式换行标签列表；回车在关闭书源时保留面板。
 10. 构建脚本统一为 `check.bat` / `deploy.bat` / `build.bat` + `scripts/*.sh`，mise 统一管理 JDK 17 / Gradle 8.13，SDK 固定 36。
 
@@ -87,7 +87,8 @@ app/build/outputs/apk/app/debug/legado_app_<versionName>.apk
 
 - `TagManageDialog` / `TagSelectDialog` 都用 `GridLayoutManager(ctx, AppConfig.tagManageSpanCount)`。
 - 列表按 `order` **倒序**展示：`sortedByDescending { it.order }`。
-- 拖拽写回必须用 `order = size - index`（`TagManageDialog.onClearView`、`TagViewModel.upOrder`），否则倒序展示会把拖拽结果整体反转。
+- 拖拽写回必须用 `order = size - index`（`TagManageDialog.onClearView`、`TagViewModel.upOrder`、`TagConfigAdapter.onClearView`），否则倒序展示会把拖拽结果整体反转。
+- 「标签配置」页（`TagConfigActivity`）同样支持长按拖拽排序，参考 `TxtTocRuleActivity` 的 `ItemTouchCallback` 接法；拖拽期间用 `adapter.isDragging` 跳过 Flow 刷新，松手用 `copy` 生成新对象后经 `BookTagDao.update(vararg)` 单事务批量回写，避免污染 DiffUtil 旧列表。
 - `TagSelectDialog` 取消复选框，改为「点击整行切换选中 + activated 背景填充 colorAccent + 文字转白」。
 - 相关样式：`res/drawable/selector_tag_select_bg.xml`、`shape_fillet_btn_selected.xml`；布局 `item_tag_select.xml`、`item_book_tag_manage.xml`。
 
