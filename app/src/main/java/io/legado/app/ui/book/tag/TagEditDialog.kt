@@ -52,7 +52,6 @@ class TagEditDialog() : BaseDialogFragment(R.layout.dialog_book_tag_edit) {
                     }
                 }
             }
-            tieTagOrder.setText(tag?.order?.toString() ?: "1")
             btnCancel.setOnClickListener { dismissAllowingStateLoss() }
             btnOk.setOnClickListener {
                 val tagName = tieTagName.text.toString().trim()
@@ -66,13 +65,12 @@ class TagEditDialog() : BaseDialogFragment(R.layout.dialog_book_tag_edit) {
                     toastOnUi(R.string.name_exist)
                     return@setOnClickListener
                 }
-                val order = tieTagOrder.text.toString().toIntOrNull()?.coerceIn(1, 999) ?: 1
                 lifecycleScope.launch {
                     withContext(IO) {
                         tag?.let { oldTag ->
-                            if (oldTag.name != tagName || oldTag.order != order) {
+                            // 排序由列表拖拽/菜单维护，编辑页只修改名称
+                            if (oldTag.name != tagName) {
                                 oldTag.name = tagName
-                                oldTag.order = order
                                 viewModel.upTag(oldTag)
                             }
                         } ?: let {
@@ -80,7 +78,7 @@ class TagEditDialog() : BaseDialogFragment(R.layout.dialog_book_tag_edit) {
                             val bookTag = BookTag(
                                 tagId = nextTagId,
                                 name = tagName,
-                                order = order
+                                order = (appDb.bookTagDao.maxOrder() ?: 0) + 1
                             )
                             viewModel.insert(bookTag)
                         }

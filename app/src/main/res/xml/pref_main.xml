@@ -19,6 +19,13 @@
         app:iconSpaceReserved="false" />
 
     <io.legado.app.lib.prefs.Preference
+        android:icon="@drawable/ic_cfg_source"
+        android:key="tagConfigManage"
+        android:summary="@string/config_tag_config"
+        android:title="@string/tag_config"
+        app:iconSpaceReserved="false" />
+
+    <io.legado.app.lib.prefs.Preference
         android:icon="@drawable/ic_cfg_replace"
         android:key="replaceManage"
         android:summary="@string/replace_purify_desc"

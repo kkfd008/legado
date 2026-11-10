@@ -17,6 +17,9 @@ interface BookTagDao {
     @Query("select * from book_tags order by `order`")
     fun all(): List<BookTag>
 
+    @Query("select * from book_tags where hot = 1 order by `order` desc")
+    fun flowHot(): Flow<List<BookTag>>
+
     @Query("select name from book_tags order by `order`")
     fun getTagNames(): List<String>
 
@@ -37,6 +40,9 @@ interface BookTagDao {
 
     @Query("select max(`order`) from book_tags")
     fun maxOrder(): Int?
+
+    @Query("select min(`order`) from book_tags")
+    fun minOrder(): Int?
 
     @Query("select max(tagId) from book_tags")
     fun maxTagId(): Long?

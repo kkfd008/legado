@@ -710,6 +710,12 @@
     <string name="edit_tag">修改标签</string>
     <string name="tag_s">标签：%s</string>
     <string name="tag_hint">输入标签，多个标签用逗号分隔</string>
+    <string name="tag_config">标签配置</string>
+    <string name="config_tag_config">配置标签、书籍数量与热门标签</string>
+    <string name="tag_hot">热门</string>
+    <string name="book_count">%1$d 本</string>
+    <string name="tag_hot_enable">设为热门</string>
+    <string name="tag_hot_disable">取消热门</string>
     <string name="view_toc">查看目录</string>
     <string name="bar_elevation">导航栏阴影</string>
     <string name="bar_elevation_s">当前阴影大小（elevation）：%s</string>

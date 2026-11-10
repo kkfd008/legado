@@ -346,10 +346,14 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
             }
         }
         lifecycleScope.launch {
-            val tags = withContext(IO) {
-                appDb.bookTagDao.all().sortedByDescending { it.order }.take(10)
+            appDb.bookTagDao.flowHot().catch {
+                AppLog.put("搜索页获取热门标签失败\n${it.localizedMessage}", it)
+            }.flowOn(IO).conflate().collect { tags ->
+                // 热门标签由「我的-标签配置」中启用的标签决定，不再按排序取前 10
+                tagSuggestAdapter.setItems(tags)
+                binding.tvTagTitle.visible(tags.isNotEmpty())
+                binding.rvTagSuggest.visible(tags.isNotEmpty())
             }
-            tagSuggestAdapter.setItems(tags)
         }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {

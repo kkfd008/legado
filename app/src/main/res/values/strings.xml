@@ -712,6 +712,12 @@
     <string name="tag_name">Tag name</string>
     <string name="tag_s">Tags: %s</string>
     <string name="tag_hint">Enter tags, separated by commas</string>
+    <string name="tag_config">Tag config</string>
+    <string name="config_tag_config">Configure tags, book count and popular tags</string>
+    <string name="tag_hot">Popular</string>
+    <string name="book_count">%1$d books</string>
+    <string name="tag_hot_enable">Set as popular</string>
+    <string name="tag_hot_disable">Remove from popular</string>
     <string name="view_toc">View Chapters</string>
     <string name="bar_elevation">Navigation bar shadow</string>
     <string name="bar_elevation_s">Current shadow size(elevation): %s</string>

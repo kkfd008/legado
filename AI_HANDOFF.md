@@ -93,7 +93,7 @@ app/build/outputs/apk/app/debug/legado_app_<versionName>.apk
 ### 4.3 搜索页输入帮助面板
 
 - 布局 `activity_book_search.xml`：`ll_input_help` 内自上而下 `tv_tag_title` + 搜索历史 `rv_history_key` + `rv_tag_suggest`。
-- 热门标签数据：`bookTagDao.all().sortedByDescending { it.order }.take(10)`，`FlexboxLayoutManager` 流式换行，点击以 `#标签名` 搜索。
+- 热门标签数据：`bookTagDao.flowHot()`（`book_tags.hot = 1`，按 order 倒序；默认非热门，不再按排序取前 10），`FlexboxLayoutManager` 流式换行，点击以 `#标签名` 搜索；热门开关在「我的 - 标签配置」页设置。
 - `onQueryTextSubmit` 中 `if (AppConfig.showBookSource) visibleInputHelp(false)`，关闭书源时保留面板避免空白结果页。
 
 ### 4.4 阅读页关键字搜索缓存

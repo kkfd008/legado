@@ -218,6 +218,11 @@
             android:name=".ui.book.toc.rule.TxtTocRuleActivity"
             android:launchMode="singleTop"
             android:screenOrientation="behind" />
+        <!-- 标签配置 -->
+        <activity
+            android:name=".ui.book.tag.TagConfigActivity"
+            android:launchMode="singleTop"
+            android:screenOrientation="behind" />
         <!-- 替换规则界面 -->
         <activity
             android:name=".ui.replace.ReplaceRuleActivity"

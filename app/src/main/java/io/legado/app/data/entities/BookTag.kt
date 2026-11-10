@@ -12,7 +12,9 @@ data class BookTag(
     @PrimaryKey
     val tagId: Long = 0b1,
     var name: String = "",
-    var order: Int = 0
+    var order: Int = 0,
+    @ColumnInfo(defaultValue = "0")
+    var hot: Boolean = false
 ) : Parcelable {
 
     override fun hashCode(): Int {
@@ -24,6 +26,7 @@ data class BookTag(
             return other.tagId == tagId
                     && other.name == name
                     && other.order == order
+                    && other.hot == hot
         }
         return false
     }

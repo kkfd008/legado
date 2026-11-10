@@ -486,7 +486,7 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 |------|----------------|
 | 搜索历史 | `HistoryKeyAdapter` + `rv_history_key`（`wrap_content`） |
 | 热门标签标题 | `tv_tag_title`，文案 `@string/hot_tag` |
-| 热门标签列表 | `rv_tag_suggest` + `FlexboxLayoutManager`（流式换行）；数据取 `bookTagDao.all().sortedByDescending { it.order }.take(10)`；点击按 `#标签名` 发起搜索 |
+| 热门标签列表 | `rv_tag_suggest` + `FlexboxLayoutManager`（流式换行）；数据取 `bookTagDao.flowHot()`（`hot = 1`，按 order 倒序，默认非热门，不再取前 10）；无数据隐藏标题与列表；点击按 `#标签名` 发起搜索 |
 
 - 回车上屏（`onQueryTextSubmit`）时，仅当 `AppConfig.showBookSource` 为真才调用 `visibleInputHelp(false)`；关闭书源时保留面板，避免落到空白结果页。
 - 布局上 `content_view` / `ll_input_help` / FAB 均以 `parent` 为底部约束，标签列表位于搜索历史之下的 LinearLayout 内。
