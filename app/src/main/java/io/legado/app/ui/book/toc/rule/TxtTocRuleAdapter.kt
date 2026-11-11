@@ -24,6 +24,9 @@ class TxtTocRuleAdapter(context: Context, private val callBack: CallBack) :
 
     private val selected = linkedSetOf<TxtTocRule>()
 
+    /** 规则 id -> 匹配的书籍数量，由页面根据 books.tocUrl 统计后传入 */
+    private var bookCounts = emptyMap<Long, Int>()
+
     val selection: List<TxtTocRule>
         get() = getItems().filter {
             selected.contains(it)
@@ -70,6 +73,21 @@ class TxtTocRuleAdapter(context: Context, private val callBack: CallBack) :
         return ItemTxtTocRuleBinding.inflate(inflater, parent, false)
     }
 
+    /**
+     * 更新书籍数量。数量不在 Room 实体里，因此不参与 DiffUtil 比较，
+     * 变化时单独派发局部刷新 payload。
+     */
+    fun setBookCounts(counts: Map<Long, Int>) {
+        if (bookCounts == counts) return
+        bookCounts = counts
+        notifyItemRangeChanged(0, itemCount, bundleOf(Pair("upCount", null)))
+    }
+
+    private fun ItemTxtTocRuleBinding.upCount(rule: TxtTocRule) {
+        val count = bookCounts[rule.id] ?: 0
+        tvBookCount.text = root.context.getString(R.string.rule_book_count, count)
+    }
+
     override fun convert(
         holder: ItemViewHolder,
         binding: ItemTxtTocRuleBinding,
@@ -80,6 +98,7 @@ class TxtTocRuleAdapter(context: Context, private val callBack: CallBack) :
             if (payloads.isEmpty()) {
                 root.setBackgroundColor(ColorUtils.withAlpha(context.backgroundColor, 0.5f))
                 cbSource.text = item.name
+                upCount(item)
                 swtEnabled.isChecked = item.enable
                 cbSource.isChecked = selected.contains(item)
                 titleExample.text = item.example
@@ -90,6 +109,7 @@ class TxtTocRuleAdapter(context: Context, private val callBack: CallBack) :
                         when (it) {
                             "selected" -> cbSource.isChecked = selected.contains(item)
                             "upName" -> cbSource.text = item.name
+                            "upCount" -> upCount(item)
                             "upExample" -> titleExample.text = item.example
                             "enabled" -> swtEnabled.isChecked = item.enable
                         }

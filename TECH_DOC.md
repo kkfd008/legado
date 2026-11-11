@@ -492,6 +492,12 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 - 回车上屏（`onQueryTextSubmit`）时，仅当 `AppConfig.showBookSource` 为真才调用 `visibleInputHelp(false)`；关闭书源时保留面板，避免落到空白结果页。
 - 布局上 `content_view` / `ll_input_help` / FAB 均以 `parent` 为底部约束，标签列表位于搜索历史之下的 LinearLayout 内。
 
+### 6.8 TXT 目录规则列表页匹配书籍数量
+
+- 数据来源：`TxtTocRuleActivity.initData()` 用 `combine(txtTocRuleDao.observeAll(), bookDao.flowAll())` 统计。本地 TXT 书把命中的目录规则正则字符串保存在 `books.tocUrl`（`TextFile.getChapterList()` 自动匹配、`TxtTocRuleDialog` 手动更换规则都写入 `rule.rule`），因此匹配口径为 `book.isLocal && book.tocUrl == rule.rule`。
+- 数量不放进 Room 实体（避免数据库迁移，也不污染导出的规则 JSON）：`TxtTocRuleAdapter` 持有 `Map<ruleId, count>`，`setBookCounts()` 在 map 变化时派发 `upCount` payload 局部刷新；`diffItemCallBack` 仍只比较规则自身字段，拖拽/选择/导出逻辑不受影响。
+- 显示：`item_txt_toc_rule.xml` 第二行右侧 `tv_book_count`，文案 `@string/rule_book_count`（中「匹配 %1$d 本书」/ 英「%1$d books matched」）；`title_example` 改为 `0dp` 并约束到其左侧，长示例省略显示。
+
 ---
 
 ## 7. Web API 层

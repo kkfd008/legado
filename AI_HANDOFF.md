@@ -89,6 +89,7 @@ app/build/outputs/apk/app/debug/legado_app_<versionName>.apk
 - 列表按 `order` **倒序**展示：`sortedByDescending { it.order }`。
 - 拖拽写回必须用 `order = size - index`（`TagManageDialog.onClearView`、`TagViewModel.upOrder`、`TagConfigAdapter.onClearView`），否则倒序展示会把拖拽结果整体反转。
 - 「标签配置」页（`TagConfigActivity`）同样支持长按拖拽排序，参考 `TxtTocRuleActivity` 的 `ItemTouchCallback` 接法；拖拽期间用 `adapter.isDragging` 跳过 Flow 刷新，松手用 `copy` 生成新对象后经 `BookTagDao.update(vararg)` 单事务批量回写，避免污染 DiffUtil 旧列表。
+- TXT 目录规则列表页显示每条规则匹配的书籍数：`combine(observeAll(), bookDao.flowAll())` 按本地书 `book.tocUrl == rule.rule` 统计；数量不进 Room 实体，用 `TxtTocRuleAdapter` 内的 `Map<ruleId, count>` + `upCount` payload 局部刷新，避免数据库迁移与导出 JSON 被污染。
 - `TagSelectDialog` 取消复选框，改为「点击整行切换选中 + activated 背景填充 colorAccent + 文字转白」。
 - 相关样式：`res/drawable/selector_tag_select_bg.xml`、`shape_fillet_btn_selected.xml`；布局 `item_tag_select.xml`、`item_book_tag_manage.xml`。
 

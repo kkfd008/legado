@@ -16,6 +16,7 @@ import io.legado.app.data.entities.TxtTocRule
 import io.legado.app.databinding.ActivityTxtTocRuleBinding
 import io.legado.app.databinding.DialogEditTextBinding
 import io.legado.app.help.DirectLinkUpload
+import io.legado.app.help.book.isLocal
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.association.ImportTxtTocRuleDialog
@@ -37,6 +38,7 @@ import io.legado.app.utils.splitNotBlank
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
@@ -110,9 +112,22 @@ class TxtTocRuleActivity : VMBaseActivity<ActivityTxtTocRuleBinding, TxtTocRuleV
 
     private fun initData() {
         lifecycleScope.launch {
-            appDb.txtTocRuleDao.observeAll().catch {
+            combine(
+                appDb.txtTocRuleDao.observeAll(),
+                appDb.bookDao.flowAll()
+            ) { tocRules, books ->
+                // 本地 TXT 书把命中的目录规则正则字符串保存在 book.tocUrl 里，
+                // 据此统计每条规则当前匹配到的书籍数量。
+                val counts = tocRules.associate { rule ->
+                    rule.id to books.count { book ->
+                        book.isLocal && book.tocUrl == rule.rule
+                    }
+                }
+                tocRules to counts
+            }.catch {
                 AppLog.put("TXT目录规则界面获取数据失败\n${it.localizedMessage}", it)
-            }.flowOn(IO).conflate().collect { tocRules ->
+            }.flowOn(IO).conflate().collect { (tocRules, counts) ->
+                adapter.setBookCounts(counts)
                 adapter.setItems(tocRules, adapter.diffItemCallBack)
             }
         }

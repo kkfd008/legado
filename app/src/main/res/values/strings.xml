@@ -717,6 +717,7 @@
     <string name="config_tag_config">Configure tags, book count and popular tags</string>
     <string name="tag_hot">Popular</string>
     <string name="book_count">(%1$d)</string>
+    <string name="rule_book_count">%1$d books matched</string>
     <string name="tag_hot_enable">Set as popular</string>
     <string name="tag_hot_disable">Remove from popular</string>
     <string name="view_toc">View Chapters</string>
