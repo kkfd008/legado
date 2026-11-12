@@ -515,23 +515,31 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 
 **对话框** `ui/book/read/LocalBookEditDialog.kt`（布局 `dialog_local_book_edit.xml`，菜单 `local_book_edit.xml` 只有保存）：
 
-- 进入时 `LocalBook.getChapterRawText(book, chapter)` 读原文：`getBookInputStream()` 跳到 `chapter.start` 读 `end-start` 字节，按 `book.fileCharset()` 解码，`substringAfter(chapter.title)` 去掉标题行后填进编辑框（**不经过** `padRegex` 缩进与替换规则，保证写回时原文不变形）
-- 章节名与正文分别放在 `edit_title` / `edit_content`
+- 进入时**不读整章原文**：直接从阅读界面取当前页——`ReadBook.curTextChapter?.getPageByReadPos(ReadBook.durChapterPos)`，用 `page.lines` 拼接文字（跳过 `isTitle` 行、`isParagraphEnd` 处补 `\n`），`page.text` 仅在拼不出内容时兜底。编辑框里就是屏幕这一页的文字，不含排版缩进与标题行
+- 当前页无文字时提示 `edit_local_book_page_empty` 并关闭
+- 章节名与当前页正文分别放在 `edit_title` / `edit_content`，`tv_content_label` 提示「当前页正文（只改动本页内容）」
 
-**写回** `LocalBook.saveChapterText(book, chapter, title, content)`：
+**定位当前页在原文中的区间**（`LocalBookEditViewModel.findPageRange`）：
 
-1. 由原章节文本判断换行符是 `\r\n` 还是 `\n`；新片段 = `标题 + 换行 + 正文 + 换行 + 换行`，按 `book.fileCharset()` 编码
-2. 流式重写：`[0, start)` 原样拷贝 → 写新片段 → 跳过 `end-start` 字节 → 剩余部分拷贝，全部落到 `cacheDir` 临时文件（内存占用恒定，不整本读入）
-3. 用 `book.getLocalUri().outputStream(appCtx)`（`w` 模式，截断）把临时文件覆盖回原文件，删除临时文件并 `TextFile.clear()`
+1. `LocalBook.getChapterRawText(book, chapter)` 取整章原文（含标题行，按 `book.fileCharset()` 解码）
+2. 整段 `indexOf`；原文是 CRLF 时把页文本里的 `\n` 换成 `\r\n` 再试一次
+3. 匹配不到（这段文字被替换规则改写过）时退化：取页文本首 24 字与末 24 字做锚点，`start` 为首锚点位置，`end` 为末锚点位置 + 长度；末锚点找不到就按原文本长度截取
+4. 都失败 → 抛 `edit_local_book_page_not_found`，不写文件
+
+**写回** `LocalBook.saveChapterRawText(book, chapter, rawText)`：
+
+1. 新原文 = 原章节文本 `replaceRange(pageRange, 编辑框内容)`；换行按文件风格归一（CRLF 文件里 LF → CRLF）
+2. 章节名有改动时替换章节首行标题（`indexOf(chapter.title)` 命中 0..256 内才替换，避免误改正文）
+3. `replaceChapterSegment()` 流式重写：`[0, start)` 原样拷贝 → 写新章节字节 → 跳过 `end-start` 字节 → 剩余部分拷贝，全部落到 `cacheDir` 临时文件，再用 `book.getLocalUri().outputStream(appCtx)` 覆盖回原文件；删除临时文件并 `TextFile.clear()`
 4. 把 `book.latestChapterTime` 置为当前时间，避免 `isLocalModified()` 判定为「外部改动」而重新识别编码/目录规则（会覆盖用户手选的 TXT 目录规则）
 
 **更新目录与正文**（`LocalBookEditDialog.LocalBookEditViewModel.save`）：
 
 - `LocalBook.getChapterList(book)` 重新解析全本（偏移会因长度变化而全部重算）→ 事务内 `delByBook` + `insert` 整表替换
 - 用写回时的起始偏移定位新章节：`toc.indexOfFirst { it.start == start }`；找不到说明新标题没匹配目录规则、章节被并入上一章，退化为 `indexOfLast { it.start <= start }` 并提示 `edit_local_book_merged`
-- 回写 `book.durChapterIndex / durChapterPos / durChapterTitle` 后 `book.save()`；对话框回调里设置 `ReadBook.durChapterIndex/durChapterPos` 并调用 `ReadBook.onChapterListUpdated(book)`，由后者 `loadContent(true)` 重排正文
+- 回写 `book.durChapterIndex / durChapterPos / durChapterTitle` 后 `book.save()`；对话框回调里设置 `ReadBook.durChapterIndex/durChapterPos`（保留原页首字符位置，不归零）并调用 `ReadBook.onChapterListUpdated(book)`，由后者 `loadContent(true)` 重排正文
 
-**注意**：这是整文件重写，大文件会有一次全量拷贝开销；写入失败（无权限/SAF 只读）会走 `onError` 提示。EPUB/MOBI/PDF/UMD 不提供该入口，只对 TXT 生效。
+**注意**：虽然只改一段字节，文件仍是整体重写（`[0,start)` 与尾部都要拷贝），大文件有一次全量拷贝开销；写入失败（无权限/SAF 只读）同样走 `onError`。EPUB/MOBI/PDF/UMD 不提供该入口，只对 TXT 生效。
 
 ---
 
@@ -1178,7 +1186,7 @@ AnalyzeRule（上下文）
 
 ---
 
-> **文档版本**: 1.2
+> **文档版本**: 1.3
 > **生成日期**: 2026-07-30
-> **最近更新**: 2026-11-12（新增目录页「重载书籍目录」：菜单可见性覆盖与本地/网络双路径实现）
+> **最近更新**: 2026-11-12（「编辑本地书籍」改为只取阅读界面当前页正文、按页定位改写原文）
 > **基于代码扫描自动生成**

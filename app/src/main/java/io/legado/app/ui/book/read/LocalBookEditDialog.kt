@@ -26,7 +26,8 @@ import io.legado.app.utils.visible
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 
 /**
- * 编辑本地书籍：修改当前章节名与正文，写回本地文件后重新解析目录并刷新正文
+ * 编辑本地书籍：修改当前章节名与当前页正文，写回本地文件后重新解析目录并刷新正文
+ * 正文只取阅读界面当前显示的这一页，写回时也只替换这一页对应的原文片段
  */
 class LocalBookEditDialog : BaseDialogFragment(R.layout.dialog_local_book_edit) {
 
@@ -50,10 +51,32 @@ class LocalBookEditDialog : BaseDialogFragment(R.layout.dialog_local_book_edit) 
             dismiss()
             return
         }
-        viewModel.load(book, ReadBook.durChapterIndex) { chapter, content ->
+        val pageText = currentPageText()
+        if (pageText.isEmpty()) {
+            requireContext().toastOnUi(R.string.edit_local_book_page_empty)
+            dismiss()
+            return
+        }
+        viewModel.load(book, ReadBook.durChapterIndex, pageText) { chapter, content ->
             binding.editTitle.setText(chapter.title)
             binding.editContent.setText(content)
         }
+    }
+
+    /**
+     * 取阅读界面当前页显示的文字（不含章节标题行，不含排版缩进）
+     */
+    private fun currentPageText(): String {
+        val textChapter = ReadBook.curTextChapter ?: return ""
+        val page = textChapter.getPageByReadPos(ReadBook.durChapterPos) ?: return ""
+        val sb = StringBuilder()
+        page.lines.forEach { line ->
+            if (line.isTitle) return@forEach
+            sb.append(line.text)
+            if (line.isParagraphEnd) sb.append('\n')
+        }
+        val text = sb.toString().trim('\n', '\r')
+        return text.ifEmpty { page.text.trim('\n', '\r') }
     }
 
     private fun initMenu() {
@@ -82,9 +105,11 @@ class LocalBookEditDialog : BaseDialogFragment(R.layout.dialog_local_book_edit) 
             requireContext().toastOnUi(R.string.edit_local_book_no_permission)
             return
         }
-        viewModel.save(book, chapter, title, content) { index, matched ->
+        val pageStartPos = ReadBook.curTextChapter
+            ?.getPageByReadPos(ReadBook.durChapterPos)?.chapterPosition ?: 0
+        viewModel.save(book, chapter, title, content, pageStartPos) { index, matched ->
             ReadBook.durChapterIndex = index
-            ReadBook.durChapterPos = 0
+            ReadBook.durChapterPos = pageStartPos
             ReadBook.onChapterListUpdated(book)
             requireContext().toastOnUi(R.string.edit_local_book_success)
             if (!matched) {
@@ -99,12 +124,20 @@ class LocalBookEditDialog : BaseDialogFragment(R.layout.dialog_local_book_edit) 
         val loadStateLiveData = MutableLiveData<Boolean>()
         var chapter: BookChapter? = null
 
-        fun load(book: Book, index: Int, success: (BookChapter, String) -> Unit) {
+        /** 载入时阅读界面当前页的原文，写回时用它定位文件中的位置 */
+        private var originPageText: String = ""
+
+        fun load(
+            book: Book,
+            index: Int,
+            pageText: String,
+            success: (BookChapter, String) -> Unit
+        ) {
             execute {
                 val chapter = appDb.bookChapterDao.getChapter(book.bookUrl, index)
                     ?: throw NoStackTraceException(context.getString(R.string.no_book))
-                val rawText = LocalBook.getChapterRawText(book, chapter)
-                chapter to rawText.substringAfter(chapter.title)
+                originPageText = pageText
+                chapter to pageText
             }.onStart {
                 loadStateLiveData.postValue(true)
             }.onSuccess {
@@ -123,10 +156,28 @@ class LocalBookEditDialog : BaseDialogFragment(R.layout.dialog_local_book_edit) 
             chapter: BookChapter,
             title: String,
             content: String,
+            readPos: Int,
             success: (index: Int, matched: Boolean) -> Unit
         ) {
+            val pageText = originPageText
             execute {
-                val start = LocalBook.saveChapterText(book, chapter, title, content)
+                val rawText = LocalBook.getChapterRawText(book, chapter)
+                val range = findPageRange(rawText, pageText)
+                    ?: throw NoStackTraceException(
+                        context.getString(R.string.edit_local_book_page_not_found)
+                    )
+                val useCrLf = rawText.contains("\r\n")
+                var newRawText = rawText.replaceRange(range, toFileNewLine(content, useCrLf))
+                if (title != chapter.title) {
+                    //替换章节标题行，标题总是在章节最前面
+                    val titleIndex = newRawText.indexOf(chapter.title)
+                    if (titleIndex in 0..256) {
+                        newRawText = newRawText.replaceRange(
+                            titleIndex, titleIndex + chapter.title.length, title
+                        )
+                    }
+                }
+                val start = LocalBook.saveChapterRawText(book, chapter, newRawText)
                 val toc = LocalBook.getChapterList(book)
                 appDb.runInTransaction {
                     appDb.bookChapterDao.delByBook(book.bookUrl)
@@ -140,7 +191,7 @@ class LocalBookEditDialog : BaseDialogFragment(R.layout.dialog_local_book_edit) 
                     if (index < 0) index = 0
                 }
                 book.durChapterIndex = index
-                book.durChapterPos = 0
+                book.durChapterPos = readPos
                 book.durChapterTitle = toc.getOrNull(index)?.title
                 book.save()
                 index to matched
@@ -150,10 +201,47 @@ class LocalBookEditDialog : BaseDialogFragment(R.layout.dialog_local_book_edit) 
                 success.invoke(it.first, it.second)
             }.onError {
                 AppLog.put("写入本地书籍失败\n${it.localizedMessage}", it, true)
-                context.toastOnUi("${context.getString(R.string.edit_local_book_no_permission)}\n${it.localizedMessage}")
+                context.toastOnUi(it.localizedMessage)
             }.onFinally {
                 loadStateLiveData.postValue(false)
             }
+        }
+
+        private fun toFileNewLine(text: String, useCrLf: Boolean): String {
+            val lf = text.replace("\r\n", "\n")
+            return if (useCrLf) lf.replace("\n", "\r\n") else lf
+        }
+
+        /**
+         * 在章节原文中定位某一页文字的位置
+         * 先整段匹配，失败时用首尾片段定位（正文可能被替换规则改写过）
+         */
+        private fun findPageRange(rawText: String, pageText: String): IntRange? {
+            val text = pageText.trim('\n', '\r')
+            if (text.isEmpty()) return null
+            val fullIndex = indexOfText(rawText, text, 0)
+            if (fullIndex != null) return fullIndex until fullIndex + text.length
+            val anchorSize = 24
+            val headAnchor = text.take(anchorSize)
+            val tailAnchor = text.takeLast(anchorSize)
+            val start = indexOfText(rawText, headAnchor, 0) ?: return null
+            val tailIndex = indexOfText(rawText, tailAnchor, start)
+            val end = if (tailIndex != null && tailIndex >= start) {
+                tailIndex + tailAnchor.length
+            } else {
+                (start + text.length).coerceAtMost(rawText.length)
+            }
+            return start until end
+        }
+
+        private fun indexOfText(rawText: String, text: String, fromIndex: Int): Int? {
+            val index = rawText.indexOf(text, fromIndex)
+            if (index >= 0) return index
+            if (text.contains("\n") && rawText.contains("\r\n")) {
+                val crlfIndex = rawText.indexOf(text.replace("\n", "\r\n"), fromIndex)
+                if (crlfIndex >= 0) return crlfIndex
+            }
+            return null
         }
 
     }

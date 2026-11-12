@@ -364,6 +364,9 @@
     <string name="edit_local_book_success">已写入本地书籍文件</string>
     <string name="edit_local_book_no_permission">没有写入权限，无法编辑本地文件</string>
     <string name="edit_local_book_merged">新章节名未匹配目录规则，已并入上一章</string>
+    <string name="edit_local_book_page_empty">当前页没有可编辑的文字</string>
+    <string name="edit_local_book_page_hint">当前页正文（只改动本页内容）</string>
+    <string name="edit_local_book_page_not_found">无法在原文中定位当前页内容（可能被替换规则改写）</string>
     <string name="select_section_export">选择待导出章节</string>
     <string name="set_charset">设置编码</string>
     <string name="swap_sort">倒序-顺序</string>

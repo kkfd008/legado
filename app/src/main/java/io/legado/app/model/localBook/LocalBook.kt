@@ -235,33 +235,24 @@ object LocalBook {
     }
 
     /**
-     * 将编辑后的章节（标题 + 正文）写回本地书籍文件
-     * 采用整章替换的方式，文件长度改变后需要重新解析目录
+     * 将编辑后的章节原文（包含标题行，按原样）写回本地书籍文件
+     * 用于只修改章节内局部内容的场景，除改动处外其余字节保持不变
      * @return 该章节在文件中的起始字节偏移
      */
     @Throws(Exception::class)
-    fun saveChapterText(
-        book: Book,
-        chapter: BookChapter,
-        title: String,
-        content: String
-    ): Long {
+    fun saveChapterRawText(book: Book, chapter: BookChapter, rawText: String): Long {
         val start = chapter.start ?: throw NoStackTraceException("章节缺少位置信息")
-        val end = chapter.end ?: throw NoStackTraceException("章节缺少位置信息")
+        val end = chapter.end ?: throw NoStackTraceException("章节位置信息异常")
         if (end < start) throw NoStackTraceException("章节位置信息异常")
-        val charset = book.fileCharset()
-        val oldText = kotlin.runCatching { getChapterRawText(book, chapter) }.getOrDefault("")
-        val newLine = if (oldText.contains("\r\n")) "\r\n" else "\n"
-        val body = content.trim('\n', '\r', ' ', '　')
-        val segment = buildString {
-            append(title.trim())
-            append(newLine)
-            if (body.isNotEmpty()) {
-                append(body)
-                append(newLine)
-            }
-            append(newLine)
-        }.toByteArray(charset)
+        replaceChapterSegment(book, start, end, rawText.toByteArray(book.fileCharset()))
+        return start
+    }
+
+    /**
+     * 用新的字节片段替换文件中 [start, end) 区间，其余内容原样保留
+     */
+    @Throws(Exception::class)
+    private fun replaceChapterSegment(book: Book, start: Long, end: Long, segment: ByteArray) {
         val tempFile = File(appCtx.cacheDir, "local_book_edit_${System.currentTimeMillis()}.tmp")
         try {
             getBookInputStream(book).use { input ->
@@ -285,7 +276,6 @@ object LocalBook {
         }
         //自己修改的文件，避免被当成外部改动而重新识别编码/目录规则
         book.latestChapterTime = System.currentTimeMillis()
-        return start
     }
 
     /**

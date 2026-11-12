@@ -366,6 +366,9 @@
     <string name="edit_local_book_success">Saved to the local book file</string>
     <string name="edit_local_book_no_permission">No write permission for this file</string>
     <string name="edit_local_book_merged">The new title does not match the catalog rule, merged into the previous chapter</string>
+    <string name="edit_local_book_page_empty">No editable text on the current page</string>
+    <string name="edit_local_book_page_hint">Text of the current page (only this page will be changed)</string>
+    <string name="edit_local_book_page_not_found">Cannot locate the current page in the original file (it may be modified by replace rules)</string>
     <string name="select_section_export">Choose some chapters to be exported</string>
     <string name="set_charset">Text encoding</string>
     <string name="swap_sort">Ascending/Descending order</string>
