@@ -361,6 +361,11 @@
     <string name="update_local_book">Update local books</string>
     <string name="txt_toc_rule">Txt Catalog Rule</string>
     <string name="reload_toc">Reload book chapters</string>
+    <string name="edit_local_book">Edit local book</string>
+    <string name="chapter_title">Chapter title</string>
+    <string name="edit_local_book_success">Saved to the local book file</string>
+    <string name="edit_local_book_no_permission">No write permission for this file</string>
+    <string name="edit_local_book_merged">The new title does not match the catalog rule, merged into the previous chapter</string>
     <string name="select_section_export">Choose some chapters to be exported</string>
     <string name="set_charset">Text encoding</string>
     <string name="swap_sort">Ascending/Descending order</string>

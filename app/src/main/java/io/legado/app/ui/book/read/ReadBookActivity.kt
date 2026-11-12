@@ -63,6 +63,7 @@ import io.legado.app.model.analyzeRule.AnalyzeRule
 import io.legado.app.model.analyzeRule.AnalyzeRule.Companion.setChapter
 import io.legado.app.model.analyzeRule.AnalyzeRule.Companion.setCoroutineContext
 import io.legado.app.model.localBook.EpubFile
+import io.legado.app.model.localBook.LocalBook
 import io.legado.app.model.localBook.MobiFile
 import io.legado.app.receiver.NetworkChangedListener
 import io.legado.app.receiver.TimeBatteryReceiver
@@ -437,6 +438,8 @@ class ReadBookActivity : BaseReadBookActivity(),
 //                    }
 
                     R.id.menu_reverse_content -> item.isVisible = onLine
+                    R.id.menu_edit_local_book -> item.isVisible =
+                        book.isLocalTxt && LocalBook.canWrite(book)
                     R.id.menu_del_ruby_tag -> item.isChecked = book.getDelTag(Book.rubyTag)
                     R.id.menu_del_h_tag -> item.isChecked = book.getDelTag(Book.hTag)
                 }
@@ -514,6 +517,7 @@ class ReadBookActivity : BaseReadBookActivity(),
             R.id.menu_add_bookmark -> addBookmark()
             R.id.menu_simulated_reading -> showSimulatedReading()
             R.id.menu_edit_content -> showDialogFragment(ContentEditDialog())
+            R.id.menu_edit_local_book -> showDialogFragment(LocalBookEditDialog())
             R.id.menu_update_toc -> ReadBook.book?.let {
                 if (it.isEpub) {
                     BookHelp.clearCache(it)

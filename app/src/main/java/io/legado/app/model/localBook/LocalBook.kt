@@ -27,6 +27,7 @@ import io.legado.app.help.book.getLocalUri
 import io.legado.app.help.book.getRemoteUrl
 import io.legado.app.help.book.isArchive
 import io.legado.app.help.book.isEpub
+import io.legado.app.help.book.isLocal
 import io.legado.app.help.book.isMobi
 import io.legado.app.help.book.isPdf
 import io.legado.app.help.book.isUmd
@@ -48,6 +49,7 @@ import io.legado.app.utils.inputStream
 import io.legado.app.utils.isAbsUrl
 import io.legado.app.utils.isContentScheme
 import io.legado.app.utils.isDataUrl
+import io.legado.app.utils.outputStream
 import io.legado.app.utils.printOnDebug
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.text.StringEscapeUtils
@@ -66,6 +68,9 @@ import kotlin.coroutines.coroutineContext
  * 支持在线文件(txt epub umd 压缩文件 本地文件
  */
 object LocalBook {
+
+    //本地书籍文件可写状态缓存
+    private val writeableCache = hashMapOf<String, Boolean>()
 
     private val nameAuthorPatterns = arrayOf(
         Pattern.compile("(.*?)《([^《》]+)》.*?作者：(.*)"),
@@ -205,6 +210,128 @@ object LocalBook {
         }
 
         return content
+    }
+
+    /**
+     * 读取章节原文（含标题行，未做缩进与替换处理）
+     */
+    @Throws(NoStackTraceException::class)
+    fun getChapterRawText(book: Book, chapter: BookChapter): String {
+        val start = chapter.start ?: throw NoStackTraceException("章节缺少位置信息")
+        val end = chapter.end ?: throw NoStackTraceException("章节缺少位置信息")
+        val count = (end - start).toInt()
+        if (count <= 0) return ""
+        val bytes = ByteArray(count)
+        var read = 0
+        getBookInputStream(book).use { input ->
+            skipBytes(input, start)
+            while (read < count) {
+                val length = input.read(bytes, read, count - read)
+                if (length <= 0) break
+                read += length
+            }
+        }
+        return String(bytes, 0, read, book.fileCharset())
+    }
+
+    /**
+     * 将编辑后的章节（标题 + 正文）写回本地书籍文件
+     * 采用整章替换的方式，文件长度改变后需要重新解析目录
+     * @return 该章节在文件中的起始字节偏移
+     */
+    @Throws(Exception::class)
+    fun saveChapterText(
+        book: Book,
+        chapter: BookChapter,
+        title: String,
+        content: String
+    ): Long {
+        val start = chapter.start ?: throw NoStackTraceException("章节缺少位置信息")
+        val end = chapter.end ?: throw NoStackTraceException("章节缺少位置信息")
+        if (end < start) throw NoStackTraceException("章节位置信息异常")
+        val charset = book.fileCharset()
+        val oldText = kotlin.runCatching { getChapterRawText(book, chapter) }.getOrDefault("")
+        val newLine = if (oldText.contains("\r\n")) "\r\n" else "\n"
+        val body = content.trim('\n', '\r', ' ', '　')
+        val segment = buildString {
+            append(title.trim())
+            append(newLine)
+            if (body.isNotEmpty()) {
+                append(body)
+                append(newLine)
+            }
+            append(newLine)
+        }.toByteArray(charset)
+        val tempFile = File(appCtx.cacheDir, "local_book_edit_${System.currentTimeMillis()}.tmp")
+        try {
+            getBookInputStream(book).use { input ->
+                FileOutputStream(tempFile).use { output ->
+                    copyBytes(input, output, start)
+                    output.write(segment)
+                    skipBytes(input, end - start)
+                    input.copyTo(output, 8 * 1024)
+                }
+            }
+            val output = book.getLocalUri().outputStream(appCtx)
+                .getOrElse { throw it }
+            output.use {
+                tempFile.inputStream().use { input ->
+                    input.copyTo(it, 8 * 1024)
+                }
+            }
+        } finally {
+            tempFile.delete()
+            TextFile.clear()
+        }
+        //自己修改的文件，避免被当成外部改动而重新识别编码/目录规则
+        book.latestChapterTime = System.currentTimeMillis()
+        return start
+    }
+
+    /**
+     * 本地书籍文件是否可写
+     */
+    fun canWrite(book: Book): Boolean {
+        if (!book.isLocal) return false
+        writeableCache[book.bookUrl]?.let { return it }
+        val canWrite = kotlin.runCatching {
+            val uri = book.getLocalUri()
+            if (uri.isContentScheme()) {
+                DocumentFile.fromSingleUri(appCtx, uri)?.canWrite() == true
+            } else {
+                val path = uri.path ?: return@runCatching false
+                File(path).let { it.exists() && it.canWrite() }
+            }
+        }.getOrDefault(false)
+        writeableCache[book.bookUrl] = canWrite
+        return canWrite
+    }
+
+    private fun copyBytes(input: InputStream, output: java.io.OutputStream, count: Long) {
+        var remaining = count
+        val buffer = ByteArray(8 * 1024)
+        while (remaining > 0) {
+            val length = input.read(buffer, 0, minOf(buffer.size.toLong(), remaining).toInt())
+            if (length <= 0) break
+            output.write(buffer, 0, length)
+            remaining -= length
+        }
+        if (remaining > 0) {
+            throw NoStackTraceException("章节位置超出文件范围")
+        }
+    }
+
+    private fun skipBytes(input: InputStream, count: Long) {
+        var remaining = count
+        while (remaining > 0) {
+            val skipped = input.skip(remaining)
+            if (skipped <= 0) {
+                if (input.read() < 0) break
+                remaining--
+            } else {
+                remaining -= skipped
+            }
+        }
     }
 
     fun getCoverPath(book: Book): String {

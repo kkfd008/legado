@@ -55,6 +55,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/menu_edit_local_book"
+        android:title="@string/edit_local_book"
+        android:visible="false"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/menu_page_anim"
         android:title="@string/book_page_anim"
         app:showAsAction="never" />

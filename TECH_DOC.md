@@ -509,6 +509,30 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 - 与「TXT 目录规则」的区别：后者先改 `book.tocUrl`（`onTocRegexDialogResult` → `upBookTocRule`）再解析；重载不动 `book.tocUrl`，只按现有规则重跑，因此可用于"规则没变但目录解析错了/文件被替换"的场景。
 - 交互：重载期间 `WaitDialog`；成功 `toast(R.string.success)`；失败 `AppLog.put("重载目录失败…")` + `toast("LoadTocError:…")`。
 
+### 6.10 编辑本地书籍（写回 TXT 原文件）
+
+菜单 `menu_edit_local_book`（`@string/edit_local_book`）在 `menu/book_read.xml` 中紧跟 `menu_edit_content`，默认 `visible=false`；`ReadBookActivity.upMenu()` 中按 `book.isLocalTxt && LocalBook.canWrite(book)` 决定是否显示。`canWrite()` 结果按 `bookUrl` 缓存在 `LocalBook.writeableCache`，判断方式：SAF Uri 用 `DocumentFile.fromSingleUri().canWrite()`，`file://` 用 `File.canWrite()`。
+
+**对话框** `ui/book/read/LocalBookEditDialog.kt`（布局 `dialog_local_book_edit.xml`，菜单 `local_book_edit.xml` 只有保存）：
+
+- 进入时 `LocalBook.getChapterRawText(book, chapter)` 读原文：`getBookInputStream()` 跳到 `chapter.start` 读 `end-start` 字节，按 `book.fileCharset()` 解码，`substringAfter(chapter.title)` 去掉标题行后填进编辑框（**不经过** `padRegex` 缩进与替换规则，保证写回时原文不变形）
+- 章节名与正文分别放在 `edit_title` / `edit_content`
+
+**写回** `LocalBook.saveChapterText(book, chapter, title, content)`：
+
+1. 由原章节文本判断换行符是 `\r\n` 还是 `\n`；新片段 = `标题 + 换行 + 正文 + 换行 + 换行`，按 `book.fileCharset()` 编码
+2. 流式重写：`[0, start)` 原样拷贝 → 写新片段 → 跳过 `end-start` 字节 → 剩余部分拷贝，全部落到 `cacheDir` 临时文件（内存占用恒定，不整本读入）
+3. 用 `book.getLocalUri().outputStream(appCtx)`（`w` 模式，截断）把临时文件覆盖回原文件，删除临时文件并 `TextFile.clear()`
+4. 把 `book.latestChapterTime` 置为当前时间，避免 `isLocalModified()` 判定为「外部改动」而重新识别编码/目录规则（会覆盖用户手选的 TXT 目录规则）
+
+**更新目录与正文**（`LocalBookEditDialog.LocalBookEditViewModel.save`）：
+
+- `LocalBook.getChapterList(book)` 重新解析全本（偏移会因长度变化而全部重算）→ 事务内 `delByBook` + `insert` 整表替换
+- 用写回时的起始偏移定位新章节：`toc.indexOfFirst { it.start == start }`；找不到说明新标题没匹配目录规则、章节被并入上一章，退化为 `indexOfLast { it.start <= start }` 并提示 `edit_local_book_merged`
+- 回写 `book.durChapterIndex / durChapterPos / durChapterTitle` 后 `book.save()`；对话框回调里设置 `ReadBook.durChapterIndex/durChapterPos` 并调用 `ReadBook.onChapterListUpdated(book)`，由后者 `loadContent(true)` 重排正文
+
+**注意**：这是整文件重写，大文件会有一次全量拷贝开销；写入失败（无权限/SAF 只读）会走 `onError` 提示。EPUB/MOBI/PDF/UMD 不提供该入口，只对 TXT 生效。
+
 ---
 
 ## 7. Web API 层
