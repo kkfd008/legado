@@ -13,6 +13,7 @@ import androidx.fragment.app.FragmentPagerAdapter
 import com.google.android.material.tabs.TabLayout
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
+import io.legado.app.constant.AppLog
 import io.legado.app.data.entities.Book
 import io.legado.app.databinding.ActivityChapterListBinding
 import io.legado.app.help.book.isLocalTxt
@@ -27,6 +28,7 @@ import io.legado.app.ui.widget.dialog.WaitDialog
 import io.legado.app.utils.applyTint
 import io.legado.app.utils.gone
 import io.legado.app.utils.showDialogFragment
+import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import io.legado.app.utils.visible
 
@@ -114,6 +116,8 @@ class TocActivity : VMBaseActivity<ActivityChapterListBinding, TocViewModel>(),
             menu.setGroupVisible(R.id.menu_group_bookmark, false)
             menu.setGroupVisible(R.id.menu_group_toc, true)
             menu.setGroupVisible(R.id.menu_group_text, viewModel.bookData.value?.isLocalTxt == true)
+            // 重载目录位于 menu_group_text 内，但非 txt 书籍（其他本地格式/网络书籍）同样需要
+            menu.findItem(R.id.menu_reload_toc)?.isVisible = true
         }
         menu.findItem(R.id.menu_use_replace)?.isChecked =
             AppConfig.tocUiUseReplace
@@ -129,6 +133,8 @@ class TocActivity : VMBaseActivity<ActivityChapterListBinding, TocViewModel>(),
             R.id.menu_toc_regex -> showDialogFragment(
                 TxtTocRuleDialog(viewModel.bookData.value?.tocUrl)
             )
+
+            R.id.menu_reload_toc -> reloadToc()
 
             R.id.menu_split_long_chapter -> {
                 viewModel.bookData.value?.let { book ->
@@ -187,6 +193,28 @@ class TocActivity : VMBaseActivity<ActivityChapterListBinding, TocViewModel>(),
                 } else {
                     ReadBook.upMsg("LoadTocError:${it.localizedMessage}")
                 }
+            }
+        }
+    }
+
+    /**
+     * 按当前书籍已选的目录规则重载目录
+     */
+    private fun reloadToc() {
+        if (viewModel.bookData.value == null) return
+        waitDialog.show()
+        viewModel.reloadToc { error ->
+            waitDialog.dismiss()
+            if (error == null) {
+                toastOnUi(R.string.success)
+                viewModel.bookData.value?.let {
+                    if (ReadBook.book == it) {
+                        ReadBook.upMsg(null)
+                    }
+                }
+            } else {
+                AppLog.put("重载目录失败\n${error.localizedMessage}", error, true)
+                toastOnUi("LoadTocError:${error.localizedMessage}")
             }
         }
     }

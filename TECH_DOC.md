@@ -498,6 +498,17 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 - 数量不放进 Room 实体（避免数据库迁移，也不污染导出的规则 JSON）：`TxtTocRuleAdapter` 持有 `Map<ruleId, count>`，`setBookCounts()` 在 map 变化时派发 `upCount` payload 局部刷新；`diffItemCallBack` 仍只比较规则自身字段，拖拽/选择/导出逻辑不受影响。
 - 显示：`item_txt_toc_rule.xml` 第二行右侧 `tv_book_count`，文案 `@string/rule_book_count`（中「匹配 %1$d 本书」/ 英「%1$d books matched」）；`title_example` 改为 `0dp` 并约束到其左侧，长示例省略显示。
 
+### 6.9 目录页「重载书籍目录」
+
+- 菜单：`menu/book_toc.xml` 中 `menu_reload_toc`（`@string/reload_toc`），声明在 `menu_group_text` 内、`menu_toc_regex` 之后，故本地 TXT 书籍中它正好位于「TXT 目录规则」下一行。
+- 该分组默认 `visible=false`（仅 TXT 可见），而重载目录对所有书籍都有意义，因此 `TocActivity.onMenuOpened()` 在章节页签分支里对 `menu_reload_toc` 单独 `isVisible = true`：`setGroupVisible()` 只是批量改写组内各 item 的可见性，随后按 item 覆盖即可生效。书签页签分支不放开，重载入口只在章节页签出现。
+- 实现：`TocViewModel.reloadToc()`，分两条路
+  - 本地书籍：`LocalBook.getChapterList(book)`（内部按 `books.tocUrl` 命中 TXT 目录规则，EPUB/MOBI/PDF/UMD 各走各的解析器）→ 事务内 `delByBook` + `insert` 整表替换 → `bookDao.update` → `ReadBook.onChapterListUpdated(book)`。
+  - 网络书籍：`bookSourceDao.getBookSource(book.origin)` 取书源（缺失抛 `error_no_source`）→ `WebBook.getChapterListAwait(source, book, true).getOrThrow()`；`bookUrl` 被 preUpdateJs 改动时用 `bookDao.replace` + `BookHelp.updateCacheFolder` 搬缓存目录，章节按 `oldBook.bookUrl` 删除。
+  - 两条路最后都 `bookData.postValue(book)`，`ChapterListFragment` 的 `bookData` 观察者 `initBook()` 会重读数据库刷新列表；`ReadBook.onChapterListUpdated()` 让阅读页同步拿到新目录。
+- 与「TXT 目录规则」的区别：后者先改 `book.tocUrl`（`onTocRegexDialogResult` → `upBookTocRule`）再解析；重载不动 `book.tocUrl`，只按现有规则重跑，因此可用于"规则没变但目录解析错了/文件被替换"的场景。
+- 交互：重载期间 `WaitDialog`；成功 `toast(R.string.success)`；失败 `AppLog.put("重载目录失败…")` + `toast("LoadTocError:…")`。
+
 ---
 
 ## 7. Web API 层
@@ -1143,7 +1154,7 @@ AnalyzeRule（上下文）
 
 ---
 
-> **文档版本**: 1.1
+> **文档版本**: 1.2
 > **生成日期**: 2026-07-30
-> **最近更新**: 2026-11-05（补充标签网格列数配置、搜索页输入帮助面板、功能开关门控、构建与环境脚本）
+> **最近更新**: 2026-11-12（新增目录页「重载书籍目录」：菜单可见性覆盖与本地/网络双路径实现）
 > **基于代码扫描自动生成**

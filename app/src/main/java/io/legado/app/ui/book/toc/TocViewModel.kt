@@ -10,8 +10,11 @@ import io.legado.app.constant.AppLog
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.exception.NoStackTraceException
+import io.legado.app.help.book.BookHelp
+import io.legado.app.help.book.isLocal
 import io.legado.app.model.ReadBook
 import io.legado.app.model.localBook.LocalBook
+import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.FileDoc
 import io.legado.app.utils.GSON
 import io.legado.app.utils.createFileIfNotExist
@@ -47,6 +50,49 @@ class TocViewModel(application: Application) : BaseViewModel(application) {
                 ReadBook.onChapterListUpdated(book)
                 bookData.postValue(book)
             }
+        }.onSuccess {
+            complete.invoke(null)
+        }.onError {
+            complete.invoke(it)
+        }
+    }
+
+    /**
+     * 重载书籍目录
+     * 本地书籍按当前已选目录规则（txt 目录规则）重新解析生成目录，
+     * 网络书籍重新从书源获取目录
+     */
+    fun reloadToc(complete: (Throwable?) -> Unit) {
+        execute {
+            val book = bookData.value
+                ?: throw NoStackTraceException(context.getString(R.string.no_book))
+            if (book.isLocal) {
+                LocalBook.getChapterList(book).let { chapterList ->
+                    appDb.runInTransaction {
+                        appDb.bookChapterDao.delByBook(book.bookUrl)
+                        appDb.bookChapterDao.insert(*chapterList.toTypedArray())
+                    }
+                    appDb.bookDao.update(book)
+                    ReadBook.onChapterListUpdated(book)
+                }
+            } else {
+                val bookSource = appDb.bookSourceDao.getBookSource(book.origin)
+                    ?: throw NoStackTraceException(context.getString(R.string.error_no_source))
+                val oldBook = book.copy()
+                val chapterList = WebBook.getChapterListAwait(bookSource, book, true).getOrThrow()
+                if (oldBook.bookUrl == book.bookUrl) {
+                    appDb.bookDao.update(book)
+                } else {
+                    appDb.bookDao.replace(oldBook, book)
+                    BookHelp.updateCacheFolder(oldBook, book)
+                }
+                appDb.runInTransaction {
+                    appDb.bookChapterDao.delByBook(oldBook.bookUrl)
+                    appDb.bookChapterDao.insert(*chapterList.toTypedArray())
+                }
+                ReadBook.onChapterListUpdated(book)
+            }
+            bookData.postValue(book)
         }.onSuccess {
             complete.invoke(null)
         }.onError {

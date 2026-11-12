@@ -358,6 +358,7 @@
     <string name="update_toc">更新目录</string>
     <string name="update_local_book">更新本地书籍</string>
     <string name="txt_toc_rule">TXT 目录规则</string>
+    <string name="reload_toc">重载书籍目录</string>
     <string name="select_section_export">选择待导出章节</string>
     <string name="set_charset">设置编码</string>
     <string name="swap_sort">倒序-顺序</string>

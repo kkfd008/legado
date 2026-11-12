@@ -347,6 +347,7 @@
     <string name="ps_show_all_find">關閉則只顯示勾選源的發現</string>
     <string name="update_toc">更新目錄</string>
     <string name="txt_toc_rule">TXT 目錄規則</string>
+    <string name="reload_toc">重載書籍目錄</string>
     <string name="set_charset">設置編碼</string>
     <string name="swap_sort">倒序-順序</string>
     <string name="sort">排序</string>

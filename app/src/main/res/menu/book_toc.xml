@@ -20,6 +20,11 @@
             app:showAsAction="never" />
 
         <item
+            android:id="@+id/menu_reload_toc"
+            android:title="@string/reload_toc"
+            app:showAsAction="never" />
+
+        <item
             android:id="@+id/menu_split_long_chapter"
             android:checkable="true"
             android:title="@string/split_long_chapter"
