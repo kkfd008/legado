@@ -94,6 +94,19 @@ class TagConfigActivity : VMBaseActivity<ActivityTagConfigBinding, TagConfigView
 
     override fun onCompatOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.menu_clear_invalid -> {
+                alert(
+                    titleResource = R.string.clear_invalid_tag,
+                    messageResource = R.string.clear_invalid_tag_confirm
+                ) {
+                    yesButton {
+                        viewModel.clearInvalidTags { count ->
+                            toastOnUi(getString(R.string.clear_invalid_tag_result, count))
+                        }
+                    }
+                    noButton()
+                }
+            }
             R.id.menu_add -> {
                 if (viewModel.getNextTagId() > 0L) {
                     showDialogFragment(TagEditDialog())

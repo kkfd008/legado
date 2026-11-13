@@ -28,15 +28,12 @@ class TagViewModel : ViewModel() {
     }
 
     fun delete(vararg bookTag: BookTag) {
-        appDb.bookTagDao.run {
-            bookTag.forEach {
-                delete(it)
-            }
-        }
+        if (bookTag.isEmpty()) return
+        appDb.bookTagDao.deleteAndClearBooks(*bookTag)
     }
 
     fun deleteTag(tagId: Long) {
-        appDb.bookTagDao.delete(tagId)
+        appDb.bookTagDao.deleteAndClearBooks(tagId)
     }
 
     fun insert(bookTag: BookTag) {

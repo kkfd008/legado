@@ -14,10 +14,19 @@ class TagConfigViewModel(app: Application) : BaseViewModel(app) {
     }
 
     fun del(vararg tags: BookTag) {
+        if (tags.isEmpty()) return
         execute {
-            tags.forEach {
-                appDb.bookTagDao.delete(it)
-            }
+            // 删除标签定义的同时清掉所有书籍上的该标签位（同一事务）
+            appDb.bookTagDao.deleteAndClearBooks(*tags)
+        }
+    }
+
+    /** 清理书籍上已不存在于标签库的标签位，回调返回被清理的书籍数 */
+    fun clearInvalidTags(callback: (Int) -> Unit) {
+        execute {
+            appDb.bookTagDao.clearInvalidTags()
+        }.onSuccess {
+            callback(it)
         }
     }
 

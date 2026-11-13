@@ -729,6 +729,9 @@
     <string name="rule_book_count">%1$d books matched</string>
     <string name="tag_hot_enable">Set as popular</string>
     <string name="tag_hot_disable">Remove from popular</string>
+    <string name="clear_invalid_tag">Clear invalid tags</string>
+    <string name="clear_invalid_tag_confirm">Remove tags that no longer exist in the tag library from all books?</string>
+    <string name="clear_invalid_tag_result">Cleared invalid tags from %1$d books</string>
     <string name="view_toc">View Chapters</string>
     <string name="bar_elevation">Navigation bar shadow</string>
     <string name="bar_elevation_s">Current shadow size(elevation): %s</string>
