@@ -128,6 +128,7 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
         popupMenu.inflate(R.menu.tag_config_item)
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
+                R.id.menu_search -> callBack.search(item.tag)
                 R.id.menu_top -> callBack.toTop(item.tag)
                 R.id.menu_bottom -> callBack.toBottom(item.tag)
                 R.id.menu_del -> {
@@ -184,6 +185,7 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
         fun toTop(tag: BookTag)
         fun toBottom(tag: BookTag)
         fun upOrder(tags: List<BookTag>)
+        fun search(tag: BookTag)
         fun upCountView()
     }
 

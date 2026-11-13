@@ -472,6 +472,7 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 | `ui/book/tag/TagSelectDialog.kt` | 同样跟随 `AppConfig.tagManageSpanCount`；`setItems(it.sortedByDescending { tag -> tag.order })`；点击整行切换选中位 |
 | `ui/book/tag/TagViewModel.kt` | `tagList = bookTagDao.flowSelect()`；`upOrder` 按 `size - index` 写 order；`getNextTagId()` 取最小可用的 2 的幂次（上限 64 个） |
 | `ui/book/tag/TagConfigActivity.kt` / `TagConfigAdapter.kt` | 标签配置单行列表同样支持 `ItemTouchCallback` 长按拖拽（参考 TXT 目录规则页）；拖拽期间 `isDragging` 时跳过 Flow 刷新；松手按 `size - index` 用 `copy` 生成新对象，经 `BookTagDao.update(vararg)` 单事务批量回写 order，避免污染 DiffUtil 旧列表 |
+| 标签改名 / 标签搜索 | `BookTag` 为可变 data class，Fragment arguments 里的 Parcelable 与 adapter 持有的是同一对象；`TagEditDialog` 与 `edit()` 一律用 `copy()` 落库，避免就地赋值污染 DiffUtil 旧列表导致改名不刷新。条目菜单「搜索」调用 `SearchActivity.start(ctx, "#标签名", submit = false)`，只填入关键字并展示 `flowSearchByTag` 的本地结果，不发起书源搜索、不收起输入帮助面板 |
 | `res/layout/item_book_tag_manage.xml` | 圆角紧凑项，文字靠右、maxLines=2 |
 | `res/layout/item_tag_select.xml` | 选中态背景 `selector_tag_select_bg`（activated → `shape_fillet_btn_selected`，colorAccent 填充） |
 | `res/xml/pref_config_other.xml` | `Preference` key=`tagManageSpanCount`，点击弹 NumberPickerDialog（1-4） |

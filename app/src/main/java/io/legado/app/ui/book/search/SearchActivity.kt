@@ -380,7 +380,9 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
             searchView.findViewById<TextView>(androidx.appcompat.R.id.search_src_text)
                 .requestFocus()
         } else {
-            searchView.setQuery(key, true)
+            // 默认立即提交；标签配置页传入 submit=false，只填入 #标签 并展示书架内匹配结果
+            val submit = intent.getBooleanExtra("submit", true)
+            searchView.setQuery(key, submit)
         }
     }
 
@@ -595,9 +597,14 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
 
     companion object {
 
-        fun start(context: Context, key: String?) {
+        /**
+         * @param submit 是否立即提交搜索。false 时只填入关键字并展示书架内匹配结果，
+         * 与用户在搜索框手动输入 #标签 时的效果一致。
+         */
+        fun start(context: Context, key: String?, submit: Boolean = true) {
             context.startActivity<SearchActivity> {
                 putExtra("key", key)
+                putExtra("submit", submit)
             }
         }
 

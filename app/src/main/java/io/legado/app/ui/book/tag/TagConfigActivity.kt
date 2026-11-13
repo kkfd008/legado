@@ -15,6 +15,7 @@ import io.legado.app.data.entities.BookTag
 import io.legado.app.databinding.ActivityTagConfigBinding
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.primaryColor
+import io.legado.app.ui.book.search.SearchActivity
 import io.legado.app.ui.widget.SelectActionBar
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.ui.widget.recycler.VerticalDivider
@@ -115,7 +116,13 @@ class TagConfigActivity : VMBaseActivity<ActivityTagConfigBinding, TagConfigView
     }
 
     override fun edit(tag: BookTag) {
-        showDialogFragment(TagEditDialog(tag))
+        // 传副本，避免编辑对话框内的任何就地修改污染 adapter 持有的实体
+        showDialogFragment(TagEditDialog(tag.copy()))
+    }
+
+    override fun search(tag: BookTag) {
+        // 与在搜索框输入 #标签 一致：不自动提交书源搜索，保留本地标签书籍结果
+        SearchActivity.start(this, "#${tag.name}", submit = false)
     }
 
     override fun update(tag: BookTag) {

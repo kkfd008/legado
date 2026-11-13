@@ -68,10 +68,11 @@ class TagEditDialog() : BaseDialogFragment(R.layout.dialog_book_tag_edit) {
                 lifecycleScope.launch {
                     withContext(IO) {
                         tag?.let { oldTag ->
-                            // 排序由列表拖拽/菜单维护，编辑页只修改名称
+                            // 排序由列表拖拽/菜单维护，编辑页只修改名称。
+                            // arguments 中的 Parcelable 与列表持有的是同一对象，必须落库副本，
+                            // 就地赋值会污染 adapter 旧数据，令 DiffUtil 判定内容未变、界面不刷新。
                             if (oldTag.name != tagName) {
-                                oldTag.name = tagName
-                                viewModel.upTag(oldTag)
+                                viewModel.upTag(oldTag.copy(name = tagName))
                             }
                         } ?: let {
                             val nextTagId = viewModel.getNextTagId()
