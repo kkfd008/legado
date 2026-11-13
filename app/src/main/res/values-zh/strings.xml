@@ -367,6 +367,8 @@
     <string name="edit_local_book_page_empty">当前页没有可编辑的文字</string>
     <string name="edit_local_book_page_hint">当前页正文（只改动本页内容）</string>
     <string name="edit_local_book_page_not_found">无法在原文中定位当前页内容（可能被替换规则改写）</string>
+    <string name="edit_local_book_chapter_hint">整章正文（当前页无法在原文中定位）</string>
+    <string name="edit_local_book_page_fallback">无法定位当前页，已切换为整章编辑</string>
     <string name="select_section_export">选择待导出章节</string>
     <string name="set_charset">设置编码</string>
     <string name="swap_sort">倒序-顺序</string>

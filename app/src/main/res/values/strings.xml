@@ -369,6 +369,8 @@
     <string name="edit_local_book_page_empty">No editable text on the current page</string>
     <string name="edit_local_book_page_hint">Text of the current page (only this page will be changed)</string>
     <string name="edit_local_book_page_not_found">Cannot locate the current page in the original file (it may be modified by replace rules)</string>
+    <string name="edit_local_book_chapter_hint">Text of the whole chapter (the current page could not be located)</string>
+    <string name="edit_local_book_page_fallback">Cannot locate the current page, switched to whole-chapter editing</string>
     <string name="select_section_export">Choose some chapters to be exported</string>
     <string name="set_charset">Text encoding</string>
     <string name="swap_sort">Ascending/Descending order</string>

@@ -358,6 +358,8 @@
     <string name="edit_local_book_page_empty">目前頁沒有可編輯的文字</string>
     <string name="edit_local_book_page_hint">目前頁正文（只改動本頁內容）</string>
     <string name="edit_local_book_page_not_found">無法在原文中定位目前頁內容（可能被替換規則改寫）</string>
+    <string name="edit_local_book_chapter_hint">整章正文（目前頁無法在原文中定位）</string>
+    <string name="edit_local_book_page_fallback">無法定位目前頁，已切換為整章編輯</string>
     <string name="set_charset">設定編碼</string>
     <string name="swap_sort">倒序-順序</string>
     <string name="sort">排序</string>

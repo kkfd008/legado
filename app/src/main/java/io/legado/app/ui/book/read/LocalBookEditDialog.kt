@@ -57,9 +57,13 @@ class LocalBookEditDialog : BaseDialogFragment(R.layout.dialog_local_book_edit) 
             dismiss()
             return
         }
-        viewModel.load(book, ReadBook.durChapterIndex, pageText) { chapter, content ->
+        viewModel.load(book, ReadBook.durChapterIndex, pageText) { chapter, content, wholeChapter ->
             binding.editTitle.setText(chapter.title)
             binding.editContent.setText(content)
+            if (wholeChapter) {
+                binding.tvContentLabel.setText(R.string.edit_local_book_chapter_hint)
+                requireContext().toastOnUi(R.string.edit_local_book_page_fallback)
+            }
         }
     }
 
@@ -124,25 +128,51 @@ class LocalBookEditDialog : BaseDialogFragment(R.layout.dialog_local_book_edit) 
         val loadStateLiveData = MutableLiveData<Boolean>()
         var chapter: BookChapter? = null
 
-        /** 载入时阅读界面当前页的原文，写回时用它定位文件中的位置 */
+        /** 编辑框里展示的、直接取自文件的原文片段，写回时用它精确定位 */
         private var originPageText: String = ""
+
+        /** 载入时的章节原文与该页片段在原文中的位置，文件未变时直接复用，避免同文误匹配 */
+        private var originRawText: String = ""
+        private var originRange: IntRange? = null
+
+        /** 当前页无法在原文中定位时退化为整章编辑 */
+        private var wholeChapter: Boolean = false
+
+        /** 整章模式下需要原样保留的标题行（含换行） */
+        private var chapterPrefix: String = ""
 
         fun load(
             book: Book,
             index: Int,
             pageText: String,
-            success: (BookChapter, String) -> Unit
+            success: (BookChapter, String, Boolean) -> Unit
         ) {
             execute {
                 val chapter = appDb.bookChapterDao.getChapter(book.bookUrl, index)
                     ?: throw NoStackTraceException(context.getString(R.string.no_book))
-                originPageText = pageText
-                chapter to pageText
+                val rawText = LocalBook.getChapterRawText(book, chapter)
+                originRawText = rawText
+                val range = findPageRange(rawText, pageText)
+                if (range != null) {
+                    // 编辑框直接显示原文片段，保存时整段精确匹配必定命中
+                    originRange = range
+                    originPageText = rawText.substring(range)
+                    wholeChapter = false
+                    chapterPrefix = ""
+                } else {
+                    // 替换规则改写了文字内容，无法定位到当前页，改为编辑整章
+                    originRange = null
+                    val (prefix, body) = splitTitleLine(rawText, chapter.title)
+                    originPageText = body
+                    wholeChapter = true
+                    chapterPrefix = prefix
+                }
+                Triple(chapter, originPageText, wholeChapter)
             }.onStart {
                 loadStateLiveData.postValue(true)
             }.onSuccess {
                 chapter = it.first
-                success.invoke(it.first, it.second)
+                success.invoke(it.first, it.second, it.third)
             }.onError {
                 AppLog.put("读取本地书籍正文失败\n${it.localizedMessage}", it)
                 context.toastOnUi("LoadTocError:${it.localizedMessage}")
@@ -160,14 +190,27 @@ class LocalBookEditDialog : BaseDialogFragment(R.layout.dialog_local_book_edit) 
             success: (index: Int, matched: Boolean) -> Unit
         ) {
             val pageText = originPageText
+            val fallback = wholeChapter
+            val prefix = chapterPrefix
+            val cachedRawText = originRawText
+            val cachedRange = originRange
             execute {
                 val rawText = LocalBook.getChapterRawText(book, chapter)
-                val range = findPageRange(rawText, pageText)
-                    ?: throw NoStackTraceException(
+                val useCrLf = rawText.contains("\r\n")
+                var newRawText = if (fallback) {
+                    //整章模式：标题行原样保留，正文整体替换；清空正文即可清空该章全部内容
+                    prefix + toFileNewLine(content, useCrLf)
+                } else {
+                    //文件未变时直接复用载入时算出的位置，避免重复文本被误替换
+                    val range = (if (rawText == cachedRawText && cachedRange != null) {
+                        cachedRange
+                    } else {
+                        findPageRange(rawText, pageText)
+                    }) ?: throw NoStackTraceException(
                         context.getString(R.string.edit_local_book_page_not_found)
                     )
-                val useCrLf = rawText.contains("\r\n")
-                var newRawText = rawText.replaceRange(range, toFileNewLine(content, useCrLf))
+                    rawText.replaceRange(range, toFileNewLine(content, useCrLf))
+                }
                 if (title != chapter.title) {
                     //替换章节标题行，标题总是在章节最前面
                     val titleIndex = newRawText.indexOf(chapter.title)
@@ -213,35 +256,79 @@ class LocalBookEditDialog : BaseDialogFragment(R.layout.dialog_local_book_edit) 
         }
 
         /**
-         * 在章节原文中定位某一页文字的位置
-         * 先整段匹配，失败时用首尾片段定位（正文可能被替换规则改写过）
+         * 在章节原文中定位某一页文字对应的范围。
+         * 阅读界面的文字带有排版缩进、可能被替换规则改写、换行符也可能不同，
+         * 而 getChapterRawText 返回的是未做缩进与替换处理的原始文本，两者不能直接用 indexOf 比较。
+         * 依次尝试：整段精确匹配 → 忽略所有空白后匹配 → 忽略空白后的首尾片段定位。
+         * 返回范围始终是原文中的真实下标，用于取出原文片段直接编辑。
          */
         private fun findPageRange(rawText: String, pageText: String): IntRange? {
             val text = pageText.trim('\n', '\r')
             if (text.isEmpty()) return null
-            val fullIndex = indexOfText(rawText, text, 0)
-            if (fullIndex != null) return fullIndex until fullIndex + text.length
-            val anchorSize = 24
-            val headAnchor = text.take(anchorSize)
-            val tailAnchor = text.takeLast(anchorSize)
-            val start = indexOfText(rawText, headAnchor, 0) ?: return null
-            val tailIndex = indexOfText(rawText, tailAnchor, start)
-            val end = if (tailIndex != null && tailIndex >= start) {
-                tailIndex + tailAnchor.length
-            } else {
-                (start + text.length).coerceAtMost(rawText.length)
-            }
-            return start until end
+            val fullIndex = rawText.indexOf(text, 0)
+            if (fullIndex >= 0) return fullIndex until fullIndex + text.length
+            return findPageRangeIgnoreSpace(rawText, text)
         }
 
-        private fun indexOfText(rawText: String, text: String, fromIndex: Int): Int? {
-            val index = rawText.indexOf(text, fromIndex)
-            if (index >= 0) return index
-            if (text.contains("\n") && rawText.contains("\r\n")) {
-                val crlfIndex = rawText.indexOf(text.replace("\n", "\r\n"), fromIndex)
-                if (crlfIndex >= 0) return crlfIndex
+        /**
+         * 忽略空白字符（段首缩进、换行、CRLF、空行）后匹配，再映射回原文真实下标。
+         * 这样即使段落被重新排版、插入缩进，也能定位到对应的原文片段。
+         */
+        private fun findPageRangeIgnoreSpace(rawText: String, pageText: String): IntRange? {
+            val (rawCompact, rawIndexes) = compactText(rawText)
+            val (pageCompact, _) = compactText(pageText)
+            if (pageCompact.isEmpty() || rawCompact.isEmpty()) return null
+            val start = rawCompact.indexOf(pageCompact)
+            if (start >= 0) {
+                return rawRange(rawIndexes, start, start + pageCompact.length)
             }
-            return null
+            //替换规则可能改写了文字，退而用首尾片段圈定范围
+            val anchorSize = 12
+            val head = pageCompact.take(anchorSize)
+            val tail = pageCompact.takeLast(anchorSize)
+            val headIndex = rawCompact.indexOf(head)
+            if (headIndex < 0) return null
+            val tailIndex = rawCompact.indexOf(tail, headIndex)
+            val end = if (tailIndex >= headIndex) {
+                tailIndex + tail.length
+            } else {
+                rawCompact.length
+            }
+            return rawRange(rawIndexes, headIndex, end)
+        }
+
+        /** 去掉所有空白字符，同时记录每个保留字符在原文中的下标 */
+        private fun compactText(text: String): Pair<String, IntArray> {
+            val chars = StringBuilder(text.length)
+            val indexes = ArrayList<Int>(text.length)
+            text.forEachIndexed { index, c ->
+                if (!c.isWhitespace()) {
+                    chars.append(c)
+                    indexes.add(index)
+                }
+            }
+            return chars.toString() to indexes.toIntArray()
+        }
+
+        /** 把压缩字符串的下标区间映射回原文的真实范围 */
+        private fun rawRange(indexes: IntArray, from: Int, to: Int): IntRange? {
+            if (from < 0 || from >= indexes.size || to <= from) return null
+            val start = indexes[from]
+            val end = indexes[to.coerceAtMost(indexes.size) - 1] + 1
+            return if (end > start) start until end else null
+        }
+
+        /** 拆出章节原文的标题行（含换行），余下部分作为整章正文 */
+        private fun splitTitleLine(rawText: String, title: String): Pair<String, String> {
+            val lineEnd = rawText.indexOf('\n')
+            if (lineEnd < 0) return "" to rawText
+            val prefix = rawText.substring(0, lineEnd + 1)
+            val firstLine = prefix.trimEnd('\n', '\r')
+            return if (title.isNotBlank() && firstLine.contains(title.trim())) {
+                prefix to rawText.substring(lineEnd + 1)
+            } else {
+                "" to rawText
+            }
         }
 
     }

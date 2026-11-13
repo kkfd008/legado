@@ -517,20 +517,23 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 
 **对话框** `ui/book/read/LocalBookEditDialog.kt`（布局 `dialog_local_book_edit.xml`，菜单 `local_book_edit.xml` 只有保存）：
 
-- 进入时**不读整章原文**：直接从阅读界面取当前页——`ReadBook.curTextChapter?.getPageByReadPos(ReadBook.durChapterPos)`，用 `page.lines` 拼接文字（跳过 `isTitle` 行、`isParagraphEnd` 处补 `\n`），`page.text` 仅在拼不出内容时兜底。编辑框里就是屏幕这一页的文字，不含排版缩进与标题行
+- 从阅读界面取当前页用于定位——`ReadBook.curTextChapter?.getPageByReadPos(ReadBook.durChapterPos)`，用 `page.lines` 拼接文字（跳过 `isTitle` 行、`isParagraphEnd` 处补 `\n`），`page.text` 仅在拼不出内容时兜底
 - 当前页无文字时提示 `edit_local_book_page_empty` 并关闭
-- 章节名与当前页正文分别放在 `edit_title` / `edit_content`，`tv_content_label` 提示「当前页正文（只改动本页内容）」
+- **编辑框不直接显示屏幕文字，而是显示从文件原文切出的对应片段**：阅读界面文字带排版缩进、可能经替换规则改写，与 `getChapterRawText()` 返回的「未做缩进与替换处理」原文并不相同，直接拿显示文本反查原文会几乎必然失败（旧实现因此报 `edit_local_book_page_not_found`）
+- 章节名与正文分别放在 `edit_title` / `edit_content`，`tv_content_label` 默认提示「当前页正文（只改动本页内容）」
 
 **定位当前页在原文中的区间**（`LocalBookEditViewModel.findPageRange`）：
 
-1. `LocalBook.getChapterRawText(book, chapter)` 取整章原文（含标题行，按 `book.fileCharset()` 解码）
-2. 整段 `indexOf`；原文是 CRLF 时把页文本里的 `\n` 换成 `\r\n` 再试一次
-3. 匹配不到（这段文字被替换规则改写过）时退化：取页文本首 24 字与末 24 字做锚点，`start` 为首锚点位置，`end` 为末锚点位置 + 长度；末锚点找不到就按原文本长度截取
-4. 都失败 → 抛 `edit_local_book_page_not_found`，不写文件
+1. `LocalBook.getChapterRawText(book, chapter)` 取整章原文（含标题行，按 `book.fileCharset()` 解码），缓存为 `originRawText`
+2. 整段 `indexOf` 精确匹配
+3. 失败则 `compactText()` 去掉两侧全部空白字符（段首缩进、换行、CRLF、空行）并保留字符到原文下标的映射，在压缩串上整段匹配后用 `rawRange()` 映射回原文真实下标
+4. 仍失败（替换规则改写了文字本身）时用压缩串首尾各 12 字做锚点圈定范围
+5. 命中后 `originPageText = rawText.substring(range)`，编辑框显示这段原文；`originRange` 一并缓存，保存时只要文件未变就直接复用，避免重复文本被误替换
+6. **全部失败 → 不再报错，自动退化为整章编辑**：`splitTitleLine()` 拆出标题行（含换行）作为 `chapterPrefix`，其余原文作为编辑框内容，`tv_content_label` 改为「整章正文」并 toast `edit_local_book_page_fallback`。`edit_local_book_page_not_found` 现在只在编辑期间文件被外部改动、缓存区间失效时才会出现
 
 **写回** `LocalBook.saveChapterRawText(book, chapter, rawText)`：
 
-1. 新原文 = 原章节文本 `replaceRange(pageRange, 编辑框内容)`；换行按文件风格归一（CRLF 文件里 LF → CRLF）
+1. 页模式：新原文 = 原章节文本 `replaceRange(range, 编辑框内容)`；整章模式：新原文 = `chapterPrefix + 编辑框内容`（标题行原样保留）。正文清空即删除该页片段或清空整章内容；换行按文件风格归一（CRLF 文件里 LF → CRLF）
 2. 章节名有改动时替换章节首行标题（`indexOf(chapter.title)` 命中 0..256 内才替换，避免误改正文）
 3. `replaceChapterSegment()` 流式重写：`[0, start)` 原样拷贝 → 写新章节字节 → 跳过 `end-start` 字节 → 剩余部分拷贝，全部落到 `cacheDir` 临时文件，再用 `book.getLocalUri().outputStream(appCtx)` 覆盖回原文件；删除临时文件并 `TextFile.clear()`
 4. 把 `book.latestChapterTime` 置为当前时间，避免 `isLocalModified()` 判定为「外部改动」而重新识别编码/目录规则（会覆盖用户手选的 TXT 目录规则）
@@ -1190,5 +1193,5 @@ AnalyzeRule（上下文）
 
 > **文档版本**: 1.3
 > **生成日期**: 2026-07-30
-> **最近更新**: 2026-11-12（「编辑本地书籍」改为只取阅读界面当前页正文、按页定位改写原文）
+> **最近更新**: 2026-11-13（「编辑本地书籍」编辑框改为直接展示文件原文片段，忽略空白定位页区间，定位失败自动退化为整章编辑，支持清空正文）
 > **基于代码扫描自动生成**
