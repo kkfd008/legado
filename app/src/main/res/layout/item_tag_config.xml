@@ -1,65 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="?android:attr/selectableItemBackground"
-    android:gravity="center_vertical"
-    android:orientation="horizontal"
-    android:paddingLeft="12dp"
-    android:paddingTop="6dp"
-    android:paddingRight="8dp"
-    android:paddingBottom="6dp">
-
-    <io.legado.app.lib.theme.view.ThemeCheckBox
-        android:id="@+id/cb_select"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:contentDescription="@string/tag_select"
-        tools:ignore="TouchTargetSizeCheck" />
+    android:layout_height="wrap_content">
 
     <TextView
-        android:id="@+id/tv_name"
-        android:layout_width="0dp"
+        android:id="@+id/tv_group_title"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="6dp"
-        android:layout_marginEnd="4dp"
-        android:layout_weight="1"
+        android:background="@color/background_menu"
         android:ellipsize="end"
         android:maxLines="1"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp"
         android:textColor="@color/primaryText"
-        android:textSize="14sp"
-        tools:text="标签名(12)" />
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        tools:text="分组名" />
 
-    <io.legado.app.lib.theme.view.ThemeSwitch
-        android:id="@+id/swt_hot"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/tag_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minWidth="0dp"
-        android:text="@string/tag_hot"
-        android:textColor="@color/tv_text_summary"
-        android:textSize="12sp"
-        tools:ignore="TouchTargetSizeCheck" />
+        android:background="?android:attr/selectableItemBackground"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="12dp"
+        android:paddingTop="6dp"
+        android:paddingRight="8dp"
+        android:paddingBottom="6dp">
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/iv_edit"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/edit"
-        android:padding="5dp"
-        android:src="@drawable/ic_edit"
-        android:tint="@color/primaryText" />
+        <io.legado.app.lib.theme.view.ThemeCheckBox
+            android:id="@+id/cb_select"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/tag_select"
+            tools:ignore="TouchTargetSizeCheck" />
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/iv_menu_more"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/more_menu"
-        android:padding="5dp"
-        android:src="@drawable/ic_more_vert"
-        android:tint="@color/primaryText"
-        tools:ignore="RtlHardcoded" />
+        <TextView
+            android:id="@+id/tv_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/primaryText"
+            android:textSize="14sp"
+            tools:text="标签名(12)" />
 
-</LinearLayout>
+        <io.legado.app.lib.theme.view.ThemeSwitch
+            android:id="@+id/swt_hot"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="0dp"
+            android:text="@string/tag_hot"
+            android:textColor="@color/tv_text_summary"
+            android:textSize="12sp"
+            tools:ignore="TouchTargetSizeCheck" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/iv_edit"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/edit"
+            android:padding="5dp"
+            android:src="@drawable/ic_edit"
+            android:tint="@color/primaryText" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/iv_menu_more"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/more_menu"
+            android:padding="5dp"
+            android:src="@drawable/ic_more_vert"
+            android:tint="@color/primaryText"
+            tools:ignore="RtlHardcoded" />
+
+    </LinearLayout>
+
+</FrameLayout>

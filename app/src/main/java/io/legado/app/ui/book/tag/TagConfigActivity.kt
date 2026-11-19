@@ -58,6 +58,8 @@ class TagConfigActivity : VMBaseActivity<ActivityTagConfigBinding, TagConfigView
         // 与 TXT 目录规则列表页一致：长按条目即可上下拖动排序
         val itemTouchCallback = ItemTouchCallback(adapter)
         itemTouchCallback.isCanDrag = true
+        // 分组标题行不参与拖拽，标签只能在本组内移动
+        itemTouchCallback.canDrag = { it.itemViewType != TagListItem.TYPE_GROUP }
         ItemTouchHelper(itemTouchCallback).attachToRecyclerView(recyclerView)
     }
 
@@ -69,15 +71,16 @@ class TagConfigActivity : VMBaseActivity<ActivityTagConfigBinding, TagConfigView
     }
 
     private fun initData() {
+        val ungroupedName = getString(R.string.tag_group_ungrouped)
         lifecycleScope.launch {
             combine(
                 appDb.bookTagDao.flowSelect(),
                 appDb.bookDao.flowAll(),
                 appDb.tagGroupDao.flowAll()
             ) { tags, books, groups ->
-                // 按分组次序展示，未分组标签固定排在最后，组内仍按 order 降序
-                tags.sortByTagGroup(groups).map { tag ->
-                    TagConfigItem(tag, books.count { book -> (book.tags and tag.tagId) > 0L })
+                // 按分组方式显示：分组标题行 + 组内标签，未分组固定排在最后
+                tags.toTagGroupItems(groups, ungroupedName) { tag ->
+                    books.count { book -> (book.tags and tag.tagId) > 0L }
                 }
             }.catch {
                 AppLog.put("标签配置界面获取数据失败\n${it.localizedMessage}", it)
@@ -157,7 +160,7 @@ class TagConfigActivity : VMBaseActivity<ActivityTagConfigBinding, TagConfigView
     }
 
     override fun upCountView() {
-        binding.selectActionBar.upCountView(adapter.selection.size, adapter.itemCount)
+        binding.selectActionBar.upCountView(adapter.selection.size, adapter.tagCount)
     }
 
     override fun onClickSelectBarMainAction() {

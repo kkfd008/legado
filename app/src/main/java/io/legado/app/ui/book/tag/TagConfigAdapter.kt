@@ -14,11 +14,10 @@ import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.data.entities.BookTag
 import io.legado.app.databinding.ItemTagConfigBinding
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
-
-data class TagConfigItem(val tag: BookTag, val bookCount: Int)
+import io.legado.app.utils.gone
 
 class TagConfigAdapter(context: Context, private val callBack: CallBack) :
-    RecyclerAdapter<TagConfigItem, ItemTagConfigBinding>(context),
+    RecyclerAdapter<TagListItem, ItemTagConfigBinding>(context),
     ItemTouchCallback.Callback {
 
     private val selected = linkedSetOf<Long>()
@@ -31,28 +30,47 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
         private set
 
     val selection: List<BookTag>
-        get() = getItems().filter { selected.contains(it.tag.tagId) }.map { it.tag }
+        get() = getItems().filterIsInstance<TagListItem.Tag>()
+            .filter { selected.contains(it.bookTag.tagId) }
+            .map { it.bookTag }
 
-    val diffItemCallBack = object : DiffUtil.ItemCallback<TagConfigItem>() {
+    /** 标签总数，不含分组标题行，用于底部操作栏计数 */
+    val tagCount: Int
+        get() = getItems().count { it is TagListItem.Tag }
 
-        override fun areItemsTheSame(oldItem: TagConfigItem, newItem: TagConfigItem): Boolean {
-            return oldItem.tag.tagId == newItem.tag.tagId
+    val diffItemCallBack = object : DiffUtil.ItemCallback<TagListItem>() {
+
+        override fun areItemsTheSame(oldItem: TagListItem, newItem: TagListItem): Boolean {
+            return when {
+                oldItem is TagListItem.Group && newItem is TagListItem.Group ->
+                    oldItem.groupId == newItem.groupId
+                oldItem is TagListItem.Tag && newItem is TagListItem.Tag ->
+                    oldItem.bookTag.tagId == newItem.bookTag.tagId
+                else -> false
+            }
         }
 
-        override fun areContentsTheSame(oldItem: TagConfigItem, newItem: TagConfigItem): Boolean {
-            return oldItem.tag.name == newItem.tag.name
-                    && oldItem.tag.order == newItem.tag.order
-                    && oldItem.tag.hot == newItem.tag.hot
-                    && oldItem.tag.groupId == newItem.tag.groupId
-                    && oldItem.bookCount == newItem.bookCount
+        override fun areContentsTheSame(oldItem: TagListItem, newItem: TagListItem): Boolean {
+            return when {
+                oldItem is TagListItem.Group && newItem is TagListItem.Group ->
+                    oldItem.name == newItem.name
+                oldItem is TagListItem.Tag && newItem is TagListItem.Tag ->
+                    oldItem.bookTag.name == newItem.bookTag.name
+                            && oldItem.bookTag.order == newItem.bookTag.order
+                            && oldItem.bookTag.hot == newItem.bookTag.hot
+                            && oldItem.bookTag.groupId == newItem.bookTag.groupId
+                            && oldItem.bookCount == newItem.bookCount
+                else -> false
+            }
         }
 
-        override fun getChangePayload(oldItem: TagConfigItem, newItem: TagConfigItem): Any? {
+        override fun getChangePayload(oldItem: TagListItem, newItem: TagListItem): Any? {
+            if (oldItem !is TagListItem.Tag || newItem !is TagListItem.Tag) return null
             val payload = Bundle()
-            if (oldItem.tag.name != newItem.tag.name) {
+            if (oldItem.bookTag.name != newItem.bookTag.name) {
                 payload.putBoolean("upName", true)
             }
-            if (oldItem.tag.hot != newItem.tag.hot) {
+            if (oldItem.bookTag.hot != newItem.bookTag.hot) {
                 payload.putBoolean("upHot", true)
             }
             if (oldItem.bookCount != newItem.bookCount) {
@@ -66,25 +84,40 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
         return ItemTagConfigBinding.inflate(inflater, parent, false)
     }
 
+    override fun getItemViewType(item: TagListItem, position: Int): Int {
+        return if (item is TagListItem.Group) TagListItem.TYPE_GROUP
+        else TagListItem.TYPE_TAG
+    }
+
     override fun convert(
         holder: ItemViewHolder,
         binding: ItemTagConfigBinding,
-        item: TagConfigItem,
+        item: TagListItem,
         payloads: MutableList<Any>
     ) {
+        val isGroup = item is TagListItem.Group
+        binding.tvGroupTitle.gone(!isGroup)
+        binding.tagContent.gone(isGroup)
+        if (item is TagListItem.Group) {
+            binding.tvGroupTitle.text = item.name
+            return
+        }
+        if (item !is TagListItem.Tag) return
+        val tag = item.bookTag
         binding.run {
             if (payloads.isEmpty()) {
-                cbSelect.isChecked = selected.contains(item.tag.tagId)
-                tvName.text = item.tag.name + root.context.getString(R.string.book_count, item.bookCount)
-                swtHot.isChecked = item.tag.hot
+                cbSelect.isChecked = selected.contains(tag.tagId)
+                tvName.text = tag.name + root.context.getString(R.string.book_count, item.bookCount)
+                swtHot.isChecked = tag.hot
             } else {
                 for (i in payloads.indices) {
                     val bundle = payloads[i] as Bundle
                     bundle.keySet().forEach {
                         when (it) {
-                            "selected" -> cbSelect.isChecked = selected.contains(item.tag.tagId)
-                            "upName", "upCount" -> tvName.text = item.tag.name + root.context.getString(R.string.book_count, item.bookCount)
-                            "upHot" -> swtHot.isChecked = item.tag.hot
+                            "selected" -> cbSelect.isChecked = selected.contains(tag.tagId)
+                            "upName", "upCount" -> tvName.text =
+                                tag.name + root.context.getString(R.string.book_count, item.bookCount)
+                            "upHot" -> swtHot.isChecked = tag.hot
                         }
                     }
                 }
@@ -94,24 +127,24 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
 
     override fun registerListener(holder: ItemViewHolder, binding: ItemTagConfigBinding) {
         binding.cbSelect.setOnUserCheckedChangeListener { isChecked ->
-            getItem(holder.layoutPosition)?.let {
+            (getItem(holder.layoutPosition) as? TagListItem.Tag)?.let {
                 if (isChecked) {
-                    selected.add(it.tag.tagId)
+                    selected.add(it.bookTag.tagId)
                 } else {
-                    selected.remove(it.tag.tagId)
+                    selected.remove(it.bookTag.tagId)
                 }
                 callBack.upCountView()
             }
         }
         binding.swtHot.setOnUserCheckedChangeListener { isChecked ->
-            getItem(holder.layoutPosition)?.let {
+            (getItem(holder.layoutPosition) as? TagListItem.Tag)?.let {
                 // 用副本落库，避免污染当前列表里的实体对象影响 DiffUtil 判断
-                callBack.update(it.tag.copy(hot = isChecked))
+                callBack.update(it.bookTag.copy(hot = isChecked))
             }
         }
         binding.ivEdit.setOnClickListener {
-            getItem(holder.layoutPosition)?.let {
-                callBack.edit(it.tag)
+            (getItem(holder.layoutPosition) as? TagListItem.Tag)?.let {
+                callBack.edit(it.bookTag.copy())
             }
         }
         binding.ivMenuMore.setOnClickListener {
@@ -124,17 +157,17 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
     }
 
     private fun showMenu(view: View, position: Int) {
-        val item = getItem(position) ?: return
+        val item = getItem(position) as? TagListItem.Tag ?: return
         val popupMenu = PopupMenu(context, view)
         popupMenu.inflate(R.menu.tag_config_item)
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
-                R.id.menu_search -> callBack.search(item.tag)
-                R.id.menu_top -> callBack.toTop(item.tag)
-                R.id.menu_bottom -> callBack.toBottom(item.tag)
+                R.id.menu_search -> callBack.search(item.bookTag)
+                R.id.menu_top -> callBack.toTop(item.bookTag)
+                R.id.menu_bottom -> callBack.toBottom(item.bookTag)
                 R.id.menu_del -> {
-                    callBack.del(item.tag)
-                    selected.remove(item.tag.tagId)
+                    callBack.del(item.bookTag)
+                    selected.remove(item.bookTag.tagId)
                 }
             }
             true
@@ -143,17 +176,18 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
     }
 
     fun selectAll() {
-        getItems().forEach {
-            selected.add(it.tag.tagId)
+        getItems().filterIsInstance<TagListItem.Tag>().forEach {
+            selected.add(it.bookTag.tagId)
         }
         notifyItemRangeChanged(0, itemCount, bundleOf(Pair("selected", null)))
         callBack.upCountView()
     }
 
     fun revertSelection() {
-        getItems().forEach {
-            if (!selected.remove(it.tag.tagId)) {
-                selected.add(it.tag.tagId)
+        getItems().filterIsInstance<TagListItem.Tag>().forEach {
+            val tagId = it.bookTag.tagId
+            if (!selected.remove(tagId)) {
+                selected.add(tagId)
             }
         }
         notifyItemRangeChanged(0, itemCount, bundleOf(Pair("selected", null)))
@@ -161,6 +195,11 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
     }
 
     override fun swap(srcPosition: Int, targetPosition: Int): Boolean {
+        // 分组标题不可移动，也不允许标签跨越标题行
+        val items = getItems()
+        val from = minOf(srcPosition, targetPosition)
+        val to = maxOf(srcPosition, targetPosition)
+        if ((from..to).any { items.getOrNull(it) is TagListItem.Group }) return false
         swapItem(srcPosition, targetPosition)
         isDragging = true
         return true
@@ -169,12 +208,12 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
     override fun onClearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
         if (!isDragging) return
         isDragging = false
-        val items = getItems()
-        val size = items.size
+        val tags = getItems().filterIsInstance<TagListItem.Tag>()
+        val size = tags.size
         // 界面按 order 降序展示，拖拽后的第 0 项应保持最大 order。
         // 用 copy 生成新对象落库，不修改 adapter 持有的实体，避免污染 DiffUtil 的旧列表。
-        val orderedTags = items.mapIndexed { index, item ->
-            item.tag.copy(order = size - index)
+        val orderedTags = tags.mapIndexed { index, item ->
+            item.bookTag.copy(order = size - index)
         }
         callBack.upOrder(orderedTags)
     }

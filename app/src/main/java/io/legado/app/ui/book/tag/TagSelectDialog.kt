@@ -14,7 +14,6 @@ import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
 import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
-import io.legado.app.data.entities.BookTag
 import io.legado.app.databinding.DialogBookTagPickerBinding
 import io.legado.app.databinding.ItemTagSelectBinding
 import io.legado.app.help.config.AppConfig
@@ -23,6 +22,7 @@ import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.utils.applyTint
 import io.legado.app.utils.getCompatColor
+import io.legado.app.utils.gone
 import io.legado.app.utils.setLayout
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.viewbindingdelegate.viewBinding
@@ -46,23 +46,41 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
     private var currentTags = 0L
     private val callBack get() = (activity as? CallBack)
     private val adapter by lazy {
-        object : RecyclerAdapter<BookTag, ItemTagSelectBinding>(requireContext()),
+        object : RecyclerAdapter<TagListItem, ItemTagSelectBinding>(requireContext()),
             ItemTouchCallback.Callback {
 
             override fun getViewBinding(parent: ViewGroup): ItemTagSelectBinding {
                 return ItemTagSelectBinding.inflate(layoutInflater, parent, false)
             }
 
+            override fun getItemViewType(item: TagListItem, position: Int): Int {
+                return if (item is TagListItem.Group) TagListItem.TYPE_GROUP
+                else TagListItem.TYPE_TAG
+            }
+
+            override fun getSpanSize(viewType: Int, position: Int): Int {
+                // 分组标题占满整行
+                return if (viewType == TagListItem.TYPE_GROUP) AppConfig.tagManageSpanCount else 1
+            }
+
             override fun convert(
                 holder: ItemViewHolder,
                 binding: ItemTagSelectBinding,
-                item: BookTag,
+                item: TagListItem,
                 payloads: MutableList<Any>
             ) {
+                val isGroup = item is TagListItem.Group
+                binding.tvGroupTitle.gone(!isGroup)
+                binding.tagContent.gone(isGroup)
+                if (item is TagListItem.Group) {
+                    binding.tvGroupTitle.text = item.name
+                    return
+                }
+                if (item !is TagListItem.Tag) return
                 binding.run {
-                    cbTag.text = item.name
-                    val selected = currentTags and item.tagId > 0
-                    root.isActivated = selected
+                    cbTag.text = item.bookTag.name
+                    val selected = currentTags and item.bookTag.tagId > 0
+                    tagContent.isActivated = selected
                     cbTag.setTextColor(
                         if (selected) 0xFFFFFFFF.toInt()
                         else context.getCompatColor(R.color.primaryText)
@@ -76,34 +94,39 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
             override fun registerListener(holder: ItemViewHolder, binding: ItemTagSelectBinding) {
                 // 与管理标签页一致：只有点击右侧修改图标才进入编辑，单击/长按标签区域都不编辑
                 binding.tvEdit.setOnClickListener {
-                    getItem(holder.layoutPosition)?.let {
-                        showDialogFragment(TagEditDialog(it))
+                    (getItem(holder.layoutPosition) as? TagListItem.Tag)?.let {
+                        showDialogFragment(TagEditDialog(it.bookTag.copy()))
                     }
                 }
-                binding.root.setOnClickListener {
-                    getItem(holder.layoutPosition)?.let { item ->
-                        if (currentTags and item.tagId > 0) {
-                            currentTags = currentTags and item.tagId.inv()
-                        } else {
-                            currentTags = currentTags or item.tagId
-                        }
-                        // 切换选中态视觉
-                        val selected = currentTags and item.tagId > 0
-                        binding.root.isActivated = selected
-                        binding.cbTag.setTextColor(
-                            if (selected) 0xFFFFFFFF.toInt()
-                            else context.getCompatColor(R.color.primaryText)
-                        )
-                        val tint = if (selected) 0xFFFFFFFF.toInt()
-                        else context.getCompatColor(R.color.secondaryText)
-                        binding.tvEdit.setColorFilter(tint)
+                binding.tagContent.setOnClickListener {
+                    val tag = (getItem(holder.layoutPosition) as? TagListItem.Tag)?.bookTag
+                        ?: return@setOnClickListener
+                    if (currentTags and tag.tagId > 0) {
+                        currentTags = currentTags and tag.tagId.inv()
+                    } else {
+                        currentTags = currentTags or tag.tagId
                     }
+                    // 切换选中态视觉
+                    val selected = currentTags and tag.tagId > 0
+                    binding.tagContent.isActivated = selected
+                    binding.cbTag.setTextColor(
+                        if (selected) 0xFFFFFFFF.toInt()
+                        else context.getCompatColor(R.color.primaryText)
+                    )
+                    val tint = if (selected) 0xFFFFFFFF.toInt()
+                    else context.getCompatColor(R.color.secondaryText)
+                    binding.tvEdit.setColorFilter(tint)
                 }
                 // 长按交给 ItemTouchHelper 拖拽排序，不再弹编辑框
                 holder.itemView.setOnLongClickListener(null)
             }
 
             override fun swap(srcPosition: Int, targetPosition: Int): Boolean {
+                // 分组标题不可移动，也不允许标签跨越标题行
+                val items = getItems()
+                val from = minOf(srcPosition, targetPosition)
+                val to = maxOf(srcPosition, targetPosition)
+                if ((from..to).any { items.getOrNull(it) is TagListItem.Group }) return false
                 swapItem(srcPosition, targetPosition)
                 return true
             }
@@ -112,7 +135,10 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
                 recyclerView: RecyclerView,
                 viewHolder: RecyclerView.ViewHolder
             ) {
-                viewModel.upOrder(getItems())
+                // 用副本落库，避免就地改 order 污染列表里的实体
+                viewModel.upOrder(getItems().filterIsInstance<TagListItem.Tag>().map {
+                    it.bookTag.copy()
+                })
             }
         }
     }
@@ -144,6 +170,8 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
         binding.recyclerView.adapter = adapter
         val itemTouchCallback = ItemTouchCallback(adapter)
         itemTouchCallback.isCanDrag = true
+        // 分组标题行不参与拖拽，标签只能在本组内移动
+        itemTouchCallback.canDrag = { it.itemViewType != TagListItem.TYPE_GROUP }
         ItemTouchHelper(itemTouchCallback).attachToRecyclerView(binding.recyclerView)
     }
 
@@ -159,10 +187,11 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
     }
 
     private fun initData() {
+        val ungroupedName = getString(R.string.tag_group_ungrouped)
         lifecycleScope.launchWhenStarted {
             combine(viewModel.tagList, viewModel.tagGroupList) { tags, groups ->
-                // 按分组次序展示，未分组标签固定排在最后
-                tags.sortByTagGroup(groups)
+                // 按分组方式显示：分组标题行 + 组内标签，未分组固定排在最后
+                tags.toTagGroupItems(groups, ungroupedName)
             }.conflate().collect {
                 adapter.setItems(it)
             }

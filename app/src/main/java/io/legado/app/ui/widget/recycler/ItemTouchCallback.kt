@@ -26,6 +26,12 @@ class ItemTouchCallback(private val callback: Callback) : ItemTouchHelper.Callba
     var isCanSwipe = false
 
     /**
+     * 返回 false 的条目不可拖拽，也不能作为拖拽目标。
+     * 用于列表中的分组标题行等非数据条目，默认全部可拖拽。
+     */
+    var canDrag: (viewHolder: RecyclerView.ViewHolder) -> Boolean = { true }
+
+    /**
      * 当Item被长按的时候是否可以被拖拽
      */
     override fun isLongPressDragEnabled(): Boolean {
@@ -46,6 +52,9 @@ class ItemTouchCallback(private val callback: Callback) : ItemTouchHelper.Callba
         recyclerView: RecyclerView,
         viewHolder: RecyclerView.ViewHolder
     ): Int {
+        if (!canDrag(viewHolder)) {
+            return 0
+        }
         val layoutManager = recyclerView.layoutManager
         if (layoutManager is GridLayoutManager) {// GridLayoutManager
             // flag如果值是0，相当于这个功能被关闭
@@ -86,8 +95,16 @@ class ItemTouchCallback(private val callback: Callback) : ItemTouchHelper.Callba
         srcViewHolder: RecyclerView.ViewHolder,
         targetViewHolder: RecyclerView.ViewHolder
     ): Boolean {
+        if (!canDrag(srcViewHolder) || !canDrag(targetViewHolder)) {
+            return false
+        }
         val fromPosition: Int = srcViewHolder.bindingAdapterPosition
         val toPosition: Int = targetViewHolder.bindingAdapterPosition
+        // 不允许跨越分组标题等不可拖拽的条目，避免把标签拖到别的分组
+        for (i in minOf(fromPosition, toPosition)..maxOf(fromPosition, toPosition)) {
+            val holder = recyclerView.findViewHolderForAdapterPosition(i) ?: continue
+            if (!canDrag(holder)) return false
+        }
         if (fromPosition < toPosition) {
             for (i in fromPosition until toPosition) {
                 callback.swap(i, i + 1)
