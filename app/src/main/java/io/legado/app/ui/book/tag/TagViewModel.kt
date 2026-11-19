@@ -7,6 +7,7 @@ import io.legado.app.data.entities.BookTag
 class TagViewModel : ViewModel() {
 
     val tagList = appDb.bookTagDao.flowSelect()
+    val tagGroupList = appDb.tagGroupDao.flowAll()
 
     fun upTag(vararg bookTag: BookTag) {
         appDb.bookTagDao.run {

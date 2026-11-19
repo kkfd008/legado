@@ -42,6 +42,7 @@ import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.ui.about.AppLogDialog
 import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.ui.book.source.manage.BookSourceActivity
+import io.legado.app.ui.book.tag.sortByTagGroup
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.applyNavigationBarMargin
 import io.legado.app.utils.applyNavigationBarPadding
@@ -60,6 +61,7 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
@@ -346,10 +348,12 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
             }
         }
         lifecycleScope.launch {
-            appDb.bookTagDao.flowHot().catch {
+            combine(appDb.bookTagDao.flowHot(), appDb.tagGroupDao.flowAll()) { tags, groups ->
+                // 热门标签由「我的-标签配置」中启用的标签决定，按分组次序展示、未分组置底
+                tags.sortByTagGroup(groups)
+            }.catch {
                 AppLog.put("搜索页获取热门标签失败\n${it.localizedMessage}", it)
             }.flowOn(IO).conflate().collect { tags ->
-                // 热门标签由「我的-标签配置」中启用的标签决定，不再按排序取前 10
                 tagSuggestAdapter.setItems(tags)
                 binding.tvTagTitle.visible(tags.isNotEmpty())
                 binding.rvTagSuggest.visible(tags.isNotEmpty())

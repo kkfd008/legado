@@ -33,6 +33,10 @@
                 android:title="@string/tag_manage" />
 
             <item
+                android:id="@+id/menu_tag_group_manage"
+                android:title="@string/tag_group_manage" />
+
+            <item
                 android:id="@+id/menu_no_tag"
                 android:checkable="true"
                 android:title="@string/no_tag" />

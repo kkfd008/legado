@@ -13,6 +13,7 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.data.entities.BookTag
+import io.legado.app.data.entities.BookTagGroup
 import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.Bookmark
 import io.legado.app.data.entities.DictRule
@@ -131,6 +132,9 @@ object Restore {
         }
         fileToListT<BookGroup>(path, "bookGroup.json")?.let {
             appDb.bookGroupDao.insert(*it.toTypedArray())
+        }
+        fileToListT<BookTagGroup>(path, "tagGroup.json")?.let {
+            appDb.tagGroupDao.insert(*it.toTypedArray())
         }
         fileToListT<BookTag>(path, "bookTag.json")?.let {
             it.forEach { bookTag ->

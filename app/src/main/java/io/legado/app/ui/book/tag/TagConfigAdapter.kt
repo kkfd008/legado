@@ -43,6 +43,7 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
             return oldItem.tag.name == newItem.tag.name
                     && oldItem.tag.order == newItem.tag.order
                     && oldItem.tag.hot == newItem.tag.hot
+                    && oldItem.tag.groupId == newItem.tag.groupId
                     && oldItem.bookCount == newItem.bookCount
         }
 

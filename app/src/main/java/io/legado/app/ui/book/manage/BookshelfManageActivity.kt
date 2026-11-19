@@ -33,6 +33,7 @@ import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.ui.book.group.GroupManageDialog
 import io.legado.app.ui.book.group.GroupSelectDialog
+import io.legado.app.ui.book.tag.TagGroupManageDialog
 import io.legado.app.ui.book.tag.TagManageDialog
 import io.legado.app.ui.book.tag.TagSelectDialog
 import io.legado.app.ui.book.info.BookInfoActivity
@@ -330,6 +331,7 @@ class BookshelfManageActivity :
         when (item.itemId) {
             R.id.menu_group_manage -> showDialogFragment<GroupManageDialog>()
             R.id.menu_tag_manage -> showDialogFragment<TagManageDialog>()
+            R.id.menu_tag_group_manage -> showDialogFragment<TagGroupManageDialog>()
             R.id.menu_no_tag -> {
                 viewModel.noTagFilter = !viewModel.noTagFilter
                 item.isChecked = viewModel.noTagFilter

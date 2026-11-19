@@ -14,6 +14,7 @@ import io.legado.app.data.dao.BookDao
 import io.legado.app.data.dao.BookGroupDao
 import io.legado.app.data.dao.BookSearchKeywordDao
 import io.legado.app.data.dao.BookTagDao
+import io.legado.app.data.dao.BookTagGroupDao
 import io.legado.app.data.dao.BookSourceDao
 import io.legado.app.data.dao.BookmarkDao
 import io.legado.app.data.dao.CacheDao
@@ -37,6 +38,7 @@ import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSearchKeyword
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.data.entities.BookTag
+import io.legado.app.data.entities.BookTagGroup
 import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.BookSourcePart
 import io.legado.app.data.entities.Bookmark
@@ -71,9 +73,10 @@ val appDb by lazy {
 }
 
 @Database(
-    version = 80,
+    version = 81,
     exportSchema = true,
-    entities = [Book::class, BookGroup::class, BookTag::class, BookSource::class, BookChapter::class,
+    entities = [Book::class, BookGroup::class, BookTag::class, BookTagGroup::class, BookSource::class,
+        BookChapter::class,
         ReplaceRule::class, SearchBook::class, SearchKeyword::class, Cookie::class,
         RssSource::class, Bookmark::class, RssArticle::class, RssReadRecord::class,
         RssStar::class, TxtTocRule::class, ReadRecord::class, HttpTTS::class, Cache::class,
@@ -118,6 +121,7 @@ val appDb by lazy {
         AutoMigration(from = 77, to = 78, spec = DatabaseMigrations.Migration_77_78::class),
         AutoMigration(from = 78, to = 79),
         AutoMigration(from = 79, to = 80),
+        AutoMigration(from = 80, to = 81),
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -125,6 +129,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract val bookDao: BookDao
     abstract val bookGroupDao: BookGroupDao
     abstract val bookTagDao: BookTagDao
+    abstract val tagGroupDao: BookTagGroupDao
     abstract val bookSourceDao: BookSourceDao
     abstract val bookChapterDao: BookChapterDao
     abstract val replaceRuleDao: ReplaceRuleDao

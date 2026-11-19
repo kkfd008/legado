@@ -14,7 +14,10 @@ data class BookTag(
     var name: String = "",
     var order: Int = 0,
     @ColumnInfo(defaultValue = "0")
-    var hot: Boolean = false
+    var hot: Boolean = false,
+    /** 所属标签分组 ID，0 表示未分组 */
+    @ColumnInfo(defaultValue = "0")
+    var groupId: Long = 0L
 ) : Parcelable {
 
     override fun hashCode(): Int {
@@ -27,6 +30,7 @@ data class BookTag(
                     && other.name == name
                     && other.order == order
                     && other.hot == hot
+                    && other.groupId == groupId
         }
         return false
     }

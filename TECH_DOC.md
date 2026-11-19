@@ -156,6 +156,7 @@ Room 数据库是整个应用的数据核心，定义了所有实体、DAO 接�
 | BookmarkDao | Bookmark | 书签数据操作 |
 | BookGroupDao | BookGroup | 书籍分组操作 |
 | BookTagDao | BookTag | 书籍标签操作 |
+| BookTagGroupDao | BookTagGroup | 标签分组操作（v81） |
 | BookSourceDao | BookSource / BookSourcePart | 书源数据操作（含列表视图查询） |
 | RssSourceDao | RssSource | RSS源数据操作 |
 | RssArticleDao | RssArticle | RSS文章操作 |
@@ -464,13 +465,17 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 
 ### 6.6 标签管理网格（TagManageDialog / TagSelectDialog）
 
-标签管理页与标签选择弹窗共用一套网格展示与排序规则。
+标签管理页与标签选择弹窗共用一套网格展示与排序规则；两者与标签配置页、搜索页热门标签均按「分组次序 → 标签 order 降序」展示，未分组标签固定置底。
 
 | 位置 | 实现要点 |
 |------|---------|
-| `ui/book/tag/TagManageDialog.kt` | `GridLayoutManager(ctx, AppConfig.tagManageSpanCount)`；ItemTouchHelper 拖拽排序；拖拽结束在 `onClearView` 里回写 `order = size - index` |
-| `ui/book/tag/TagSelectDialog.kt` | 同样跟随 `AppConfig.tagManageSpanCount`；`setItems(it.sortedByDescending { tag -> tag.order })`；点击整行切换选中位 |
-| `ui/book/tag/TagViewModel.kt` | `tagList = bookTagDao.flowSelect()`；`upOrder` 按 `size - index` 写 order；`getNextTagId()` 取最小可用的 2 的幂次（上限 64 个） |
+| `ui/book/tag/TagManageDialog.kt` | `GridLayoutManager(ctx, AppConfig.tagManageSpanCount)`；`combine(tagList, tagGroupList)` 后 `sortByTagGroup()`；ItemTouchHelper 拖拽排序，拖拽结束在 `onClearView` 里回写 `order = size - index` |
+| `ui/book/tag/TagSelectDialog.kt` | 同样跟随 `AppConfig.tagManageSpanCount` 与 `sortByTagGroup()`；点击整行切换选中位 |
+| `ui/book/tag/TagViewModel.kt` | `tagList = bookTagDao.flowSelect()`、`tagGroupList = tagGroupDao.flowAll()`；`upOrder` 按 `size - index` 写 order；`getNextTagId()` 取最小可用的 2 的幂次（上限 64 个） |
+| `ui/book/tag/TagSort.kt` | `List<BookTag>.sortByTagGroup(groups)`：按「是否未分组（groupId=0 或分组已删）→ 分组 order 降序 → 标签 order 降序」排序，返回新列表不改动实体 |
+| 标签分组 | `data/entities/BookTagGroup.kt`（表 `tag_group`，`groupId` 普通递增整数，0 保留给未分组、实际从 1 分配）、`BookTagGroupDao`（`flowAll`/`all` 均按 `order desc`，`deleteAndClearTags()` 事务内把该组标签 `groupId` 置 0）。`BookTag.groupId` 新增列 `@ColumnInfo(defaultValue = "0")`，Room 由 v80 AutoMigration 到 v81；`Backup`/`Restore` 增加 `tagGroup.json` |
+| `TagGroupManageDialog` / `TagGroupEditDialog` | 参考书籍分组管理：线性列表 + 拖拽（松手按 `size - index` 用 `copy()` 批量回写 order）、工具栏「+」、条目编辑/删除、独立编辑弹窗含名称校验与删除确认。入口在 `main_bookshelf.xml` 的「标签管理」下方与 `bookshelf_manage.xml` 的标签子菜单 |
+| `TagEditDialog` | 标签名称下方新增分组下拉：第 0 项「未分组」(groupId=0)，其余按分组 `order desc`；保存时编辑用 `copy(name=..., groupId=...)`、新增时写入 `groupId`，均落库副本避免污染 DiffUtil 旧列表 |
 | `ui/book/tag/TagConfigActivity.kt` / `TagConfigAdapter.kt` | 标签配置单行列表同样支持 `ItemTouchCallback` 长按拖拽（参考 TXT 目录规则页）；拖拽期间 `isDragging` 时跳过 Flow 刷新；松手按 `size - index` 用 `copy` 生成新对象，经 `BookTagDao.update(vararg)` 单事务批量回写 order，避免污染 DiffUtil 旧列表 |
 | 标签改名 / 标签搜索 | `BookTag` 为可变 data class，Fragment arguments 里的 Parcelable 与 adapter 持有的是同一对象；`TagEditDialog` 与 `edit()` 一律用 `copy()` 落库，避免就地赋值污染 DiffUtil 旧列表导致改名不刷新。条目菜单「搜索」调用 `SearchActivity.start(ctx, "#标签名", submit = false)`，只填入关键字并展示 `flowSearchByTag` 的本地结果，不发起书源搜索、不收起输入帮助面板 |
 | 删除标签 / 清理标签 | `books.tags` 是位掩码，`tagId` 为 2 的幂。`BookTagDao.deleteAndClearBooks()` 用 `@Transaction` 把 `update books set tags = tags - :tagId where tags & :tagId > 0`（与 `BookDao.removeGroup` 同口径）与删除标签定义放在同一事务，覆盖标签配置页单条/批量删除与编辑弹窗删除；不清位会导致新建标签复用 tagId 时旧书"继承"该标签。`clearInvalidTags()` 按现有标签求有效掩码，`update books set tags = tags & :validMask where tags != (tags & :validMask)` 清理历史残留位，返回受影响书籍数 |
@@ -1013,8 +1018,17 @@ AnalyzeRule（上下文）
 | tagId | INTEGER (PK) | 标签ID（2的幂次，位掩码设计） |
 | name | TEXT | 标签名称 |
 | order | INTEGER | 排序 |
+| hot | INTEGER | 是否热门（v80 新增，默认 0） |
+| groupId | INTEGER | 所属标签分组 ID（v81 新增，默认 0 = 未分组） |
 
 > **位掩码设计**: `tagId` 为 2 的幂次（1, 2, 4, 8, ...），Book.tags 字段存储选中标签ID的按位OR结果，支持最多64个标签。
+
+#### BookTagGroup（标签分组表 `tag_group`，v81 新增）
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| groupId | INTEGER (PK) | 分组 ID，普通递增整数，允许 0；0 保留给「未分组」，实际新建从 1 开始 |
+| name | TEXT | 分组名称 |
+| order | INTEGER | 排序，列表按从大到小展示 |
 
 #### ReplaceRule（替换规则表）
 | 字段 | 类型 | 说明 |
@@ -1193,5 +1207,5 @@ AnalyzeRule（上下文）
 
 > **文档版本**: 1.3
 > **生成日期**: 2026-07-30
-> **最近更新**: 2026-11-13（「编辑本地书籍」编辑框改为直接展示文件原文片段，忽略空白定位页区间，定位失败自动退化为整章编辑，支持清空正文）
+> **最近更新**: 2026-11-19（新增标签分组 `tag_group`、v81 迁移、分组管理页与标签编辑页分组选择；标签列表按分组次序展示、未分组置底）
 > **基于代码扫描自动生成**

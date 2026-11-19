@@ -26,6 +26,7 @@ import io.legado.app.utils.getCompatColor
 import io.legado.app.utils.setLayout
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.viewbindingdelegate.viewBinding
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 
 class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
@@ -159,9 +160,11 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
 
     private fun initData() {
         lifecycleScope.launchWhenStarted {
-            viewModel.tagList.conflate().collect {
-                // 按排序值从大到小展示
-                adapter.setItems(it.sortedByDescending { tag -> tag.order })
+            combine(viewModel.tagList, viewModel.tagGroupList) { tags, groups ->
+                // 按分组次序展示，未分组标签固定排在最后
+                tags.sortByTagGroup(groups)
+            }.conflate().collect {
+                adapter.setItems(it)
             }
         }
     }

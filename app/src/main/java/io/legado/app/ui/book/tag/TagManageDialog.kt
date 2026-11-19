@@ -31,6 +31,7 @@ import io.legado.app.utils.viewbindingdelegate.viewBinding
 import io.legado.app.utils.visible
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
@@ -74,11 +75,13 @@ class TagManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
 
     private fun initData() {
         lifecycleScope.launch {
-            viewModel.tagList.catch {
+            combine(viewModel.tagList, viewModel.tagGroupList) { tags, groups ->
+                // 按分组次序展示，未分组标签固定排在最后
+                tags.sortByTagGroup(groups)
+            }.catch {
                 AppLog.put("标签管理界面获取标签数据失败\n${it.localizedMessage}", it)
             }.flowOn(IO).conflate().collect {
-                // 按排序值从大到小展示
-                adapter.setItems(it.sortedByDescending { tag -> tag.order })
+                adapter.setItems(it)
             }
         }
     }

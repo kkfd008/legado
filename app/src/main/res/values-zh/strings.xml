@@ -1289,4 +1289,9 @@
     <string name="auto_check_new_backup_t">自动检查新备份</string>
     <string name="auto_check_new_backup_s">打开软件时检查是否有新备份，有新备份时提示是否更新</string>
     <string name="sys_image_picker">系统图片选择器</string>
+    <string name="tag_group_manage">标签分组管理</string>
+    <string name="tag_group">标签分组</string>
+    <string name="tag_group_ungrouped">未分组</string>
+    <string name="tag_group_edit">修改标签分组</string>
+    <string name="tag_group_name_empty">分组名称不能为空</string>
 </resources>

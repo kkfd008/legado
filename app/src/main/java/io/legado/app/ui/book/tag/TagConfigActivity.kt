@@ -72,9 +72,11 @@ class TagConfigActivity : VMBaseActivity<ActivityTagConfigBinding, TagConfigView
         lifecycleScope.launch {
             combine(
                 appDb.bookTagDao.flowSelect(),
-                appDb.bookDao.flowAll()
-            ) { tags, books ->
-                tags.sortedByDescending { it.order }.map { tag ->
+                appDb.bookDao.flowAll(),
+                appDb.tagGroupDao.flowAll()
+            ) { tags, books, groups ->
+                // 按分组次序展示，未分组标签固定排在最后，组内仍按 order 降序
+                tags.sortByTagGroup(groups).map { tag ->
                     TagConfigItem(tag, books.count { book -> (book.tags and tag.tagId) > 0L })
                 }
             }.catch {
