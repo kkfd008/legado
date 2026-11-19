@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
+    android:layout_width="wrap_content"
     android:layout_height="wrap_content">
 
     <TextView
@@ -23,7 +23,7 @@
 
     <LinearLayout
         android:id="@+id/tag_content"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="4dp"
         android:background="@drawable/selector_fillet_btn_bg"
@@ -46,13 +46,12 @@
 
         <TextView
             android:id="@+id/tv_tag"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:layout_weight="1"
             android:ellipsize="end"
             android:gravity="end|center_vertical"
-            android:maxLines="2"
+            android:maxLines="1"
             android:textColor="@color/primaryText"
             android:textSize="14sp"
             tools:text="标签名" />

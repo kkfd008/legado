@@ -8,9 +8,13 @@ import android.view.ViewGroup
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.flexbox.AlignItems
+import com.google.android.flexbox.FlexDirection
+import com.google.android.flexbox.FlexWrap
+import com.google.android.flexbox.FlexboxLayoutManager
+import com.google.android.flexbox.JustifyContent
 import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
 import io.legado.app.base.adapter.ItemViewHolder
@@ -18,7 +22,6 @@ import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.constant.AppLog
 import io.legado.app.databinding.DialogRecyclerViewBinding
 import io.legado.app.databinding.ItemBookTagManageBinding
-import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
@@ -46,6 +49,12 @@ class TagManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
     private val binding by viewBinding(DialogRecyclerViewBinding::bind)
     private val adapter by lazy { TagAdapter(requireContext()) }
 
+    /** 标签文字最大宽度，防止超长名称撑出屏幕（已扣除编辑图标与内边距） */
+    private val maxTagWidth by lazy {
+        (resources.displayMetrics.widthPixels * 0.85f).toInt() -
+                (56 * resources.displayMetrics.density).toInt()
+    }
+
     override fun onStart() {
         super.onStart()
         setLayout(0.9f, 0.9f)
@@ -60,13 +69,22 @@ class TagManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
     }
 
     private fun initView() {
-        binding.recyclerView.layoutManager =
-            GridLayoutManager(requireContext(), AppConfig.tagManageSpanCount)
+        // 与标签选择页一致：取消固定列数，按文字宽度依次排列、自动换行
+        binding.recyclerView.layoutManager = FlexboxLayoutManager(requireContext()).apply {
+            flexDirection = FlexDirection.ROW
+            flexWrap = FlexWrap.WRAP
+            justifyContent = JustifyContent.FLEX_START
+            alignItems = AlignItems.FLEX_START
+        }
         binding.recyclerView.adapter = adapter
         val itemTouchCallback = ItemTouchCallback(adapter)
         itemTouchCallback.isCanDrag = true
         // 分组标题行不参与拖拽，标签只能在本组内移动
         itemTouchCallback.canDrag = { it.itemViewType != TagListItem.TYPE_GROUP }
+        // FlexboxLayoutManager 非 Grid / Linear，需显式开启拖拽方向
+        itemTouchCallback.dragFlagsForOtherLayout =
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT or
+                    ItemTouchHelper.UP or ItemTouchHelper.DOWN
         ItemTouchHelper(itemTouchCallback).attachToRecyclerView(binding.recyclerView)
         binding.tvOk.setTextColor(requireContext().accentColor)
         binding.tvOk.visible()
@@ -123,11 +141,6 @@ class TagManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
             else TagListItem.TYPE_TAG
         }
 
-        override fun getSpanSize(viewType: Int, position: Int): Int {
-            // 分组标题占满整行
-            return if (viewType == TagListItem.TYPE_GROUP) AppConfig.tagManageSpanCount else 1
-        }
-
         override fun convert(
             holder: ItemViewHolder,
             binding: ItemBookTagManageBinding,
@@ -135,11 +148,29 @@ class TagManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
             payloads: MutableList<Any>
         ) {
             val isGroup = item is TagListItem.Group
+            // 流式布局：标题行整行并强制换行，标签行按文字宽度排列、自动折行
+            val lp = holder.itemView.layoutParams
+            val flexLp = if (lp is FlexboxLayoutManager.LayoutParams) lp
+            else FlexboxLayoutManager.LayoutParams(
+                lp?.width ?: ViewGroup.LayoutParams.WRAP_CONTENT,
+                lp?.height ?: ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            flexLp.isWrapBefore = isGroup
+                    || getItem(holder.layoutPosition - 1) is TagListItem.Group
+            flexLp.width = if (isGroup) ViewGroup.LayoutParams.MATCH_PARENT
+            else ViewGroup.LayoutParams.WRAP_CONTENT
+            flexLp.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            flexLp.flexGrow = 0f
+            holder.itemView.layoutParams = flexLp
+
             binding.tvGroupTitle.gone(!isGroup)
             binding.tagContent.gone(isGroup)
             when (item) {
                 is TagListItem.Group -> binding.tvGroupTitle.text = item.name
-                is TagListItem.Tag -> binding.tvTag.text = item.bookTag.name
+                is TagListItem.Tag -> {
+                    binding.tvTag.maxWidth = maxTagWidth
+                    binding.tvTag.text = item.bookTag.name
+                }
             }
         }
 
