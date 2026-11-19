@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
+    android:layout_width="wrap_content"
     android:layout_height="wrap_content">
 
     <TextView
@@ -21,44 +21,23 @@
         android:visibility="gone"
         tools:text="分组名" />
 
-    <LinearLayout
-        android:id="@+id/tag_content"
-        android:layout_width="match_parent"
+    <TextView
+        android:id="@+id/cb_tag"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="4dp"
         android:background="@drawable/selector_tag_select_bg"
         android:clickable="true"
+        android:ellipsize="end"
         android:focusable="true"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
+        android:gravity="center"
+        android:maxLines="1"
         android:paddingLeft="12dp"
         android:paddingTop="10dp"
         android:paddingRight="12dp"
-        android:paddingBottom="10dp">
-
-        <ImageView
-            android:id="@+id/tv_edit"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/edit"
-            android:padding="2dp"
-            android:src="@drawable/ic_edit"
-            android:tint="@color/secondaryText" />
-
-        <TextView
-            android:id="@+id/cb_tag"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:ellipsize="end"
-            android:gravity="end|center_vertical"
-            android:maxLines="2"
-            android:textColor="@color/primaryText"
-            android:textSize="14sp"
-            tools:text="标签名" />
-
-    </LinearLayout>
+        android:paddingBottom="10dp"
+        android:textColor="@color/primaryText"
+        android:textSize="14sp"
+        tools:text="标签名" />
 
 </FrameLayout>

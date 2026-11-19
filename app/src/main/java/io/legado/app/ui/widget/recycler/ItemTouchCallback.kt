@@ -32,6 +32,12 @@ class ItemTouchCallback(private val callback: Callback) : ItemTouchHelper.Callba
     var canDrag: (viewHolder: RecyclerView.ViewHolder) -> Boolean = { true }
 
     /**
+     * 非 Grid / Linear 的 LayoutManager（如 FlexboxLayoutManager）的拖拽方向标志。
+     * 默认 0 = 不可拖拽，保持其它页面原有行为不变。
+     */
+    var dragFlagsForOtherLayout: Int = 0
+
+    /**
      * 当Item被长按的时候是否可以被拖拽
      */
     override fun isLongPressDragEnabled(): Boolean {
@@ -80,7 +86,7 @@ class ItemTouchCallback(private val callback: Callback) : ItemTouchHelper.Callba
             }
             return makeMovementFlags(dragFlag, swipeFlag)
         }
-        return 0
+        return makeMovementFlags(dragFlagsForOtherLayout, 0)
     }
 
     /**
