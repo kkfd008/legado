@@ -481,7 +481,7 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 | 标签改名 / 标签搜索 | `BookTag` 为可变 data class，Fragment arguments 里的 Parcelable 与 adapter 持有的是同一对象；`TagEditDialog` 与 `edit()` 一律用 `copy()` 落库，避免就地赋值污染 DiffUtil 旧列表导致改名不刷新。条目菜单「搜索」调用 `SearchActivity.start(ctx, "#标签名", submit = false)`，只填入关键字并展示 `flowSearchByTag` 的本地结果，不发起书源搜索、不收起输入帮助面板 |
 | 删除标签 / 清理标签 | `books.tags` 是位掩码，`tagId` 为 2 的幂。`BookTagDao.deleteAndClearBooks()` 用 `@Transaction` 把 `update books set tags = tags - :tagId where tags & :tagId > 0`（与 `BookDao.removeGroup` 同口径）与删除标签定义放在同一事务，覆盖标签配置页单条/批量删除与编辑弹窗删除；不清位会导致新建标签复用 tagId 时旧书"继承"该标签。`clearInvalidTags()` 按现有标签求有效掩码，`update books set tags = tags & :validMask where tags != (tags & :validMask)` 清理历史残留位，返回受影响书籍数 |
 | `res/layout/item_book_tag_manage.xml` / `item_tag_config.xml` | 外层 `FrameLayout` + `tv_group_title`（`@color/background_menu` 背景、默认 GONE）+ 内层 `tag_content`（原标签内容，background / activated / clickable 移到这一层）。用 `gone(Boolean)` 而不是 `visible(Boolean)` 切换，否则隐藏项仍占位。管理页 item 的 `FrameLayout` / `tag_content` / `tv_tag` 均为 `wrap_content`（去掉 `weight`），宽度由文字决定 |
-| `res/layout/item_tag_select.xml` | 外层 `FrameLayout` 为 `wrap_content`；只有 `tv_group_title` 与 `cb_tag`，无编辑图标、无 `tag_content` 容器，选中态直接作用在 `cb_tag` 上。`tv_group_title` 为 `wrap_content` 行内块（无背景，`margin=1dp` + 上下 `padding=1dp`，`14sp` + `bold`，文本不带冒号）；`cb_tag` 为 `wrap_content` + `maxLines=1` + `margin=1dp` + 上下 `padding=1dp` + 左右 `padding=5px`（按需求用 px 固定紧凑间隔），**移除 `android:background`**（不再有选中灰色圆角区域），`textColor` 用 `res/color/selector_tag_select_text.xml`（`state_activated=true` 为 `md_brown_500` 棕色，否则 `primaryText`） |
+| `res/layout/item_tag_select.xml` | 外层 `FrameLayout` 为 `wrap_content`；只有 `tv_group_title` 与 `cb_tag`，无编辑图标、无 `tag_content` 容器，选中态直接作用在 `cb_tag` 上。`tv_group_title` 为 `wrap_content` 行内块（无背景，`margin=1dp` + 上下 `padding=1dp`，`18sp` + `bold`，文本不带冒号）；`cb_tag` 为 `wrap_content` + `maxLines=1` + `margin=1dp` + 上下 `padding=1dp` + 左右 `padding=5px`（按需求用 px 固定紧凑间隔）+ `16sp`，**移除 `android:background`**（不再有选中灰色圆角区域），`textColor` 用 `res/color/selector_tag_select_text.xml`（`state_activated=true` 为 `md_brown_500` 棕色，否则 `primaryText`） |
 | `ui/widget/recycler/ItemTouchCallback.kt` | 新增可配置 `canDrag: (ViewHolder) -> Boolean`（默认 true），`getMovementFlags` 与 `onMove` 都会过滤；`onMove` 额外检查拖拽区间内的可见 holder，避免标签跨过分组标题。三个标签页设为 `it.itemViewType != TYPE_GROUP`。另加 `dragFlagsForOtherLayout`（默认 0）用于非 Grid / Linear 的 LayoutManager：FlexboxLayoutManager 下 `getMovementFlags` 原本返回 0 会让拖拽失效，标签管理页与标签选择页都把它设为四个方向 |
 | 已移除的设置项 | 「标签管理每行标签数」对应的 `pref_config_other.xml` Preference、`OtherConfigFragment` 点击/summary 分支、`PreferKey.tagManageSpanCount`、`AppConfig.tagManageSpanCount`、中英文 strings 全部删除；旧设备 SharedPreferences 里可能残留该键，不再被读取 |
 
@@ -1207,5 +1207,5 @@ AnalyzeRule（上下文）
 
 > **文档版本**: 1.3
 > **生成日期**: 2026-07-30
-> **最近更新**: 2026-11-20（书架菜单改名；选择标签页分组间加灰色分割线、分组名无冒号、标签无选中背景、选中文字棕色、左右间距 5px 并压缩行高）
+> **最近更新**: 2026-11-20（书架菜单改名；选择标签页分组间加灰色分割线、分组名无冒号、标签无选中背景、选中文字棕色、左右间距 5px 并压缩行高；分组名 18sp / 标签名 16sp）
 > **基于代码扫描自动生成**
