@@ -74,7 +74,8 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
                 payloads: MutableList<Any>
             ) {
                 val isGroup = item is TagListItem.Group
-                // 流式布局：标题行整行并强制换行，标签行按文字宽度排列、自动折行
+                // 分组名作为行首块另起一行，组内首个标签紧随其后排在同一行，
+                // 后续标签按文字宽度依次排列、排不下自动折行
                 val lp = holder.itemView.layoutParams
                 val flexLp = if (lp is FlexboxLayoutManager.LayoutParams) lp
                 else FlexboxLayoutManager.LayoutParams(
@@ -82,9 +83,7 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
                     lp?.height ?: ViewGroup.LayoutParams.WRAP_CONTENT
                 )
                 flexLp.isWrapBefore = isGroup
-                        || getItem(holder.layoutPosition - 1) is TagListItem.Group
-                flexLp.width = if (isGroup) ViewGroup.LayoutParams.MATCH_PARENT
-                else ViewGroup.LayoutParams.WRAP_CONTENT
+                flexLp.width = ViewGroup.LayoutParams.WRAP_CONTENT
                 flexLp.height = ViewGroup.LayoutParams.WRAP_CONTENT
                 flexLp.flexGrow = 0f
                 holder.itemView.layoutParams = flexLp
@@ -92,6 +91,7 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
                 binding.tvGroupTitle.gone(!isGroup)
                 binding.cbTag.gone(isGroup)
                 if (item is TagListItem.Group) {
+                    binding.tvGroupTitle.maxWidth = maxTagWidth
                     binding.tvGroupTitle.text = item.name
                     return
                 }

@@ -465,14 +465,14 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 
 ### 6.6 标签列表布局（TagManageDialog / TagSelectDialog / TagConfigActivity）
 
-标签管理、标签选择（均为按文字宽度自动换行的 Flexbox 流式布局）、标签配置（单列列表）三页共用「分组标题行 + 组内标签行」的分区展示；分组按 order 降序，组内标签按 order 降序，未分组固定置底。搜索页热门标签仍只按 `sortByTagGroup()` 排序，不显示标题行。固定列数与「标签管理每行标签数」设置项已移除。
+标签管理、标签选择（均为按文字宽度自动换行的 Flexbox 流式布局）、标签配置（单列列表）三页共用「分组标题 + 组内标签」的分区展示；分组按 order 降序，组内标签按 order 降序，未分组固定置底。管理标签 / 标签配置页的标题独占整行，标签选择页的标题为行首行内加粗块、与该组首个标签同一行。搜索页热门标签仍只按 `sortByTagGroup()` 排序，不显示标题行。固定列数与「标签管理每行标签数」设置项已移除。
 
 | 位置 | 实现要点 |
 |------|---------|
 | `ui/book/tag/TagListItem.kt` | `sealed class TagListItem`：`Group(groupId, name)` 标题行（`TYPE_GROUP=1`）与 `Tag(bookTag, bookCount)` 标签行（`TYPE_TAG=0`）；三个页面的 adapter 统一以它为 `ITEM`，靠 `getItemViewType()` 区分 |
 | `ui/book/tag/TagSort.kt` | `toTagGroupItems(groups, ungroupedName, bookCount)`：按分组 order 降序生成「标题 + 组内标签」，空分组不插入标题，未分组（含所属分组已删除的标签）最后追加；`sortByTagGroup()` 保留给搜索页热门标签。两者均返回新列表、不改动实体 |
 | `ui/book/tag/TagManageDialog.kt` | 与标签选择页同样使用 `FlexboxLayoutManager`（ROW + WRAP + FLEX_START）按文字宽度自动换行；`convert` 里把 itemView 的 LayoutParams 转成 `FlexboxLayoutManager.LayoutParams`（标题行 `MATCH_PARENT` + `isWrapBefore`，标签行 `WRAP_CONTENT` + `flexGrow=0`），`tvTag.maxWidth` 限制超长名称；`combine(tagList, tagGroupList)` 后 `toTagGroupItems()`；拖拽结束在 `onClearView` 里只对 `Tag` 项按 `size - index` 用 `copy()` 回写 order |
-| `ui/book/tag/TagSelectDialog.kt` | 用 `FlexboxLayoutManager`（`FlexDirection.ROW` + `FlexWrap.WRAP` + `FLEX_START`）取消固定每行数量，标签按文字宽度依次排列、自动换行；`convert` 里把 `holder.itemView.layoutParams` 转成 `FlexboxLayoutManager.LayoutParams`：标题行 `isWrapBefore=true` + `MATCH_PARENT` 独占整行，标签行 `WRAP_CONTENT` + `flexGrow=0`，且标题后的首个标签也强制换行；`cbTag.maxWidth` 限制在屏宽 85% 防止超长名撑出屏幕。条目只剩一个 `cb_tag` TextView（点击切换选中、activated 决定背景），无编辑图标；`combine(...).toTagGroupItems()` 数据源不变 |
+| `ui/book/tag/TagSelectDialog.kt` | 用 `FlexboxLayoutManager`（`FlexDirection.ROW` + `FlexWrap.WRAP` + `FLEX_START`）取消固定每行数量，标签按文字宽度依次排列、自动换行；`convert` 里把 `holder.itemView.layoutParams` 转成 `FlexboxLayoutManager.LayoutParams`：所有行统一 `WRAP_CONTENT` + `flexGrow=0`，**只有 Group 行 `isWrapBefore=true`**（每组另起一行），组内首个标签紧随标题排在同一行、不再强制换行；`cbTag` / `tvGroupTitle` 的 `maxWidth` 均限制在屏宽 85% 防止超长名撑出屏幕。条目只剩一个 `cb_tag` TextView（点击切换选中、activated 决定背景），无编辑图标；`combine(...).toTagGroupItems()` 数据源不变。Group 仍是独立列表项，因此 `canDrag` 与 `swap()` 的「不可跨组拖拽」拦截不受布局影响 |
 | `ui/book/tag/TagViewModel.kt` | `tagList = bookTagDao.flowSelect()`、`tagGroupList = tagGroupDao.flowAll()`；`upOrder` 按 `size - index` 写 order；`getNextTagId()` 取最小可用的 2 的幂次（上限 64 个） |
 | 标签分组 | `data/entities/BookTagGroup.kt`（表 `tag_group`，`groupId` 普通递增整数，0 保留给未分组、实际从 1 分配）、`BookTagGroupDao`（`flowAll`/`all` 均按 `order desc`，`deleteAndClearTags()` 事务内把该组标签 `groupId` 置 0）。`BookTag.groupId` 新增列 `@ColumnInfo(defaultValue = "0")`，Room 由 v80 AutoMigration 到 v81；`Backup`/`Restore` 增加 `tagGroup.json` |
 | `TagGroupManageDialog` / `TagGroupEditDialog` | 参考书籍分组管理：线性列表 + 拖拽（松手按 `size - index` 用 `copy()` 批量回写 order）、工具栏「+」、条目编辑/删除、独立编辑弹窗含名称校验与删除确认。入口在 `main_bookshelf.xml` 的「标签管理」下方与 `bookshelf_manage.xml` 的标签子菜单 |
@@ -481,7 +481,7 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 | 标签改名 / 标签搜索 | `BookTag` 为可变 data class，Fragment arguments 里的 Parcelable 与 adapter 持有的是同一对象；`TagEditDialog` 与 `edit()` 一律用 `copy()` 落库，避免就地赋值污染 DiffUtil 旧列表导致改名不刷新。条目菜单「搜索」调用 `SearchActivity.start(ctx, "#标签名", submit = false)`，只填入关键字并展示 `flowSearchByTag` 的本地结果，不发起书源搜索、不收起输入帮助面板 |
 | 删除标签 / 清理标签 | `books.tags` 是位掩码，`tagId` 为 2 的幂。`BookTagDao.deleteAndClearBooks()` 用 `@Transaction` 把 `update books set tags = tags - :tagId where tags & :tagId > 0`（与 `BookDao.removeGroup` 同口径）与删除标签定义放在同一事务，覆盖标签配置页单条/批量删除与编辑弹窗删除；不清位会导致新建标签复用 tagId 时旧书"继承"该标签。`clearInvalidTags()` 按现有标签求有效掩码，`update books set tags = tags & :validMask where tags != (tags & :validMask)` 清理历史残留位，返回受影响书籍数 |
 | `res/layout/item_book_tag_manage.xml` / `item_tag_config.xml` | 外层 `FrameLayout` + `tv_group_title`（`@color/background_menu` 背景、默认 GONE）+ 内层 `tag_content`（原标签内容，background / activated / clickable 移到这一层）。用 `gone(Boolean)` 而不是 `visible(Boolean)` 切换，否则隐藏项仍占位。管理页 item 的 `FrameLayout` / `tag_content` / `tv_tag` 均为 `wrap_content`（去掉 `weight`），宽度由文字决定 |
-| `res/layout/item_tag_select.xml` | 外层 `FrameLayout` 为 `wrap_content`；只有 `tv_group_title`（标题行）与 `cb_tag`（标签行，`wrap_content` + 圆角 selector 背景 + `maxLines=1`），无编辑图标、无 `tag_content` 容器，选中态直接作用在 `cb_tag` 上 |
+| `res/layout/item_tag_select.xml` | 外层 `FrameLayout` 为 `wrap_content`；只有 `tv_group_title` 与 `cb_tag`，无编辑图标、无 `tag_content` 容器，选中态直接作用在 `cb_tag` 上。`tv_group_title` 为 `wrap_content` 行内块（去掉整行背景，`margin=4dp` + 上下 `padding=10dp` 与标签块等高，`14sp` + `bold`），`cb_tag` 为 `wrap_content` + 圆角 selector 背景 + `maxLines=1` |
 | `ui/widget/recycler/ItemTouchCallback.kt` | 新增可配置 `canDrag: (ViewHolder) -> Boolean`（默认 true），`getMovementFlags` 与 `onMove` 都会过滤；`onMove` 额外检查拖拽区间内的可见 holder，避免标签跨过分组标题。三个标签页设为 `it.itemViewType != TYPE_GROUP`。另加 `dragFlagsForOtherLayout`（默认 0）用于非 Grid / Linear 的 LayoutManager：FlexboxLayoutManager 下 `getMovementFlags` 原本返回 0 会让拖拽失效，标签管理页与标签选择页都把它设为四个方向 |
 | 已移除的设置项 | 「标签管理每行标签数」对应的 `pref_config_other.xml` Preference、`OtherConfigFragment` 点击/summary 分支、`PreferKey.tagManageSpanCount`、`AppConfig.tagManageSpanCount`、中英文 strings 全部删除；旧设备 SharedPreferences 里可能残留该键，不再被读取 |
 
@@ -1207,5 +1207,5 @@ AnalyzeRule（上下文）
 
 > **文档版本**: 1.3
 > **生成日期**: 2026-07-30
-> **最近更新**: 2026-11-19（新增标签分组 `tag_group`、v81 迁移、分组管理页与标签编辑页分组选择；三页按分组方式显示；标签管理/选择两页均改为按文字宽度自动换行的 Flexbox 流式布局并保留拖拽排序，选择页取消编辑图标；「标签管理每行标签数」设置项移除）
+> **最近更新**: 2026-11-20（选择标签页分组名取消独占整行，改为行内行首加粗块，与该组标签同一行显示；分组间仍各自另起一行，拖拽/选中行为不变）
 > **基于代码扫描自动生成**
