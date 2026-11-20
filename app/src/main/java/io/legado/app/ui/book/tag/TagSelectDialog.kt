@@ -94,7 +94,7 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
                 binding.cbTag.gone(isGroup)
                 if (item is TagListItem.Group) {
                     binding.tvGroupTitle.maxWidth = maxTagWidth
-                    binding.tvGroupTitle.text = "${item.name}："
+                    binding.tvGroupTitle.text = item.name
                     return
                 }
                 if (item !is TagListItem.Tag) return
