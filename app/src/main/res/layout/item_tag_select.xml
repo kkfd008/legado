@@ -18,7 +18,7 @@
         android:paddingRight="8dp"
         android:paddingBottom="2dp"
         android:textColor="@color/primaryText"
-        android:textSize="18sp"
+        android:textSize="14sp"
         android:textStyle="bold"
         android:visibility="gone"
         tools:text="分组名" />
@@ -39,7 +39,7 @@
         android:paddingRight="5px"
         android:paddingBottom="2dp"
         android:textColor="@color/selector_tag_select_text"
-        android:textSize="16sp"
+        android:textSize="14sp"
         tools:text="标签名" />
 
 </FrameLayout>
