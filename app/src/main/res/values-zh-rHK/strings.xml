@@ -1239,6 +1239,7 @@
     <string name="clear_invalid_tag_confirm">將清理所有書籍上已不存在於標籤庫的標籤，是否繼續？</string>
     <string name="clear_invalid_tag_result">已清理 %1$d 本書的無效標籤</string>
     <string name="tag_group_manage">標籤分組管理</string>
+    <string name="local_sync">本機同步</string>
     <string name="tag_group">標籤分組</string>
     <string name="tag_group_ungrouped">未分組</string>
     <string name="tag_group_edit">修改標籤分組</string>

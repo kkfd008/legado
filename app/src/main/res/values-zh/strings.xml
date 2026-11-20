@@ -357,6 +357,7 @@
     <string name="ps_show_all_find">关闭则只显示勾选源的发现</string>
     <string name="update_toc">更新目录</string>
     <string name="update_local_book">更新本地书籍</string>
+    <string name="local_sync">本地同步</string>
     <string name="txt_toc_rule">TXT 目录规则</string>
     <string name="reload_toc">重载书籍目录</string>
     <string name="edit_local_book">编辑本地书籍</string>

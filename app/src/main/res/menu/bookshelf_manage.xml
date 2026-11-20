@@ -34,7 +34,7 @@
 
             <item
                 android:id="@+id/menu_tag_group_manage"
-                android:title="@string/tag_group_manage" />
+                android:title="@string/tag_group" />
 
             <item
                 android:id="@+id/menu_no_tag"

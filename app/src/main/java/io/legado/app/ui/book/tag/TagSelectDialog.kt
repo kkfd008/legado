@@ -1,10 +1,13 @@
 package io.legado.app.ui.book.tag
 
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.widget.Toolbar
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -24,7 +27,6 @@ import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.utils.applyTint
-import io.legado.app.utils.getCompatColor
 import io.legado.app.utils.gone
 import io.legado.app.utils.setLayout
 import io.legado.app.utils.showDialogFragment
@@ -92,19 +94,14 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
                 binding.cbTag.gone(isGroup)
                 if (item is TagListItem.Group) {
                     binding.tvGroupTitle.maxWidth = maxTagWidth
-                    binding.tvGroupTitle.text = item.name
+                    binding.tvGroupTitle.text = "${item.name}："
                     return
                 }
                 if (item !is TagListItem.Tag) return
                 val tag = item.bookTag
                 binding.cbTag.maxWidth = maxTagWidth
                 binding.cbTag.text = tag.name
-                val selected = currentTags and tag.tagId > 0
-                binding.cbTag.isActivated = selected
-                binding.cbTag.setTextColor(
-                    if (selected) 0xFFFFFFFF.toInt()
-                    else context.getCompatColor(R.color.primaryText)
-                )
+                binding.cbTag.isActivated = currentTags and tag.tagId > 0
             }
 
             override fun registerListener(holder: ItemViewHolder, binding: ItemTagSelectBinding) {
@@ -116,12 +113,7 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
                     } else {
                         currentTags = currentTags or tag.tagId
                     }
-                    val selected = currentTags and tag.tagId > 0
-                    binding.cbTag.isActivated = selected
-                    binding.cbTag.setTextColor(
-                        if (selected) 0xFFFFFFFF.toInt()
-                        else context.getCompatColor(R.color.primaryText)
-                    )
+                    binding.cbTag.isActivated = currentTags and tag.tagId > 0
                 }
                 // 长按交给 ItemTouchHelper 拖拽排序
                 holder.itemView.setOnLongClickListener(null)
@@ -179,6 +171,24 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
             alignItems = AlignItems.FLEX_START
         }
         binding.recyclerView.adapter = adapter
+        // 与分组选择页的 VerticalDivider 同款灰色，但 Flexbox 是流式布局，
+        // 只给分组标题所在行顶部画线，避免每条标签之间都出现分割线
+        binding.recyclerView.addItemDecoration(object : RecyclerView.ItemDecoration() {
+            private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = ContextCompat.getColor(requireContext(), R.color.bg_divider_line)
+                strokeWidth = resources.displayMetrics.density
+            }
+
+            override fun onDraw(canvas: Canvas, parent: RecyclerView, state: RecyclerView.State) {
+                for (i in 0 until parent.childCount) {
+                    val child = parent.getChildAt(i) ?: continue
+                    val position = parent.getChildAdapterPosition(child)
+                    if (position <= 0 || adapter.getItem(position) !is TagListItem.Group) continue
+                    val y = child.top - paint.strokeWidth
+                    canvas.drawLine(0f, y, parent.width.toFloat(), y, paint)
+                }
+            }
+        })
         val itemTouchCallback = ItemTouchCallback(adapter)
         itemTouchCallback.isCanDrag = true
         // 分组标题行不参与拖拽，标签只能在本组内移动

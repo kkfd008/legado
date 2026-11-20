@@ -359,6 +359,7 @@
     <string name="ps_show_all_find">Display the selected origin\'s Discovery if closed</string>
     <string name="update_toc">Update chapters</string>
     <string name="update_local_book">Update local books</string>
+    <string name="local_sync">Local sync</string>
     <string name="txt_toc_rule">Txt Catalog Rule</string>
     <string name="reload_toc">Reload book chapters</string>
     <string name="edit_local_book">Edit local book</string>
