@@ -427,16 +427,34 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
                 binding.tvBookShow.gone()
                 binding.rvBookshelfSearch.gone()
             } else {
-                val flow = if (key.startsWith("#")) {
-                    val tag = key.removePrefix("#")
-                    val tagIds = appDb.bookTagDao.all().filter { it.name == tag }.map { it.tagId }
-                    if (tagIds.isNotEmpty()) {
-                        appDb.bookDao.flowSearchByTag(tagIds.first())
-                    } else {
-                        appDb.bookDao.flowSearch(key)
+                val flow = when {
+                    key.startsWith("#") -> {
+                        val tag = key.removePrefix("#")
+                        val tagIds = appDb.bookTagDao.all().filter { it.name == tag }.map { it.tagId }
+                        if (tagIds.isNotEmpty()) {
+                            appDb.bookDao.flowSearchByTag(tagIds.first())
+                        } else {
+                            appDb.bookDao.flowSearch(key)
+                        }
                     }
-                } else {
-                    appDb.bookDao.flowSearch(key)
+                    key.startsWith("@") -> {
+                        // @序号 搜索使用该 TXT 目录规则的书籍。
+                        // 序号为规则的列表序号（1-based，按 serialNumber 排序）；
+                        // 兼容手动输入 serialNumber 或规则 id（内置规则为负数）。
+                        val num = key.removePrefix("@").toIntOrNull()
+                        val rules = appDb.txtTocRuleDao.all
+                        val rule = num?.let { n ->
+                            rules.getOrNull(n - 1)
+                                ?: rules.firstOrNull { it.serialNumber == n }
+                                ?: rules.firstOrNull { it.id == n.toLong() }
+                        }
+                        if (rule != null && rule.rule.isNotBlank()) {
+                            appDb.bookDao.flowSearchByTocRule(rule.rule)
+                        } else {
+                            appDb.bookDao.flowSearch(key)
+                        }
+                    }
+                    else -> appDb.bookDao.flowSearch(key)
                 }
                 flow.conflate().collect {
                     if (it.isEmpty()) {

@@ -505,6 +505,7 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 - 数据来源：`TxtTocRuleActivity.initData()` 用 `combine(txtTocRuleDao.observeAll(), bookDao.flowAll())` 统计。本地 TXT 书把命中的目录规则正则字符串保存在 `books.tocUrl`（`TextFile.getChapterList()` 自动匹配、`TxtTocRuleDialog` 手动更换规则都写入 `rule.rule`），因此匹配口径为 `book.isLocal && book.tocUrl == rule.rule`。
 - 数量不放进 Room 实体（避免数据库迁移，也不污染导出的规则 JSON）：`TxtTocRuleAdapter` 持有 `Map<ruleId, count>`，`setBookCounts()` 在 map 变化时派发 `upCount` payload 局部刷新；`diffItemCallBack` 仍只比较规则自身字段，拖拽/选择/导出逻辑不受影响。
 - 显示：`item_txt_toc_rule.xml` 第二行右侧 `tv_book_count`，文案 `@string/rule_book_count`（中「匹配 %1$d 本书」/ 英「%1$d books matched」）；`title_example` 改为 `0dp` 并约束到其左侧，长示例省略显示。
+- 条目「搜索」：菜单 `txt_toc_rule_item.xml` 顶部 `menu_search`（`@string/search`，无需新增多语言），`TxtTocRuleAdapter.showMenu()` 回调 `callBack.search(source, position + 1)`，`TxtTocRuleActivity.search()` 调 `SearchActivity.start(this, "@$index", submit = false)`，只填关键字、看本地匹配，不提交书源搜索。
 
 ### 6.9 目录页「重载书籍目录」
 
@@ -516,6 +517,13 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
   - 两条路最后都 `bookData.postValue(book)`，`ChapterListFragment` 的 `bookData` 观察者 `initBook()` 会重读数据库刷新列表；`ReadBook.onChapterListUpdated()` 让阅读页同步拿到新目录。
 - 与「TXT 目录规则」的区别：后者先改 `book.tocUrl`（`onTocRegexDialogResult` → `upBookTocRule`）再解析；重载不动 `book.tocUrl`，只按现有规则重跑，因此可用于"规则没变但目录解析错了/文件被替换"的场景。
 - 交互：重载期间 `WaitDialog`；成功 `toast(R.string.success)`；失败 `AppLog.put("重载目录失败…")` + `toast("LoadTocError:…")`。
+
+### 6.10 搜索页「@序号」搜索语法（TXT 目录规则书籍）
+
+- 语法：`@数字` 表示搜索"使用该序号 TXT 目录规则的书籍"，与既有 `#标签`（标签搜索）并列。序号取**规则列表序号（1-based，按 `serialNumber` 升序）**，即规则页菜单点击时传入的 `position + 1`；手动输入时还兼容 `serialNumber` 与规则 `id`（内置规则为负数）。
+- 解析：`SearchActivity.upHistory()` 的 `when` 分支新增 `key.startsWith("@")`，从 `appDb.txtTocRuleDao.all` 按上述口径定位 `TxtTocRule`，取其 `rule.rule` 正则；命中则调用 `BookDao.flowSearchByTocRule(rule.rule)`，否则回退 `flowSearch(key)`。
+- DAO：`BookDao.flowSearchByTocRule(tocUrl)` 查询 `type & local > 0 and tocUrl = :tocUrl order by durChapterTime desc`，关联口径与规则页计数一致（`book.tocUrl == rule.rule` 字符串全等），只覆盖本地书。
+- 注意：`rule.rule` 为空串时不会走该分支（避免误命中大量 `tocUrl = ""` 的书）；规则被编辑后旧书 `tocUrl` 仍是旧正则快照，不再匹配该规则。
 
 ### 6.10 编辑本地书籍（写回 TXT 原文件）
 
@@ -1207,5 +1215,5 @@ AnalyzeRule（上下文）
 
 > **文档版本**: 1.3
 > **生成日期**: 2026-07-30
-> **最近更新**: 2026-11-20（书架菜单改名；选择标签页分组间加灰色分割线、分组名无冒号、标签无选中背景、选中文字棕色、左右间距 5px 并压缩行高；分组名 18sp / 标签名 16sp）
+> **最近更新**: 2026-11-22（搜索页新增 `@序号` 语法搜索使用指定 TXT 目录规则的本地书籍；TXT 目录规则列表每条菜单顶部加「搜索」跳转并预填 `@序号`）
 > **基于代码扫描自动生成**

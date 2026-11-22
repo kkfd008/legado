@@ -156,6 +156,7 @@ class TxtTocRuleAdapter(context: Context, private val callBack: CallBack) :
         popupMenu.inflate(R.menu.txt_toc_rule_item)
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
+                R.id.menu_search -> callBack.search(source, position + 1)
                 R.id.menu_top -> callBack.toTop(source)
                 R.id.menu_bottom -> callBack.toBottom(source)
                 R.id.menu_del -> {
@@ -241,6 +242,7 @@ class TxtTocRuleAdapter(context: Context, private val callBack: CallBack) :
         }
 
     interface CallBack {
+        fun search(source: TxtTocRule, index: Int)
         fun del(source: TxtTocRule)
         fun edit(source: TxtTocRule)
         fun update(vararg source: TxtTocRule)

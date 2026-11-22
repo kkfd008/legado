@@ -20,6 +20,7 @@ import io.legado.app.help.book.isLocal
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.association.ImportTxtTocRuleDialog
+import io.legado.app.ui.book.search.SearchActivity
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.qrcode.QrCodeResult
 import io.legado.app.ui.widget.SelectActionBar
@@ -153,6 +154,11 @@ class TxtTocRuleActivity : VMBaseActivity<ActivityTxtTocRuleBinding, TxtTocRuleV
 
         }
         return super.onCompatOptionsItemSelected(item)
+    }
+
+    override fun search(source: TxtTocRule, index: Int) {
+        // @序号 只填入关键字并展示本地匹配结果，不提交书源搜索
+        SearchActivity.start(this, "@$index", submit = false)
     }
 
     override fun del(source: TxtTocRule) {

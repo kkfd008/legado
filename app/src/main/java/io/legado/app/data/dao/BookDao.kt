@@ -84,6 +84,16 @@ interface BookDao {
     @Query("SELECT * FROM books WHERE tags & :tagId > 0")
     fun flowSearchByTag(tagId: Long): Flow<List<Book>>
 
+    /**
+     * 搜索使用指定 TXT 目录规则的书籍。
+     * 本地 TXT 书把命中的目录规则正则字符串保存在 tocUrl，按字符串全等匹配。
+     */
+    @Query(
+        """SELECT * FROM books WHERE type & ${BookType.local} > 0
+        and tocUrl = :tocUrl order by durChapterTime desc"""
+    )
+    fun flowSearchByTocRule(tocUrl: String): Flow<List<Book>>
+
     @Query("SELECT * FROM books WHERE tags = 0")
     fun flowSearchByNoTag(): Flow<List<Book>>
 
