@@ -438,17 +438,11 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
     ): Array<Int> {
         // calculate search result's pageIndex
         val pages = textChapter.pages
-        val content = textChapter.getContent()
-        val query = searchResult.query
-        val queryLength = query.length
+        val queryLength = searchResult.query.length
 
-        var count = 0
-        var index = content.indexOf(query)
-        while (count != searchResult.resultCountWithinChapter) {
-            index = content.indexOf(query, index + queryLength)
-            count += 1
-        }
-        val contentPosition = index
+        // 多关键字搜索时 resultCountWithinChapter 为多关键字合并排序后的序号，
+        // 无法再用单个关键字 indexOf 精确定位，直接使用搜索时记录的字符位置
+        val contentPosition = searchResult.queryIndexInChapter
         var pageIndex = 0
         var length = pages[pageIndex].text.length
         while (length < contentPosition && pageIndex + 1 < pages.size) {
