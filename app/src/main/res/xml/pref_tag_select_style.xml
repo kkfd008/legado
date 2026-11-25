@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <io.legado.app.lib.prefs.SwitchPreference
+        android:defaultValue="true"
+        android:key="showTagGroupTitle"
+        android:title="@string/show_tag_group_title"
+        app:iconSpaceReserved="false" />
+
+    <io.legado.app.lib.prefs.Preference
+        android:key="tagGroupTextSize"
+        android:title="@string/tag_group_text_size"
+        app:iconSpaceReserved="false" />
+
+    <io.legado.app.lib.prefs.Preference
+        android:key="tagTextSize"
+        android:title="@string/tag_text_size"
+        app:iconSpaceReserved="false" />
+
+    <io.legado.app.lib.prefs.ColorPreference
+        android:defaultValue="@color/background_menu"
+        android:key="tagGroupBackgroundColor"
+        android:title="@string/tag_group_background_color"
+        app:cpv_dialogType="preset"
+        app:iconSpaceReserved="false" />
+
+    <io.legado.app.lib.prefs.ColorPreference
+        android:defaultValue="@android:color/transparent"
+        android:key="tagNameBackgroundColor"
+        android:title="@string/tag_name_background_color"
+        app:cpv_dialogType="custom"
+        app:cpv_showAlphaSlider="true"
+        app:iconSpaceReserved="false" />
+
+    <io.legado.app.lib.prefs.ColorPreference
+        android:defaultValue="@color/background_menu"
+        android:key="tagSelectedBackgroundColor"
+        android:title="@string/tag_selected_background_color"
+        app:cpv_dialogType="preset"
+        app:iconSpaceReserved="false" />
+
+    <io.legado.app.lib.prefs.Preference
+        android:key="tagBoxPaddingHorizontal"
+        android:title="@string/tag_box_padding_horizontal"
+        app:iconSpaceReserved="false" />
+
+    <io.legado.app.lib.prefs.Preference
+        android:key="tagBoxPaddingVertical"
+        android:title="@string/tag_box_padding_vertical"
+        app:iconSpaceReserved="false" />
+
+    <io.legado.app.lib.prefs.Preference
+        android:key="tagBoxCornerRadius"
+        android:title="@string/tag_box_corner_radius"
+        app:iconSpaceReserved="false" />
+
+    <io.legado.app.lib.prefs.Preference
+        android:key="tagBoxBorder"
+        android:title="@string/tag_box_border"
+        app:iconSpaceReserved="false" />
+
+    <io.legado.app.lib.prefs.Preference
+        android:key="tagBoxMargin"
+        android:title="@string/tag_box_margin"
+        app:iconSpaceReserved="false" />
+
+    <io.legado.app.lib.prefs.Preference
+        android:key="tagDividerMarginTop"
+        android:title="@string/tag_divider_margin_top"
+        app:iconSpaceReserved="false" />
+
+    <io.legado.app.lib.prefs.Preference
+        android:key="tagDividerMarginBottom"
+        android:title="@string/tag_divider_margin_bottom"
+        app:iconSpaceReserved="false" />
+
+</androidx.preference.PreferenceScreen>

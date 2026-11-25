@@ -6,11 +6,11 @@
 |------|-----|
 | 数据库名称 | `legado.db` |
 | 数据库类型 | SQLite（基于 Android Room 持久化框架） |
-| 当前版本 | **79** |
+| 当前版本 | **81** |
 | 字符集 | UTF-8 |
-| 表数量 | 23 张表 + 1 个视图 |
-| 实体数量 | 23 个（含 21 个 Room `@Entity` 注解类 + 1 个 `@DatabaseView` 注解类） |
-| 迁移策略 | `fallbackToDestructiveMigration()` + 手动迁移（v10~v43）+ AutoMigration（v43~v79） |
+| 表数量 | 24 张表 + 1 个视图 |
+| 实体数量 | 25 个（24 个 Room `@Entity` 注解类 + 1 个 `@DatabaseView` 注解类） |
+| 迁移策略 | `fallbackToDestructiveMigration()` + 手动迁移（v10~v43）+ AutoMigration（v43~v81） |
 | 主要语言 | 中文（数据库 Collation 设置为 `Locale.CHINESE`） |
 
 ### 1.1 数据库设计说明
@@ -26,7 +26,7 @@
 
 ### 1.2 版本历史
 
-数据库从 v10 起经过多次手动迁移（`Migration`），v43 开始启用 Room 的 `AutoMigration` 机制，逐步演进至当前 v79。
+数据库从 v10 起经过多次手动迁移（`Migration`），v43 开始启用 Room 的 `AutoMigration` 机制，逐步演进至当前 v81（v80 为 `book_tags` 增加 `hot`，v81 新增 `tag_group` 表并为 `book_tags` 增加 `groupId`）。
 
 ---
 
@@ -37,6 +37,7 @@ erDiagram
     books ||--o{ chapters : "bookUrl → bookUrl (CASCADE)"
     books ||--o{ book_groups : "group → groupId"
     books }o--o{ book_tags : "tags(bitset) → tagId"
+    book_tags }o--o| tag_group : "groupId → groupId (0=未分组，逻辑关联)"
     book_sources ||--o{ searchBooks : "bookSourceUrl → origin (CASCADE)"
     book_sources ||--o{ books : "bookSourceUrl → origin"
     rssSources ||--o{ rssArticles : "逻辑关联"
@@ -98,6 +99,14 @@ erDiagram
     book_tags {
         Long tagId PK "标签ID(2的幂次)"
         String name "标签名称"
+        Int order "排序"
+        Boolean hot "搜索页热门标签(v80)"
+        Long groupId "所属分组ID，0=未分组(v81)"
+    }
+
+    tag_group {
+        Long groupId PK "分组ID，0保留给未分组"
+        String name "分组名称"
         Int order "排序"
     }
 
@@ -449,8 +458,23 @@ erDiagram
 | `tagId` | INTEGER | `0b1` | **PRIMARY KEY** | 标签ID（2的幂次，如 1, 2, 4, 8, ...） |
 | `name` | TEXT | `""` | NOT NULL | 标签名称 |
 | `order` | INTEGER | `0` | NOT NULL | 排序 |
+| `hot` | INTEGER | `0` | NOT NULL | 是否为搜索页热门标签（v80 新增，1=热门） |
+| `groupId` | INTEGER | `0` | NOT NULL | 所属标签分组ID（v81 新增，0=未分组，逻辑关联 `tag_group.groupId`） |
 
-**说明：** 书籍的 `tags` 字段通过位掩码组合多个标签，例如 `tags = 3` 表示同时拥有 `tagId=1` 和 `tagId=2` 的标签。
+**说明：** 书籍的 `tags` 字段通过位掩码组合多个标签，例如 `tags = 3` 表示同时拥有 `tagId=1` 和 `tagId=2` 的标签。删除标签时需同步清除书籍上的对应位，否则新建标签复用 `tagId` 会让旧书「继承」该标签。
+
+#### 3.3.1 tag_group（标签分组表，v81 新增）
+
+**表名：** `tag_group`  
+**说明：** 标签分组定义；`groupId` 为普通递增整数，0 保留给「未分组」语义，实际新建分组从 1 开始分配。
+
+| 字段名 | 数据类型 | 默认值 | 约束 | 说明 |
+|--------|---------|--------|------|------|
+| `groupId` | INTEGER | `0` | **PRIMARY KEY** | 分组ID |
+| `name` | TEXT | `""` | NOT NULL | 分组名称 |
+| `order` | INTEGER | `0` | NOT NULL | 排序，列表按倒序展示 |
+
+**说明：** 删除分组时 `BookTagGroupDao.deleteAndClearTags()` 在同一事务内把该组标签的 `groupId` 置 0，标签本身保留。分组数据随备份导出/恢复（`tagGroup.json`）。
 
 ---
 
@@ -1039,7 +1063,7 @@ FROM book_sources
 | 41→42 | `httpTTS` 添加 `contentType` 字段 |
 | 42→43 | `chapters` 添加 `isVolume` 字段 |
 
-### 7.2 AutoMigration（v43 → v79）
+### 7.2 AutoMigration（v43 → v81）
 
 | 版本范围 | 迁移方式 | 特殊说明 |
 |---------|---------|---------|
@@ -1079,6 +1103,8 @@ FROM book_sources
 | 76→77 | AutoMigration | — |
 | **77→78** | AutoMigration + Spec | `Migration_77_78`：删除 `books.tags` 列（旧版tags列，被新版 `tags` 位掩码字段替代） |
 | 78→79 | AutoMigration | — |
+| 79→80 | AutoMigration | `book_tags` 新增 `hot` 列（默认 0），标记搜索页热门标签 |
+| 80→81 | AutoMigration | 新建 `tag_group` 表；`book_tags` 新增 `groupId` 列（默认 0 = 未分组） |
 
 ### 7.3 数据库初始化回调
 

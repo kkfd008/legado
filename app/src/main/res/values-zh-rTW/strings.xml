@@ -1245,4 +1245,19 @@
     <string name="tag_group_ungrouped">未分組</string>
     <string name="tag_group_edit">修改標籤分組</string>
     <string name="tag_group_name_empty">分組名稱不能為空</string>
+    <string name="select_tag_style">選擇標籤樣式</string>
+    <string name="tag_select_style">標籤選擇頁樣式</string>
+    <string name="show_tag_group_title">顯示分組名</string>
+    <string name="tag_group_text_size">分組名字型大小</string>
+    <string name="tag_text_size">標籤字型大小</string>
+    <string name="tag_box_padding_horizontal">文字左右內邊距（padding）</string>
+    <string name="tag_box_padding_vertical">文字上下內邊距（padding）</string>
+    <string name="tag_box_corner_radius">文字圓角半徑</string>
+    <string name="tag_box_border">文字邊框寬度（border）</string>
+    <string name="tag_box_margin">文字外邊距（margin）</string>
+    <string name="tag_group_background_color">分組名背景色</string>
+    <string name="tag_name_background_color">標籤名背景色</string>
+    <string name="tag_selected_background_color">標籤選中背景色</string>
+    <string name="tag_divider_margin_top">分割線上邊距（margin）</string>
+    <string name="tag_divider_margin_bottom">分割線下邊距（margin）</string>
 </resources>

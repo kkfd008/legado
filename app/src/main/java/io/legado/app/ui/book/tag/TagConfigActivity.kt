@@ -16,19 +16,24 @@ import io.legado.app.databinding.ActivityTagConfigBinding
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.book.search.SearchActivity
+import io.legado.app.ui.config.ConfigActivity
+import io.legado.app.ui.config.ConfigTag
 import io.legado.app.ui.widget.SelectActionBar
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.setEdgeEffectColor
+import io.legado.app.utils.startActivity
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * 标签配置：展示标签、书籍数量、热门开关，支持编辑/排序/删除与批量操作。
@@ -40,6 +45,7 @@ class TagConfigActivity : VMBaseActivity<ActivityTagConfigBinding, TagConfigView
     PopupMenu.OnMenuItemClickListener {
 
     override val viewModel by viewModels<TagConfigViewModel>()
+    private val groupViewModel by viewModels<TagGroupViewModel>()
     override val binding by viewBinding(ActivityTagConfigBinding::inflate)
     private val adapter: TagConfigAdapter by lazy {
         TagConfigAdapter(this, this)
@@ -119,6 +125,10 @@ class TagConfigActivity : VMBaseActivity<ActivityTagConfigBinding, TagConfigView
                     toastOnUi("标签已达上限(64个)")
                 }
             }
+            R.id.menu_add_group -> showDialogFragment(TagGroupEditDialog())
+            R.id.menu_tag_select_style -> startActivity<ConfigActivity> {
+                putExtra("configTag", ConfigTag.TAG_SELECT_STYLE_CONFIG)
+            }
         }
         return super.onCompatOptionsItemSelected(item)
     }
@@ -157,6 +167,27 @@ class TagConfigActivity : VMBaseActivity<ActivityTagConfigBinding, TagConfigView
 
     override fun upOrder(tags: List<BookTag>) {
         viewModel.upOrder(tags)
+    }
+
+    override fun editGroup(groupId: Long) {
+        lifecycleScope.launch(IO) {
+            val group = appDb.tagGroupDao.getById(groupId) ?: return@launch
+            withContext(Main) {
+                showDialogFragment(TagGroupEditDialog(group.copy()))
+            }
+        }
+    }
+
+    override fun delGroup(groupId: Long) {
+        lifecycleScope.launch(IO) {
+            val group = appDb.tagGroupDao.getById(groupId) ?: return@launch
+            withContext(Main) {
+                alert(R.string.delete, R.string.sure_del) {
+                    yesButton { groupViewModel.delete(group) {} }
+                    noButton()
+                }
+            }
+        }
     }
 
     override fun upCountView() {

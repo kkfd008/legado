@@ -96,10 +96,14 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
         payloads: MutableList<Any>
     ) {
         val isGroup = item is TagListItem.Group
-        binding.tvGroupTitle.gone(!isGroup)
+        binding.groupHeader.gone(!isGroup)
         binding.tagContent.gone(isGroup)
         if (item is TagListItem.Group) {
             binding.tvGroupTitle.text = item.name
+            // 未分组是虚拟分组，不允许修改/删除
+            val isUngrouped = item.groupId == 0L
+            binding.tvGroupEdit.gone(isUngrouped)
+            binding.tvGroupDel.gone(isUngrouped)
             return
         }
         if (item !is TagListItem.Tag) return
@@ -126,6 +130,16 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
     }
 
     override fun registerListener(holder: ItemViewHolder, binding: ItemTagConfigBinding) {
+        binding.tvGroupEdit.setOnClickListener {
+            (getItem(holder.layoutPosition) as? TagListItem.Group)?.let {
+                if (it.groupId != 0L) callBack.editGroup(it.groupId)
+            }
+        }
+        binding.tvGroupDel.setOnClickListener {
+            (getItem(holder.layoutPosition) as? TagListItem.Group)?.let {
+                if (it.groupId != 0L) callBack.delGroup(it.groupId)
+            }
+        }
         binding.cbSelect.setOnUserCheckedChangeListener { isChecked ->
             (getItem(holder.layoutPosition) as? TagListItem.Tag)?.let {
                 if (isChecked) {
@@ -226,6 +240,8 @@ class TagConfigAdapter(context: Context, private val callBack: CallBack) :
         fun toBottom(tag: BookTag)
         fun upOrder(tags: List<BookTag>)
         fun search(tag: BookTag)
+        fun editGroup(groupId: Long)
+        fun delGroup(groupId: Long)
         fun upCountView()
     }
 

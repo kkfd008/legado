@@ -1,8 +1,11 @@
 package io.legado.app.help.config
 
 import android.content.SharedPreferences
+import android.graphics.Color
 import android.os.Build
+import androidx.core.content.ContextCompat
 import io.legado.app.BuildConfig
+import io.legado.app.R
 import io.legado.app.constant.AppConst
 import io.legado.app.constant.PreferKey
 import io.legado.app.data.appDb
@@ -603,6 +606,103 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
         }
         set(value) {
             appCtx.putPrefInt(PreferKey.sourceEditMaxLine, value)
+        }
+
+    /** 标签选择页是否显示分组名 */
+    var showTagGroupTitle: Boolean
+        get() = appCtx.getPrefBoolean(PreferKey.showTagGroupTitle, true)
+        set(value) {
+            appCtx.putPrefBoolean(PreferKey.showTagGroupTitle, value)
+        }
+
+    /** 标签选择页分组名字号，单位 sp */
+    var tagGroupTextSize: Int
+        get() = appCtx.getPrefInt(PreferKey.tagGroupTextSize, 14).coerceIn(8, 30)
+        set(value) {
+            appCtx.putPrefInt(PreferKey.tagGroupTextSize, value.coerceIn(8, 30))
+        }
+
+    /** 标签选择页标签字号，单位 sp */
+    var tagTextSize: Int
+        get() = appCtx.getPrefInt(PreferKey.tagTextSize, 14).coerceIn(8, 30)
+        set(value) {
+            appCtx.putPrefInt(PreferKey.tagTextSize, value.coerceIn(8, 30))
+        }
+
+    /** 标签选择页文字框左右内边距，单位 dp */
+    var tagBoxPaddingHorizontal: Int
+        get() = appCtx.getPrefInt(PreferKey.tagBoxPaddingHorizontal, 3).coerceIn(0, 20)
+        set(value) {
+            appCtx.putPrefInt(PreferKey.tagBoxPaddingHorizontal, value.coerceIn(0, 20))
+        }
+
+    /** 标签选择页文字框上下内边距，单位 dp */
+    var tagBoxPaddingVertical: Int
+        get() = appCtx.getPrefInt(PreferKey.tagBoxPaddingVertical, 2).coerceIn(0, 20)
+        set(value) {
+            appCtx.putPrefInt(PreferKey.tagBoxPaddingVertical, value.coerceIn(0, 20))
+        }
+
+    /** 标签选择页文字框圆角半径，单位 dp */
+    var tagBoxCornerRadius: Int
+        get() = appCtx.getPrefInt(PreferKey.tagBoxCornerRadius, 12).coerceIn(0, 30)
+        set(value) {
+            appCtx.putPrefInt(PreferKey.tagBoxCornerRadius, value.coerceIn(0, 30))
+        }
+
+    /** 标签选择页文字框边框宽度，单位 dp，0 为无边框 */
+    var tagBoxBorder: Int
+        get() = appCtx.getPrefInt(PreferKey.tagBoxBorder, 0).coerceIn(0, 10)
+        set(value) {
+            appCtx.putPrefInt(PreferKey.tagBoxBorder, value.coerceIn(0, 10))
+        }
+
+    /** 标签选择页文字框外边距，单位 dp */
+    var tagBoxMargin: Int
+        get() = appCtx.getPrefInt(PreferKey.tagBoxMargin, 2).coerceIn(0, 20)
+        set(value) {
+            appCtx.putPrefInt(PreferKey.tagBoxMargin, value.coerceIn(0, 20))
+        }
+
+    /** 标签选择页分组名背景色，默认跟随主题的 background_menu */
+    var tagGroupBackgroundColor: Int
+        get() = appCtx.getPrefInt(
+            PreferKey.tagGroupBackgroundColor,
+            ContextCompat.getColor(appCtx, R.color.background_menu)
+        )
+        set(value) {
+            appCtx.putPrefInt(PreferKey.tagGroupBackgroundColor, value)
+        }
+
+    /** 标签选择页标签名背景色，默认透明 */
+    var tagNameBackgroundColor: Int
+        get() = appCtx.getPrefInt(PreferKey.tagNameBackgroundColor, Color.TRANSPARENT)
+        set(value) {
+            appCtx.putPrefInt(PreferKey.tagNameBackgroundColor, value)
+        }
+
+    /** 标签选择页标签选中背景色，默认跟随主题的 background_menu */
+    var tagSelectedBackgroundColor: Int
+        get() = appCtx.getPrefInt(
+            PreferKey.tagSelectedBackgroundColor,
+            ContextCompat.getColor(appCtx, R.color.background_menu)
+        )
+        set(value) {
+            appCtx.putPrefInt(PreferKey.tagSelectedBackgroundColor, value)
+        }
+
+    /** 标签选择页分组分割线上边距，单位 dp */
+    var tagDividerMarginTop: Int
+        get() = appCtx.getPrefInt(PreferKey.tagDividerMarginTop, 0).coerceIn(0, 30)
+        set(value) {
+            appCtx.putPrefInt(PreferKey.tagDividerMarginTop, value.coerceIn(0, 30))
+        }
+
+    /** 标签选择页分组分割线下边距，单位 dp */
+    var tagDividerMarginBottom: Int
+        get() = appCtx.getPrefInt(PreferKey.tagDividerMarginBottom, 0).coerceIn(0, 30)
+        set(value) {
+            appCtx.putPrefInt(PreferKey.tagDividerMarginBottom, value.coerceIn(0, 30))
         }
 
     var audioPlayUseWakeLock: Boolean

@@ -6,6 +6,12 @@
     <item
         android:id="@+id/menu_clear_invalid"
         android:title="@string/clear_invalid_tag"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_add_group"
+        android:icon="@drawable/ic_add_circle"
+        android:title="@string/add_group"
         app:showAsAction="always"
         tools:ignore="AlwaysShowAction" />
 
@@ -15,5 +21,10 @@
         android:title="@string/add_tag"
         app:showAsAction="always"
         tools:ignore="AlwaysShowAction" />
+
+    <item
+        android:id="@+id/menu_tag_select_style"
+        android:title="@string/select_tag_style"
+        app:showAsAction="never" />
 
 </menu>

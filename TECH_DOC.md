@@ -3,7 +3,7 @@
 > **项目名称**: Legado（开源阅读）
 > **项目类型**: 免费开源的 Android 平台电子书阅读器
 > **开发语言**: Kotlin
-> **当前数据库版本**: 79
+> **当前数据库版本**: 81
 
 ---
 
@@ -30,7 +30,7 @@
 | 类别 | 技术/库 | 用途 |
 |------|---------|------|
 | 开发语言 | Kotlin | 主体开发语言 |
-| 数据库 | Room (SQLite) | 本地数据持久化，当前版本 79 |
+| 数据库 | Room (SQLite) | 本地数据持久化，当前版本 81 |
 | 网络请求 | OkHttp + Cronet | HTTP 客户端与 Chromium 网络栈 |
 | HTML 解析 | Jsoup + JsoupXpath | HTML 内容解析与 XPath 查询 |
 | JSON 解析 | json-path | JSON 数据路径查询 |
@@ -73,8 +73,8 @@
 ```
 app/src/main/java/io/legado/app/
 ├── data/          # 数据层
-│   ├── dao/       # 23个DAO接口，数据访问对象
-│   ├── entities/  # 23个实体类 + rule/子目录（6个规则类）
+│   ├── dao/       # 24 个 DAO 接口，数据访问对象
+│   ├── entities/  # 24 个 @Entity + 1 个视图，另 rule/子目录（6 个规则类）
 │   ├── AppDatabase.kt          # Room 数据库定义
 │   └── DatabaseMigrations.kt   # 数据库迁移
 ├── model/         # 业务逻辑层
@@ -141,13 +141,13 @@ app/src/main/java/io/legado/app/
 
 Room 数据库是整个应用的数据核心，定义了所有实体、DAO 接口和数据库迁移。
 
-- **数据库版本**: 当前版本 79
-- **AutoMigration**: 支持从 v43 到 v79 的自动迁移
+- **数据库版本**: 当前版本 81
+- **AutoMigration**: 支持从 v43 到 v81 的自动迁移
 - **TypeConverter**: 支持 JSON 序列化/反序列化
 
-### 3.2 DAO 接口（23个）
+### 3.2 DAO 接口（24 个）
 
-数据访问层包含 23 个 DAO 接口，每个接口对应一个实体表的数据操作：
+数据访问层包含 24 个 DAO 接口，每个接口对应一个实体表的数据操作：
 
 | DAO 名称 | 对应实体 | 职责 |
 |----------|---------|------|
@@ -176,7 +176,7 @@ Room 数据库是整个应用的数据核心，定义了所有实体、DAO 接�
 | ServerDao | Server | WebDAV 服务器配置 |
 | CacheDao | Cache | 缓存数据操作 |
 
-### 3.3 实体类（23个 + 规则子类）
+### 3.3 实体类（24 个 @Entity + 1 个视图 + 规则子类）
 
 ```
 entities/
@@ -184,7 +184,8 @@ entities/
 ├── BookChapter.kt        # 书籍章节
 ├── Bookmark.kt           # 书签
 ├── BookGroup.kt          # 书籍分组
-├── BookTag.kt            # 书籍标签（位掩码设计）
+├── BookTag.kt            # 书籍标签（位掩码设计，v80 加 hot、v81 加 groupId）
+├── BookTagGroup.kt       # 标签分组（表 tag_group，v81 新增）
 ├── BookSource.kt         # 书源
 ├── BookSourcePart.kt     # 书源部分字段视图（book_sources_part）
 ├── RssSource.kt          # RSS源
@@ -472,17 +473,18 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 | `ui/book/tag/TagListItem.kt` | `sealed class TagListItem`：`Group(groupId, name)` 标题行（`TYPE_GROUP=1`）与 `Tag(bookTag, bookCount)` 标签行（`TYPE_TAG=0`）；三个页面的 adapter 统一以它为 `ITEM`，靠 `getItemViewType()` 区分 |
 | `ui/book/tag/TagSort.kt` | `toTagGroupItems(groups, ungroupedName, bookCount)`：按分组 order 降序生成「标题 + 组内标签」，空分组不插入标题，未分组（含所属分组已删除的标签）最后追加；`sortByTagGroup()` 保留给搜索页热门标签。两者均返回新列表、不改动实体 |
 | `ui/book/tag/TagManageDialog.kt` | 与标签选择页同样使用 `FlexboxLayoutManager`（ROW + WRAP + FLEX_START）按文字宽度自动换行；`convert` 里把 itemView 的 LayoutParams 转成 `FlexboxLayoutManager.LayoutParams`（标题行 `MATCH_PARENT` + `isWrapBefore`，标签行 `WRAP_CONTENT` + `flexGrow=0`），`tvTag.maxWidth` 限制超长名称；`combine(tagList, tagGroupList)` 后 `toTagGroupItems()`；拖拽结束在 `onClearView` 里只对 `Tag` 项按 `size - index` 用 `copy()` 回写 order |
-| `ui/book/tag/TagSelectDialog.kt` | 用 `FlexboxLayoutManager`（`FlexDirection.ROW` + `FlexWrap.WRAP` + `FLEX_START`）取消固定每行数量，标签按文字宽度依次排列、自动换行；`convert` 里把 `holder.itemView.layoutParams` 转成 `FlexboxLayoutManager.LayoutParams`：所有行统一 `WRAP_CONTENT` + `flexGrow=0`，**只有 Group 行 `isWrapBefore=true`**（每组另起一行），组内首个标签紧随标题排在同一行、不再强制换行；`cbTag` / `tvGroupTitle` 的 `maxWidth` 均限制在屏宽 85% 防止超长名撑出屏幕。条目只剩一个 `cb_tag` TextView（点击切换选中、activated 决定棕色文字），无编辑图标、无选中背景；`tvGroupTitle` 文本不追加冒号；`initRecyclerView` 里新增 `RecyclerView.ItemDecoration`，只在 Group 行（首组除外）顶部用 `@color/bg_divider_line` 画整行分割线（与分组选择页的 `VerticalDivider` 同款灰色，Flexbox 下不能直接用 VerticalDivider，否则每条标签间都会有线）；`combine(...).toTagGroupItems()` 数据源不变。Group 仍是独立列表项，因此 `canDrag` 与 `swap()` 的「不可跨组拖拽」拦截不受布局影响 |
+| `ui/book/tag/TagSelectDialog.kt` | 用 `FlexboxLayoutManager`（`FlexDirection.ROW` + `FlexWrap.WRAP` + `FLEX_START`）取消固定每行数量，标签按文字宽度依次排列、自动换行；`convert` 里把 `holder.itemView.layoutParams` 转成 `FlexboxLayoutManager.LayoutParams`：所有行统一 `WRAP_CONTENT` + `flexGrow=0`，**只有 Group 行 `isWrapBefore=true`**（每组另起一行），组内首个标签紧随标题排在同一行、不再强制换行；`cbTag` / `tvGroupTitle` 的 `maxWidth` 均限制在屏宽 85% 防止超长名撑出屏幕。条目只剩一个 `cb_tag` TextView（点击切换选中，`state_activated` 决定红字 `md_red_500` + 灰底圆角），无编辑图标；`tvGroupTitle` 文本不追加冒号；`initRecyclerView` 里新增 `RecyclerView.ItemDecoration`，只在 Group 行（首组除外）顶部用 `@color/bg_divider_line` 画整行分割线（与分组选择页的 `VerticalDivider` 同款灰色，Flexbox 下不能直接用 VerticalDivider，否则每条标签间都会有线）；`combine(...).toTagGroupItems()` 数据源不变。Group 仍是独立列表项，因此 `canDrag` 与 `swap()` 的「不可跨组拖拽」拦截不受布局影响 |
 | `ui/book/tag/TagViewModel.kt` | `tagList = bookTagDao.flowSelect()`、`tagGroupList = tagGroupDao.flowAll()`；`upOrder` 按 `size - index` 写 order；`getNextTagId()` 取最小可用的 2 的幂次（上限 64 个） |
 | 标签分组 | `data/entities/BookTagGroup.kt`（表 `tag_group`，`groupId` 普通递增整数，0 保留给未分组、实际从 1 分配）、`BookTagGroupDao`（`flowAll`/`all` 均按 `order desc`，`deleteAndClearTags()` 事务内把该组标签 `groupId` 置 0）。`BookTag.groupId` 新增列 `@ColumnInfo(defaultValue = "0")`，Room 由 v80 AutoMigration 到 v81；`Backup`/`Restore` 增加 `tagGroup.json` |
 | `TagGroupManageDialog` / `TagGroupEditDialog` | 参考书籍分组管理：线性列表 + 拖拽（松手按 `size - index` 用 `copy()` 批量回写 order）、工具栏「+」、条目编辑/删除、独立编辑弹窗含名称校验与删除确认。入口在 `main_bookshelf.xml` 的「标签管理」下方与 `bookshelf_manage.xml` 的标签子菜单 |
 | `TagEditDialog` | 标签名称下方新增分组下拉：第 0 项「未分组」(groupId=0)，其余按分组 `order desc`；保存时编辑用 `copy(name=..., groupId=...)`、新增时写入 `groupId`，均落库副本避免污染 DiffUtil 旧列表 |
-| `ui/book/tag/TagConfigActivity.kt` / `TagConfigAdapter.kt` | 标签配置单行列表同样支持 `ItemTouchCallback` 长按拖拽（参考 TXT 目录规则页）；拖拽期间 `isDragging` 时跳过 Flow 刷新；松手按 `size - index` 用 `copy` 生成新对象，经 `BookTagDao.update(vararg)` 单事务批量回写 order，避免污染 DiffUtil 旧列表。`DiffUtil.ItemCallback<TagListItem>` 按 `Group.groupId` / `Tag.tagId` 判同一项；`selection`、`tagCount`、全选/反选、置顶/置底菜单都只取 `Tag` 项，底部计数用 `tagCount` 而非 `itemCount` |
+| `ui/book/tag/TagConfigActivity.kt` / `TagConfigAdapter.kt` | 标签配置单行列表同样支持 `ItemTouchCallback` 长按拖拽（参考 TXT 目录规则页）；拖拽期间 `isDragging` 时跳过 Flow 刷新；松手按 `size - index` 用 `copy` 生成新对象，经 `BookTagDao.update(vararg)` 单事务批量回写 order，避免污染 DiffUtil 旧列表。`DiffUtil.ItemCallback<TagListItem>` 按 `Group.groupId` / `Tag.tagId` 判同一项；`selection`、`tagCount`、全选/反选、置顶/置底菜单都只取 `Tag` 项，底部计数用 `tagCount` 而非 `itemCount`。工具栏 `menu_clear_invalid` / `menu_tag_select_style` 为 `showAsAction="never"`（收进三点菜单），新增 `menu_add_group`（`ic_add_circle` 带圈加号，位于加号左侧）直接弹 `TagGroupEditDialog()`。分组标题行由 `item_tag_config.xml` 的 `group_header` 承载 `tv_group_title` + `tv_group_edit` + `tv_group_del`；`groupId == 0L`（未分组）隐藏两个操作。`TagConfigActivity` 持独立的 `TagGroupViewModel`，编辑/删除时先在 IO 线程 `tagGroupDao.getById()` 取回完整实体（保留 `order`），再回主线程弹编辑框/确认框，确认后 `deleteAndClearTags()` 把组内标签归为未分组 |
 | 标签改名 / 标签搜索 | `BookTag` 为可变 data class，Fragment arguments 里的 Parcelable 与 adapter 持有的是同一对象；`TagEditDialog` 与 `edit()` 一律用 `copy()` 落库，避免就地赋值污染 DiffUtil 旧列表导致改名不刷新。条目菜单「搜索」调用 `SearchActivity.start(ctx, "#标签名", submit = false)`，只填入关键字并展示 `flowSearchByTag` 的本地结果，不发起书源搜索、不收起输入帮助面板 |
 | 删除标签 / 清理标签 | `books.tags` 是位掩码，`tagId` 为 2 的幂。`BookTagDao.deleteAndClearBooks()` 用 `@Transaction` 把 `update books set tags = tags - :tagId where tags & :tagId > 0`（与 `BookDao.removeGroup` 同口径）与删除标签定义放在同一事务，覆盖标签配置页单条/批量删除与编辑弹窗删除；不清位会导致新建标签复用 tagId 时旧书"继承"该标签。`clearInvalidTags()` 按现有标签求有效掩码，`update books set tags = tags & :validMask where tags != (tags & :validMask)` 清理历史残留位，返回受影响书籍数 |
 | `res/layout/item_book_tag_manage.xml` / `item_tag_config.xml` | 外层 `FrameLayout` + `tv_group_title`（`@color/background_menu` 背景、默认 GONE）+ 内层 `tag_content`（原标签内容，background / activated / clickable 移到这一层）。用 `gone(Boolean)` 而不是 `visible(Boolean)` 切换，否则隐藏项仍占位。管理页 item 的 `FrameLayout` / `tag_content` / `tv_tag` 均为 `wrap_content`（去掉 `weight`），宽度由文字决定 |
 | `res/layout/item_tag_select.xml` | 外层 `FrameLayout` 为 `wrap_content`；只有 `tv_group_title` 与 `cb_tag`，无编辑图标、无 `tag_content` 容器，选中态直接作用在 `cb_tag` 上。两者 `layout_margin` 统一 `2dp`、上下 `padding` 统一 `2dp`、`gravity=center`。`tv_group_title` 为 `wrap_content` 行内块 + **灰底圆角背景 `shape_tag_group_gray`**（`background_menu` / 12dp 圆角）+ `14sp` + `bold`，左右 `padding=3dp/3dp`，文本不带冒号；`cb_tag` 为 `wrap_content` + `maxLines=1` + 左右 `padding=3dp` + `14sp`，背景用 `selector_tag_select_gray_bg`（`state_activated=true` 时灰底 12dp 圆角），`textColor` 用 `res/color/selector_tag_select_text.xml`（`state_activated=true` 为 `md_red_500` 红色，否则 `primaryText`） |
 | `ui/widget/recycler/ItemTouchCallback.kt` | 新增可配置 `canDrag: (ViewHolder) -> Boolean`（默认 true），`getMovementFlags` 与 `onMove` 都会过滤；`onMove` 额外检查拖拽区间内的可见 holder，避免标签跨过分组标题。三个标签页设为 `it.itemViewType != TYPE_GROUP`。另加 `dragFlagsForOtherLayout`（默认 0）用于非 Grid / Linear 的 LayoutManager：FlexboxLayoutManager 下 `getMovementFlags` 原本返回 0 会让拖拽失效，标签管理页与标签选择页都把它设为四个方向 |
+| 选择页样式设置 | 原「其它设置」分类已迁出，改由 `TagConfigActivity` 菜单 `R.id.menu_tag_select_style` 启动 `ConfigActivity`，`ConfigTag.TAG_SELECT_STYLE_CONFIG` 对应 `TagSelectStyleFragment` + `res/xml/pref_tag_select_style.xml`，共 13 项。`OtherConfigFragment` / `pref_config_other.xml` 不再包含这些 Preference。`TagSelectStyleFragment` 负责 summary 初始化、数字选择器（`NumberPickerDialog`）与共享偏好变更刷新；`AppConfig` 各数值属性用 `coerceIn` 夹取范围。`showTagGroupTitle`（Switch，默认 true，关闭时 `initData` 过滤 Group）、`tagGroupTextSize` / `tagTextSize`（8–30，默认 14sp）、`tagGroupBackgroundColor`（`ColorPreference`，默认跟随 `background_menu`）、`tagNameBackgroundColor`（`ColorPreference`，默认透明；`cpv_dialogType=custom` + `cpv_showAlphaSlider=true`，否则 `ColorPreference` 会把透明默认值强制改成不透明黑）、`tagSelectedBackgroundColor`（`ColorPreference`，默认跟随 `background_menu`，专用于选中标签底色）、`tagBoxPaddingHorizontal` / `tagBoxPaddingVertical`（0–20，默认 3dp / 2dp）、`tagBoxCornerRadius`（0–30，默认 12dp）、`tagBoxBorder`（0–10，默认 0dp）、`tagBoxMargin`（0–20，默认 2dp）、`tagDividerMarginTop` / `tagDividerMarginBottom`（0–30，默认 0dp）。`TagSelectDialog.convert()` 用设置值覆盖 `item_tag_select.xml` 静态值：`textSize`、`setPadding(左右, 上下, 左右, 上下)`、`FlexboxLayoutManager.LayoutParams.setMargins()`（分组项与标签项 margin 一致，避免因额外顶部 margin 导致同行分组名比标签名低）；`textBoxBackground()` 动态生成 `GradientDrawable`：分组名用 `tagGroupBackgroundColor`、未选中标签用 `tagNameBackgroundColor`、选中标签用 `tagSelectedBackgroundColor`，边框宽度 >0 时 `setStroke(bg_divider_line)`；ItemDecoration 只在上一 flex 行底部与分组标题顶部之间按 `tagDividerMarginTop` / `tagDividerMarginBottom` 定位分割线，margin 之和超过行间距时贴分组标题绘制 |
 | 已移除的设置项 | 「标签管理每行标签数」对应的 `pref_config_other.xml` Preference、`OtherConfigFragment` 点击/summary 分支、`PreferKey.tagManageSpanCount`、`AppConfig.tagManageSpanCount`、中英文 strings 全部删除；旧设备 SharedPreferences 里可能残留该键，不再被读取 |
 
 **排序约定**：标签列表按 `order` **倒序**展示，因此写回顺序时首位取最大值（`order = 总数 - 序号`）。若沿用正序 `order = index`，倒序展示会把拖拽结果整体反转。
@@ -950,10 +952,10 @@ AnalyzeRule（上下文）
 | 属性 | 值 |
 |------|-----|
 | 数据库类型 | Room (SQLite) |
-| 当前版本 | 79 |
-| 自动迁移 | 从 v43 到 v79 |
-| 表数量 | 23张表 + 1个视图 |
-| 实体数量 | 23个 |
+| 当前版本 | 81 |
+| 自动迁移 | 从 v43 到 v81 |
+| 表数量 | 24 张表 + 1 个视图 |
+| 实体数量 | 24 个 @Entity + 1 个 @DatabaseView |
 
 ### 11.2 核心表设计
 
@@ -1073,7 +1075,7 @@ AnalyzeRule（上下文）
 
 ### 11.3 数据库迁移
 
-`DatabaseMigrations.kt` 管理 Room 数据库的版本迁移，支持从 v43 到 v79 的 AutoMigration 自动迁移策略。
+`DatabaseMigrations.kt` 管理 Room 数据库的版本迁移，支持从 v43 到 v81 的 AutoMigration 自动迁移策略。
 
 ---
 
@@ -1213,7 +1215,7 @@ AnalyzeRule（上下文）
 
 ---
 
-> **文档版本**: 1.3
+> **文档版本**: 1.6
 > **生成日期**: 2026-07-30
-> **最近更新**: 2026-11-22（搜索页新增 `@序号` 语法搜索使用指定 TXT 目录规则的本地书籍；TXT 目录规则列表每条菜单顶部加「搜索」跳转并预填 `@序号`）
+> **最近更新**: 2026-11-22（搜索页新增 `@序号` 语法搜索使用指定 TXT 目录规则的本地书籍；TXT 目录规则列表每条菜单顶部加「搜索」跳转并预填 `@序号`；标签配置页菜单调整、样式设置页迁移与标签背景色/分割线 margin 配置）
 > **基于代码扫描自动生成**

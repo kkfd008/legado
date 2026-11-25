@@ -2,6 +2,7 @@ package io.legado.app.ui.book.tag
 
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
@@ -23,6 +24,7 @@ import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.databinding.DialogBookTagPickerBinding
 import io.legado.app.databinding.ItemTagSelectBinding
+import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
@@ -54,6 +56,26 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
     /** 单个标签的最大宽度，防止超长标签名撑出屏幕 */
     private val maxTagWidth by lazy {
         (resources.displayMetrics.widthPixels * 0.85f).toInt()
+    }
+
+    /** 按设置生成文字框背景：分组名与选中标签沿用灰色圆角底，border 可单独调节 */
+    private fun textBoxBackground(activated: Boolean, isGroup: Boolean): GradientDrawable {
+        val density = resources.displayMetrics.density
+        val border = (AppConfig.tagBoxBorder * density).toInt()
+        return GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = AppConfig.tagBoxCornerRadius * density
+            setColor(
+                when {
+                    isGroup -> AppConfig.tagGroupBackgroundColor
+                    activated -> AppConfig.tagSelectedBackgroundColor
+                    else -> AppConfig.tagNameBackgroundColor
+                }
+            )
+            if (border > 0) {
+                setStroke(border, ContextCompat.getColor(requireContext(), R.color.bg_divider_line))
+            }
+        }
     }
 
     private val adapter by lazy {
@@ -88,20 +110,36 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
                 flexLp.width = ViewGroup.LayoutParams.WRAP_CONTENT
                 flexLp.height = ViewGroup.LayoutParams.WRAP_CONTENT
                 flexLp.flexGrow = 0f
+                val density = resources.displayMetrics.density
+                val paddingHorizontal = (AppConfig.tagBoxPaddingHorizontal * density).toInt()
+                val paddingVertical = (AppConfig.tagBoxPaddingVertical * density).toInt()
+                val margin = (AppConfig.tagBoxMargin * density).toInt()
+                flexLp.setMargins(margin, margin, margin, margin)
                 holder.itemView.layoutParams = flexLp
 
                 binding.tvGroupTitle.gone(!isGroup)
                 binding.cbTag.gone(isGroup)
                 if (item is TagListItem.Group) {
-                    binding.tvGroupTitle.maxWidth = maxTagWidth
-                    binding.tvGroupTitle.text = item.name
+                    binding.tvGroupTitle.apply {
+                        maxWidth = maxTagWidth
+                        text = item.name
+                        textSize = AppConfig.tagGroupTextSize.toFloat()
+                        setPadding(paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical)
+                        background = textBoxBackground(activated = false, isGroup = true)
+                    }
                     return
                 }
                 if (item !is TagListItem.Tag) return
                 val tag = item.bookTag
-                binding.cbTag.maxWidth = maxTagWidth
-                binding.cbTag.text = tag.name
-                binding.cbTag.isActivated = currentTags and tag.tagId > 0
+                val activated = currentTags and tag.tagId > 0
+                binding.cbTag.apply {
+                    maxWidth = maxTagWidth
+                    text = tag.name
+                    isActivated = activated
+                    textSize = AppConfig.tagTextSize.toFloat()
+                    setPadding(paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical)
+                    background = textBoxBackground(activated, isGroup = false)
+                }
             }
 
             override fun registerListener(holder: ItemViewHolder, binding: ItemTagSelectBinding) {
@@ -114,6 +152,7 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
                         currentTags = currentTags or tag.tagId
                     }
                     binding.cbTag.isActivated = currentTags and tag.tagId > 0
+                    binding.cbTag.background = textBoxBackground(binding.cbTag.isActivated, false)
                 }
                 // 长按交给 ItemTouchHelper 拖拽排序
                 holder.itemView.setOnLongClickListener(null)
@@ -184,7 +223,21 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
                     val child = parent.getChildAt(i) ?: continue
                     val position = parent.getChildAdapterPosition(child)
                     if (position <= 0 || adapter.getItem(position) !is TagListItem.Group) continue
-                    val y = child.top - paint.strokeWidth
+                    val density = resources.displayMetrics.density
+                    val dividerTop = (AppConfig.tagDividerMarginTop * density).toInt()
+                    val dividerBottom = (AppConfig.tagDividerMarginBottom * density).toInt()
+                    // 上一 flex 行的底部，保证分割线只落在两行之间的空隙里
+                    val previousBottom = (0 until parent.childCount).mapNotNull { j ->
+                        val other = parent.getChildAt(j) ?: return@mapNotNull null
+                        if (parent.getChildAdapterPosition(other) < position && other.bottom <= child.top) {
+                            other.bottom
+                        } else null
+                    }.maxOrNull() ?: 0
+                    val lower = previousBottom + dividerTop
+                    val upper = child.top - dividerBottom
+                    // 上下 margin 之和超过行间距时，贴着分组标题上方绘制，避免压到上一行标签
+                    val y = if (lower <= upper) (lower + upper) / 2f
+                    else child.top - paint.strokeWidth
                     canvas.drawLine(0f, y, parent.width.toFloat(), y, paint)
                 }
             }
@@ -217,8 +270,11 @@ class TagSelectDialog() : BaseDialogFragment(R.layout.dialog_book_tag_picker),
             combine(viewModel.tagList, viewModel.tagGroupList) { tags, groups ->
                 // 按分组方式显示：分组标题行 + 组内标签，未分组固定排在最后
                 tags.toTagGroupItems(groups, ungroupedName)
-            }.conflate().collect {
-                adapter.setItems(it)
+            }.conflate().collect { items ->
+                adapter.setItems(
+                    if (AppConfig.showTagGroupTitle) items
+                    else items.filterNot { it is TagListItem.Group }
+                )
             }
         }
     }
