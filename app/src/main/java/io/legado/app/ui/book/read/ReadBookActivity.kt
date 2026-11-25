@@ -184,7 +184,7 @@ class ReadBookActivity : BaseReadBookActivity(),
             val searchResult = IntentData.get<SearchResult>("searchResult$key")
             val searchResultList = IntentData.get<List<SearchResult>>("searchResultList$key")
             if (searchResult != null && searchResultList != null) {
-                viewModel.searchContentQuery = searchResult.query
+                viewModel.searchContentQuery = searchResult.searchQuery.ifBlank { searchResult.query }
                 viewModel.searchResultList = searchResultList
                 binding.searchMenu.upSearchResultList(searchResultList)
                 isShowingSearchResult = true
@@ -1193,7 +1193,7 @@ class ReadBookActivity : BaseReadBookActivity(),
             putExtra("searchWord", searchWord ?: viewModel.searchContentQuery)
             putExtra("searchResultIndex", viewModel.searchResultIndex)
             viewModel.searchResultList?.first()?.let {
-                if (it.query == viewModel.searchContentQuery) {
+                if (it.searchQuery == viewModel.searchContentQuery) {
                     IntentData.put("searchResultList", viewModel.searchResultList)
                 }
             }
@@ -1533,7 +1533,7 @@ class ReadBookActivity : BaseReadBookActivity(),
                 0 -> binding.readView.curPage.selectEndMoveIndex(
                     0,
                     lineIndex,
-                    charIndex + viewModel.searchContentQuery.length - 1
+                    charIndex + searchResult.query.length - 1
                 )
 
                 1 -> binding.readView.curPage.selectEndMoveIndex(

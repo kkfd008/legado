@@ -10,6 +10,7 @@ data class SearchResult(
     val resultText: String = "",
     val chapterTitle: String = "",
     val query: String = "",
+    val searchQuery: String = "",
     val pageSize: Int = 0,
     val chapterIndex: Int = 0,
     val pageIndex: Int = 0,

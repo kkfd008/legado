@@ -62,6 +62,7 @@ class SearchContentViewModel(application: Application) : BaseViewModel(applicati
                 resultText = construct.second,
                 chapterTitle = chapter.title,
                 query = matchedKeyword,
+                searchQuery = query,
                 chapterIndex = chapter.index,
                 queryIndexInResult = construct.first,
                 queryIndexInChapter = position

@@ -439,12 +439,13 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
         // calculate search result's pageIndex
         val pages = textChapter.pages
         val content = textChapter.getContent()
-        val queryLength = searchContentQuery.length
+        val query = searchResult.query
+        val queryLength = query.length
 
         var count = 0
-        var index = content.indexOf(searchContentQuery)
+        var index = content.indexOf(query)
         while (count != searchResult.resultCountWithinChapter) {
-            index = content.indexOf(searchContentQuery, index + queryLength)
+            index = content.indexOf(query, index + queryLength)
             count += 1
         }
         val contentPosition = index

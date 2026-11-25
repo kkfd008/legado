@@ -126,7 +126,7 @@ class SearchMenu @JvmOverloads constructor(
         //搜索结果
         llSearchResults.setOnClickListener {
             runMenuOut {
-                callBack.openSearchActivity(selectedSearchResult?.query)
+                callBack.openSearchActivity(null)
             }
         }
 
