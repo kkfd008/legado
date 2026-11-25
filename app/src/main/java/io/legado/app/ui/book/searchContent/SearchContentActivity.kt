@@ -12,6 +12,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.allViews
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.RecyclerView
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
 import io.legado.app.constant.AppLog
@@ -71,6 +72,7 @@ class SearchContentActivity :
     private var searchJob: Job? = null
     private var initJob: Job? = null
     private var historyFlowJob: Job? = null
+    private var isLoadingPage = false
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         val bbg = bottomBackground
@@ -158,6 +160,17 @@ class SearchContentActivity :
         binding.recyclerView.layoutManager = mLayoutManager
         binding.recyclerView.addItemDecoration(VerticalDivider(this))
         binding.recyclerView.adapter = adapter
+        binding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(rv: RecyclerView, newState: Int) {
+                if (newState == RecyclerView.SCROLL_STATE_IDLE
+                    && !rv.canScrollVertically(1)
+                    && viewModel.searchResultList.isNotEmpty()
+                ) {
+                    // 滚动到底部，加载下一页结果
+                    loadNextPage()
+                }
+            }
+        })
         binding.rvHistoryKey.layoutManager = com.google.android.flexbox.FlexboxLayoutManager(this)
         binding.rvHistoryKey.adapter = historyAdapter
         binding.rvHistoryKey.applyNavigationBarMargin()
@@ -221,43 +234,34 @@ class SearchContentActivity :
 
     @SuppressLint("SetTextI18n")
     fun startContentSearch(query: String) {
-        // 按章节搜索内容
         if (query.isBlank()) return
         searchJob?.cancel()
         adapter.clearItems()
         viewModel.searchResultList.clear()
-        viewModel.searchResultCounts = 0
+        viewModel.pages.clear()
+        viewModel.currentPage = 0
         viewModel.lastQuery = query
         binding.refreshProgressBar.isAutoLoading = true
         binding.fbStop.visible()
         searchJob = lifecycleScope.launch(IO) {
             initJob?.join()
             kotlin.runCatching {
-                appDb.bookChapterDao.getChapterList(viewModel.bookUrl).forEach { bookChapter ->
-                    ensureActive()
-                    val searchResults = if (isLocalBook
-                        || viewModel.cacheChapterNames.contains(bookChapter.getFileName())
-                    ) {
-                        viewModel.searchChapter(query, bookChapter)
-                    } else {
-                        return@forEach
-                    }
-                    ensureActive()
-                    if (searchResults.isNotEmpty()) {
-                        viewModel.searchResultList.addAll(searchResults)
-                        binding.tvCurrentSearchInfo.post {
-                            binding.tvCurrentSearchInfo.text =
-                                this@SearchContentActivity.getString(R.string.search_content_size) + ": ${viewModel.searchResultCounts}"
-                            adapter.addItems(searchResults)
-                        }
-                    }
+                viewModel.initPageSearch()
+                val results = viewModel.searchPage(query)
+                if (results.isEmpty()) {
+                    viewModel.hasMore = false
                 }
-                if (viewModel.searchResultCounts == 0) {
-                    val noSearchResult =
-                        SearchResult(resultText = getString(R.string.search_content_empty))
-                    binding.tvCurrentSearchInfo.post {
-                        adapter.addItem(noSearchResult)
+                binding.tvCurrentSearchInfo.post {
+                    if (results.isNotEmpty()) {
+                        viewModel.pages.add(results)
+                        viewModel.searchResultList.addAll(results)
+                        adapter.setItems(results)
+                    } else {
+                        val noSearchResult =
+                            SearchResult(resultText = getString(R.string.search_content_empty))
+                        adapter.setItems(listOf(noSearchResult))
                     }
+                    updateSearchInfo()
                 }
             }.onFailure {
                 AppLog.put("全文搜索出错\n${it.localizedMessage}", it)
@@ -267,6 +271,46 @@ class SearchContentActivity :
                 binding.refreshProgressBar.isAutoLoading = false
             }
         }
+    }
+
+    /**
+     * 滚动到底部时加载下一页搜索结果
+     */
+    private fun loadNextPage() {
+        if (!viewModel.hasMore || isLoadingPage) return
+        isLoadingPage = true
+        binding.refreshProgressBar.isAutoLoading = true
+        searchJob = lifecycleScope.launch(IO) {
+            kotlin.runCatching {
+                viewModel.searchPage(viewModel.lastQuery)
+            }.onSuccess { results ->
+                if (results.isEmpty()) {
+                    viewModel.hasMore = false
+                }
+                binding.tvCurrentSearchInfo.post {
+                    if (results.isNotEmpty()) {
+                        viewModel.pages.add(results)
+                        viewModel.searchResultList.addAll(results)
+                        adapter.addItems(results)
+                        updateSearchInfo()
+                    }
+                    binding.refreshProgressBar.isAutoLoading = false
+                    isLoadingPage = false
+                }
+            }.onFailure {
+                AppLog.put("全文搜索出错\n${it.localizedMessage}", it)
+                binding.tvCurrentSearchInfo.post {
+                    binding.refreshProgressBar.isAutoLoading = false
+                    isLoadingPage = false
+                }
+            }
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun updateSearchInfo() {
+        binding.tvCurrentSearchInfo.text =
+            getString(R.string.search_content_size) + ": ${viewModel.searchResultCounts}"
     }
 
     private val isLocalBook: Boolean
