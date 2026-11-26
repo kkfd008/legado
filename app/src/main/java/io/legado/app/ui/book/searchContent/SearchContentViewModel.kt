@@ -102,9 +102,11 @@ class SearchContentViewModel(application: Application) : BaseViewModel(applicati
     /**
      * 搜索关键词在内容中的位置
      * 支持多个关键字用、分割，匹配任意一个即返回（OR逻辑）
+     * 按位置顺序扫描：每次取所有关键字中位置最近的匹配，
+     * 保证分页截断时结果位置连续，不会遗漏其他关键字的匹配
      * @param startPos 从内容中哪个字符位置开始搜索
      * @param maxResults 最多返回的匹配数，达到后提前停止
-     * @return 匹配位置列表与是否被截断（截断表示本章可能还有更多匹配）
+     * @return 匹配位置列表（按位置升序，元素为 位置 to 匹配的关键字）与是否被截断
      */
     private suspend fun searchPosition(
         content: String,
@@ -117,23 +119,30 @@ class SearchContentViewModel(application: Application) : BaseViewModel(applicati
         } else {
             listOf(pattern)
         }
-        val positionMap = linkedMapOf<Int, String>()
+        val positions = mutableListOf<Pair<Int, String>>()
         var truncated = false
-        outer@ for (keyword in keywords) {
-            var index = content.indexOf(keyword, startPos)
-            while (index >= 0) {
-                coroutineContext.ensureActive()
-                if (positionMap.size >= maxResults) {
-                    truncated = true
-                    break@outer
-                }
-                if (!positionMap.containsKey(index)) {
-                    positionMap[index] = keyword
-                }
-                index = content.indexOf(keyword, index + keyword.length)
+        var currentPos = startPos
+        while (currentPos < content.length) {
+            coroutineContext.ensureActive()
+            if (positions.size >= maxResults) {
+                truncated = true
+                break
             }
+            // 取所有关键字中位置最近的匹配，保证按位置顺序产出
+            var nearestPos = -1
+            var nearestKeyword = ""
+            for (keyword in keywords) {
+                val idx = content.indexOf(keyword, currentPos)
+                if (idx >= 0 && (nearestPos < 0 || idx < nearestPos)) {
+                    nearestPos = idx
+                    nearestKeyword = keyword
+                }
+            }
+            if (nearestPos < 0) break
+            positions.add(nearestPos to nearestKeyword)
+            currentPos = nearestPos + nearestKeyword.length
         }
-        return positionMap.toList().sortedBy { it.first } to truncated
+        return positions to truncated
     }
 
     /**
@@ -163,7 +172,9 @@ class SearchContentViewModel(application: Application) : BaseViewModel(applicati
                 posInChapter = 0
             } else {
                 // 本章因达到上限未搜完，记录下次继续的位置
-                posInChapter = outcome.lastPositionInChapter + query.length
+                // 用实际匹配的关键字长度而非完整 query 长度，避免多关键字时分页起点偏移遗漏结果
+                val lastKeywordLength = outcome.results.lastOrNull()?.query?.length ?: query.length
+                posInChapter = outcome.lastPositionInChapter + lastKeywordLength
                 break
             }
         }
