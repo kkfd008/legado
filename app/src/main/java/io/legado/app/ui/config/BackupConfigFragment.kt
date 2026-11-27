@@ -138,6 +138,27 @@ class BackupConfigFragment : PreferenceFragment(),
                 restoreFromLocal()
                 true
             }
+        updateWebDavVisibility()
+    }
+
+    /**
+     * WebDAV 关闭时隐藏 WebDAV 设置分类，备份/恢复退化为纯本地行为。
+     * 用户可在「其他设置 - 启用 WebDAV」随时切换。
+     */
+    private fun updateWebDavVisibility() {
+        val enabled = AppConfig.webDavEnabled
+        findPreference<Preference>("webDavCategory")?.isVisible = enabled
+        findPreference<Preference>("web_dav_backup")?.summary = getString(
+            if (enabled) R.string.backup_summary else R.string.backup_local_summary
+        )
+        findPreference<Preference>("web_dav_restore")?.summary = getString(
+            if (enabled) R.string.restore_summary else R.string.restore_local_summary
+        )
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateWebDavVisibility()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -175,6 +196,7 @@ class BackupConfigFragment : PreferenceFragment(),
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
+            PreferKey.webDavEnabled -> updateWebDavVisibility()
             PreferKey.backupPath -> upPreferenceSummary(key, getPrefString(key))
             PreferKey.webDavUrl,
             PreferKey.webDavAccount,
@@ -234,7 +256,13 @@ class BackupConfigFragment : PreferenceFragment(),
             PreferKey.backupPath -> selectBackupPath.launch()
             PreferKey.restoreIgnore -> backupIgnore()
             "web_dav_backup" -> backup()
-            "web_dav_restore" -> restore()
+            "web_dav_restore" -> {
+                if (AppConfig.webDavEnabled) {
+                    restore()
+                } else {
+                    restoreFromLocal()
+                }
+            }
             "import_old" -> restoreOld.launch()
         }
         return super.onPreferenceTreeClick(preference)

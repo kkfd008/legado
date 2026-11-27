@@ -798,6 +798,8 @@
     <string name="sort_by_url">地址排序</string>
     <string name="backup_summary">本地和 WebDav 一起备份</string>
     <string name="restore_summary">优先从 WebDav 恢复，长按从本地恢复</string>
+    <string name="backup_local_summary">仅备份到本地</string>
+    <string name="restore_local_summary">从本地备份文件恢复</string>
     <string name="import_old_summary">选择旧版备份文件夹</string>
     <string name="enabled">已启用</string>
     <string name="disabled">已禁用</string>
