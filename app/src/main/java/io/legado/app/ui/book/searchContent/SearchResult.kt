@@ -19,8 +19,16 @@ data class SearchResult(
 ) {
 
     fun getHtmlCompat(textColor: String, accentColor: String): Spanned {
-        return if (query.isNotBlank()) {
-            val queryIndexInSurrounding = resultText.indexOf(query)
+        // 优先使用搜索时记录的精确位置（queryIndexInResult），因为替换规则/简繁转换后
+        // resultText.indexOf(query) 可能返回 -1 或指向错误位置，导致 substring 越界崩溃。
+        // 同时做边界校验，任何非法位置都退化为不高亮整段文字。
+        val queryIndexInSurrounding = queryIndexInResult.takeIf {
+            query.isNotBlank() && it >= 0 && it + query.length <= resultText.length
+        } ?: resultText.indexOf(query)
+        val canHighlight = query.isNotBlank()
+                && queryIndexInSurrounding >= 0
+                && queryIndexInSurrounding + query.length <= resultText.length
+        return if (canHighlight) {
             val leftString = resultText.substring(0, queryIndexInSurrounding)
             val rightString =
                 resultText.substring(queryIndexInSurrounding + query.length, resultText.length)

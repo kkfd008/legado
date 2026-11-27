@@ -21,3 +21,5 @@ package-lock.json
 /shell/*.txt
 build_env_check_report.txt
 *.apk
+# 大体积复现资产（20MB 测试书与日志），测试会自动生成
+.repro/

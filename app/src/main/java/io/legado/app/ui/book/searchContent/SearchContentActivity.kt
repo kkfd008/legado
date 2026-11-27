@@ -44,6 +44,7 @@ import io.legado.app.utils.visible
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flowOn
@@ -73,6 +74,8 @@ class SearchContentActivity :
     private var initJob: Job? = null
     private var historyFlowJob: Job? = null
     private var isLoadingPage = false
+    // 搜索会话序号：每次发起新搜索自增，用于丢弃被取消的旧搜索的异步结果，防止串台
+    private var searchSession = 0
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         val bbg = bottomBackground
@@ -236,6 +239,9 @@ class SearchContentActivity :
     fun startContentSearch(query: String) {
         if (query.isBlank()) return
         searchJob?.cancel()
+        // 新搜索开始：重置分页标志，避免上次分页任务被取消后标志残留导致永久卡死
+        isLoadingPage = false
+        val session = ++searchSession
         adapter.clearItems()
         viewModel.searchResultList.clear()
         viewModel.pages.clear()
@@ -252,6 +258,8 @@ class SearchContentActivity :
                     viewModel.hasMore = false
                 }
                 binding.tvCurrentSearchInfo.post {
+                    // 只有当前会话才允许写回结果，丢弃被取消的旧搜索结果，防止串台
+                    if (session != searchSession) return@post
                     if (results.isNotEmpty()) {
                         viewModel.pages.add(results)
                         viewModel.searchResultList.addAll(results)
@@ -267,6 +275,7 @@ class SearchContentActivity :
                 AppLog.put("全文搜索出错\n${it.localizedMessage}", it)
             }
             binding.tvCurrentSearchInfo.post {
+                if (session != searchSession) return@post
                 binding.fbStop.invisible()
                 binding.refreshProgressBar.isAutoLoading = false
             }
@@ -280,14 +289,17 @@ class SearchContentActivity :
         if (!viewModel.hasMore || isLoadingPage) return
         isLoadingPage = true
         binding.refreshProgressBar.isAutoLoading = true
+        val session = searchSession
         searchJob = lifecycleScope.launch(IO) {
             kotlin.runCatching {
                 viewModel.searchPage(viewModel.lastQuery)
             }.onSuccess { results ->
+                if (session != searchSession) return@onSuccess
                 if (results.isEmpty()) {
                     viewModel.hasMore = false
                 }
                 binding.tvCurrentSearchInfo.post {
+                    if (session != searchSession) return@post
                     if (results.isNotEmpty()) {
                         viewModel.pages.add(results)
                         viewModel.searchResultList.addAll(results)
@@ -298,7 +310,16 @@ class SearchContentActivity :
                     isLoadingPage = false
                 }
             }.onFailure {
+                if (it is kotlinx.coroutines.CancellationException) return@onFailure
                 AppLog.put("全文搜索出错\n${it.localizedMessage}", it)
+                binding.tvCurrentSearchInfo.post {
+                    binding.refreshProgressBar.isAutoLoading = false
+                    isLoadingPage = false
+                }
+            }
+            // Job 被取消（新搜索 / 停止按钮）时 ensureActive/协程取消会走到这里，
+            // 若上面 onFailure 因取消被跳过，在此兜底重置分页标志，防止永久卡死
+            if (!isActive && session == searchSession) {
                 binding.tvCurrentSearchInfo.post {
                     binding.refreshProgressBar.isAutoLoading = false
                     isLoadingPage = false

@@ -527,6 +527,20 @@ Activity / Fragment → ViewModel → Repository → DAO → Room Database
 - DAO：`BookDao.flowSearchByTocRule(tocUrl)` 查询 `type & local > 0 and tocUrl = :tocUrl order by durChapterTime desc`，关联口径与规则页计数一致（`book.tocUrl == rule.rule` 字符串全等），只覆盖本地书。
 - 注意：`rule.rule` 为空串时不会走该分支（避免误命中大量 `tocUrl = ""` 的书）；规则被编辑后旧书 `tocUrl` 仍是旧正则快照，不再匹配该规则。
 
+### 6.11 阅读页全文搜索 >20MB 大书专项修复（2026-11-27）
+
+基于 20MB 测试书复现（`.repro/gen_test_book.py` + `SearchOOMReproTest`）确认并修复以下问题，涉及 `ui/book/searchContent/`、`ui/book/read/ReadBookViewModel.kt`、`help/IntentData.kt`、`AndroidManifest.xml`：
+
+- **多关键字性能悬崖**（`SearchContentViewModel.searchPosition`）：旧实现每产出一条结果就对所有关键字从当前位置 `indexOf`，某关键字整章不存在时反复全量扫描，复杂度 O(m×k×n)，20MB + 缺失词可跑满 CPU 数分钟。改为每个关键字缓存“下一次匹配位置”+ `exhausted` 耗尽标记，缺失词只扫一次即剔除，复杂度降为 O(k×n + m×k)，并保持不重叠语义与结果一致。
+- **跳转定位偏移**（`ReadBookViewModel.searchResultPositions`）：搜索侧 `getContent` 默认 `includeTitle=true`，而阅读侧隐藏标题（`titleMode=2`）时排版不含标题，`e4540104e` 改用绝对位置后产生“标题长度+1”偏移。改为用 `textChapter.getContent()`（阅读侧真实排版文本）校验 `queryIndexInChapter`，无效时先尝试扣除标题前缀，再兜底按出现序号 `indexOf` 重定位。
+- **结果高亮越界**（`SearchResult.getHtmlCompat`）：`resultText.indexOf(query)` 返回 -1 时 `substring(0,-1)` 在 UI 线程崩溃。改用搜索时记录的精确位置 `queryIndexInResult` 并做边界校验，非法位置退化为不高亮整段文字。
+- **分页卡死**（`SearchContentActivity`）：`startContentSearch` 取消旧任务时未重置 `isLoadingPage`，导致无法加载下一页。新搜索开始时显式重置，并在分页 Job 取消时兜底重置。
+- **结果串台**：被取消的旧搜索的 `post {}` 仍把旧结果 `addAll` 到新列表。新增 `searchSession` 会话序号，异步写回前校验会话，丢弃过期结果。
+- **空页越界**：`searchResultPositions` 中 `pages[0]` / `lines[0]` 在排版未完成时可能越界，加空判断返回首位置。
+- **NPE**：`SearchContentViewModel.searchChapter` 中 `contentProcessor!!` 改为判空后早退。
+- **静态引用泄漏**（`IntentData`）：大结果集 `put` 后若未被消费会永久驻留。新增 `putTimes` + 容量上限（8 条）+ 有效期（10 分钟）淘汰机制。
+- **OOM 兜底**：`SearchContentViewModel.MAX_RESULT_TOTAL=20000` 限制结果总量；`AndroidManifest.xml` 开启 `android:largeHeap="true"`。
+
 ### 6.10 编辑本地书籍（写回 TXT 原文件）
 
 菜单 `menu_edit_local_book`（`@string/edit_local_book`）在 `menu/book_read.xml` 中紧跟 `menu_edit_content`，默认 `visible=false`；`ReadBookActivity.upMenu()` 中按 `book.isLocalTxt && LocalBook.canWrite(book)` 决定是否显示。`canWrite()` 结果按 `bookUrl` 缓存在 `LocalBook.writeableCache`，判断方式：SAF Uri 用 `DocumentFile.fromSingleUri().canWrite()`，`file://` 用 `File.canWrite()`。
@@ -1217,5 +1231,5 @@ AnalyzeRule（上下文）
 
 > **文档版本**: 1.6
 > **生成日期**: 2026-07-30
-> **最近更新**: 2026-11-22（搜索页新增 `@序号` 语法搜索使用指定 TXT 目录规则的本地书籍；TXT 目录规则列表每条菜单顶部加「搜索」跳转并预填 `@序号`；标签配置页菜单调整、样式设置页迁移与标签背景色/分割线 margin 配置）
+> **最近更新**: 2026-11-27（阅读页全文搜索大书场景专项修复：多关键字性能悬崖、跳转定位偏移、高亮越界崩溃、分页卡死、结果串台、空页越界、NPE、静态引用泄漏，新增结果总量上限与 `largeHeap`；20MB 复现测试验证）
 > **基于代码扫描自动生成**

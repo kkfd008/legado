@@ -20,6 +20,8 @@ class SearchContentViewModel(application: Application) : BaseViewModel(applicati
     companion object {
         // 每页搜索结果的条数
         const val PAGE_RESULT_TOTAL = 500
+        // 全书搜索结果总量上限，防止海量命中时结果对象持续累积导致 OOM
+        const val MAX_RESULT_TOTAL = 20000
     }
 
     var bookUrl: String = ""
@@ -76,7 +78,9 @@ class SearchContentViewModel(application: Application) : BaseViewModel(applicati
             else -> chapter.title
         }
         coroutineContext.ensureActive()
-        val mContent = contentProcessor!!.getContent(
+        val processor = contentProcessor
+            ?: return ChapterSearchOutcome(searchResultsWithinChapter, startPosition, true)
+        val mContent = processor.getContent(
             book, chapter, chapterContent, useReplace = replaceEnabled
         ).toString()
         val (positions, truncated) = searchPosition(mContent, query, startPosition, maxResults)
@@ -117,28 +121,50 @@ class SearchContentViewModel(application: Application) : BaseViewModel(applicati
         val keywords = if (pattern.contains("、")) {
             pattern.split("、").filter { it.isNotBlank() }
         } else {
-            listOf(pattern)
+            listOf(pattern).filter { it.isNotBlank() }
         }
         val positions = mutableListOf<Pair<Int, String>>()
+        if (keywords.isEmpty()) return positions to false
+
+        // 性能修复：旧实现每产出一条结果，就对所有关键字从当前位置重新 indexOf。
+        // 当某关键字在整章都不存在（或匹配点远在后方）时，每次都会全量扫描，
+        // 复杂度退化为 O(m×k×n)，20MB 书 + 缺失关键字可跑满 CPU 数分钟。
+        // 现在为每个关键字缓存“下一次匹配位置”并标记是否耗尽：
+        // 缓存仍有效时直接复用，失效时（落在当前位置之前）才重新 indexOf，
+        // 已在剩余内容中找不到的关键字被标记为耗尽，后续不再扫描。
+        // 保持与旧实现一致的不重叠语义（全局 currentPos 单调推进）。
+        // -1 表示尚未计算；首次必须经 indexOf 验证，不能直接用 startPos 当作命中
+        val nextPos = IntArray(keywords.size) { -1 }
+        val exhausted = BooleanArray(keywords.size)
         var truncated = false
         var currentPos = startPos
-        while (currentPos < content.length) {
+        while (true) {
             coroutineContext.ensureActive()
             if (positions.size >= maxResults) {
                 truncated = true
                 break
             }
-            // 取所有关键字中位置最近的匹配，保证按位置顺序产出
+            var nearestIdx = -1
             var nearestPos = -1
-            var nearestKeyword = ""
-            for (keyword in keywords) {
-                val idx = content.indexOf(keyword, currentPos)
+            for (i in keywords.indices) {
+                if (exhausted[i]) continue
+                // 缓存未计算或失效（落在当前位置之前）时重新定位
+                if (nextPos[i] < 0 || nextPos[i] < currentPos) {
+                    val found = content.indexOf(keywords[i], currentPos)
+                    if (found < 0) {
+                        exhausted[i] = true
+                        continue
+                    }
+                    nextPos[i] = found
+                }
+                val idx = nextPos[i]
                 if (idx >= 0 && (nearestPos < 0 || idx < nearestPos)) {
                     nearestPos = idx
-                    nearestKeyword = keyword
+                    nearestIdx = i
                 }
             }
-            if (nearestPos < 0) break
+            if (nearestIdx < 0) break
+            val nearestKeyword = keywords[nearestIdx]
             positions.add(nearestPos to nearestKeyword)
             currentPos = nearestPos + nearestKeyword.length
         }
@@ -181,8 +207,9 @@ class SearchContentViewModel(application: Application) : BaseViewModel(applicati
 
         nextChapterIndex = chapterIdx
         nextPositionInChapter = posInChapter
-        hasMore = pageResults.size == PAGE_RESULT_TOTAL
         searchResultCounts += pageResults.size
+        // 达到总量上限后停止分页，避免结果集无限增长
+        hasMore = pageResults.size == PAGE_RESULT_TOTAL && searchResultCounts < MAX_RESULT_TOTAL
         return pageResults
     }
 

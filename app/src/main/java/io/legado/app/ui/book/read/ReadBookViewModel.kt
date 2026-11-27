@@ -438,11 +438,40 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
     ): Array<Int> {
         // calculate search result's pageIndex
         val pages = textChapter.pages
-        val queryLength = searchResult.query.length
+        // 章节排版尚未完成或为空时，直接返回首位置，避免 pages[0] 越界崩溃
+        if (pages.isEmpty()) return arrayOf(0, 0, 0, 0, 0)
+        val query = searchResult.query
+        val queryLength = query.length
 
-        // 多关键字搜索时 resultCountWithinChapter 为多关键字合并排序后的序号，
-        // 无法再用单个关键字 indexOf 精确定位，直接使用搜索时记录的字符位置
-        val contentPosition = searchResult.queryIndexInChapter
+        // 搜索侧用 includeTitle=true 得到字符位置（queryIndexInChapter），
+        // 而阅读侧在“隐藏标题(titleMode=2)”等场景下排版不含标题，两侧文本口径不一致，
+        // 直接套用绝对位置会产生“标题长度+1”的系统性偏移。
+        // 这里用阅读侧真实排版文本做校验与校正，保证跳转落在正确的字上。
+        val readContent = textChapter.getContent()
+        var contentPosition = searchResult.queryIndexInChapter.coerceIn(0, readContent.length)
+        val validAtPosition = query.isNotBlank()
+                && contentPosition + queryLength <= readContent.length
+                && readContent.startsWith(query, contentPosition)
+        if (!validAtPosition && query.isNotBlank()) {
+            // 优先尝试扣除标题前缀（搜索侧含标题、阅读侧不含）
+            val titleOffset = searchResult.chapterTitle.length + 1
+            val adjusted = contentPosition - titleOffset
+            if (adjusted >= 0 && adjusted + queryLength <= readContent.length
+                && readContent.startsWith(query, adjusted)
+            ) {
+                contentPosition = adjusted
+            } else {
+                // 兜底：在阅读侧文本中按出现序号重新定位（兼容隐藏标题、简繁转换、替换规则等）
+                var idx = readContent.indexOf(query)
+                var count = 0
+                while (idx >= 0 && count < searchResult.resultCountWithinChapter) {
+                    idx = readContent.indexOf(query, idx + queryLength)
+                    count++
+                }
+                if (idx >= 0) contentPosition = idx
+            }
+        }
+
         var pageIndex = 0
         var length = pages[pageIndex].text.length
         while (length < contentPosition && pageIndex + 1 < pages.size) {
@@ -453,6 +482,8 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
         // calculate search result's lineIndex
         val currentPage = pages[pageIndex]
         val curTextLines = currentPage.lines
+        // 该页尚未排版出文字行时，回退到第 0 页第 0 行
+        if (curTextLines.isEmpty()) return arrayOf(0, 0, 0, 0, 0)
         var lineIndex = 0
         var curLine = curTextLines[lineIndex]
         length = length - currentPage.text.length + curLine.text.length
